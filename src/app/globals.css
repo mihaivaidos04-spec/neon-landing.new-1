@@ -1,0 +1,163 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  @apply bg-black text-white antialiased;
+}
+
+.glass-panel {
+  background:
+    radial-gradient(circle at top left, rgba(168, 85, 255, 0.15), rgba(15, 23, 42, 0.95));
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow:
+    0 0 40px rgba(15, 23, 42, 0.9),
+    0 0 65px rgba(15, 23, 42, 1);
+  backdrop-filter: blur(22px);
+}
+
+.btn-neon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0.9rem 2.5rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  background:
+    radial-gradient(circle at 0 0, rgba(168, 85, 255, 0.32), rgba(15, 23, 42, 0.96));
+  color: #e5e7eb;
+  box-shadow:
+    0 0 24px rgba(168, 85, 255, 0.8),
+    0 0 52px rgba(34, 211, 238, 0.7);
+  transition:
+    transform 180ms ease-out,
+    box-shadow 180ms ease-out,
+    border-color 180ms ease-out,
+    background 200ms ease-out,
+    opacity 150ms ease-out;
+}
+
+.btn-neon::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid rgba(94, 234, 212, 0.4);
+  opacity: 0;
+  box-shadow:
+    0 0 40px rgba(94, 234, 212, 0.9),
+    0 0 80px rgba(168, 85, 255, 0.95);
+  transition: opacity 200ms ease-out;
+}
+
+.btn-neon:hover {
+  transform: translateY(-2px) scale(1.03);
+  background:
+    radial-gradient(circle at 100% 0, rgba(34, 211, 238, 0.4), rgba(15, 23, 42, 0.95));
+  box-shadow:
+    0 0 30px rgba(168, 85, 255, 0.9),
+    0 0 70px rgba(34, 211, 238, 0.9);
+  border-color: rgba(94, 234, 212, 0.85);
+}
+
+.btn-neon:hover::after {
+  opacity: 1;
+}
+
+.badge-neon {
+  border-radius: 9999px;
+  padding: 0.2rem 0.95rem;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: linear-gradient(
+    to right,
+    rgba(168, 85, 255, 0.2),
+    rgba(34, 211, 238, 0.22)
+  );
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #e5e7eb;
+}
+
+.heading-glow {
+  text-shadow:
+    0 0 40px rgba(168, 85, 255, 0.95),
+    0 0 85px rgba(34, 211, 238, 0.9);
+}
+
+.card-premium {
+  position: relative;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: radial-gradient(circle at top left, rgba(168, 85, 255, 0.16), #020617);
+  box-shadow:
+    0 0 40px rgba(15, 23, 42, 0.9),
+    0 0 72px rgba(15, 23, 42, 1);
+  overflow: hidden;
+  transition:
+    transform 180ms ease-out,
+    box-shadow 200ms ease-out,
+    border-color 180ms ease-out;
+}
+
+.card-premium-inner {
+  position: relative;
+  padding: 1.75rem 1.7rem;
+  background: radial-gradient(circle at top, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.98));
+  backdrop-filter: blur(20px);
+}
+
+.card-premium::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background: radial-gradient(circle at top, rgba(168, 85, 255, 0.32), transparent 60%);
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+}
+
+.card-premium:hover {
+  transform: translateY(-4px) scale(1.03);
+  border-color: rgba(94, 234, 212, 0.7);
+  box-shadow:
+    0 0 55px rgba(168, 85, 255, 0.7),
+    0 0 95px rgba(15, 23, 42, 1);
+}
+
+.card-premium:hover::before {
+  opacity: 1;
+}
+
+.badge-tier {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.18rem 0.7rem;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: linear-gradient(
+    to right,
+    rgba(15, 23, 42, 0.96),
+    rgba(15, 23, 42, 0.8)
+  );
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #e5e7eb;
+}
+
