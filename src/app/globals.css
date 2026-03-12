@@ -17,147 +17,228 @@ body {
   @apply bg-black text-white antialiased;
 }
 
-.glass-panel {
-  background:
-    radial-gradient(circle at top left, rgba(168, 85, 255, 0.15), rgba(15, 23, 42, 0.95));
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  box-shadow:
-    0 0 40px rgba(15, 23, 42, 0.9),
-    0 0 65px rgba(15, 23, 42, 1);
-  backdrop-filter: blur(22px);
+/* Lightweight entrance animations (GPU-friendly: opacity + transform) */
+.hero-fade-in {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: hero-fade-in 0.5s ease-out forwards;
+}
+.hero-delay-1 { animation-delay: 0.1s; }
+.hero-delay-2 { animation-delay: 0.2s; }
+
+@keyframes hero-fade-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.btn-neon {
+.section-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: section-reveal 0.5s ease-out forwards;
+}
+.section-delay-1 { animation-delay: 0.1s; }
+.section-delay-2 { animation-delay: 0.2s; }
+.section-delay-3 { animation-delay: 0.3s; }
+.section-delay-4 { animation-delay: 0.4s; }
+
+@keyframes section-reveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Logo heart pulse */
+@keyframes pulse-soft {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+
+/* Logo hearts – extrem de glowing, rotație la 3 secunde */
+@keyframes heart-rotate-a {
+  0% { transform: scale(1.4); opacity: 1; filter: drop-shadow(0 0 40px rgba(244, 114, 182, 1)) drop-shadow(0 0 80px rgba(244, 114, 182, 0.9)) drop-shadow(0 0 120px rgba(244, 114, 182, 0.6)); }
+  45% { transform: scale(1.4); opacity: 1; filter: drop-shadow(0 0 40px rgba(244, 114, 182, 1)) drop-shadow(0 0 80px rgba(244, 114, 182, 0.9)) drop-shadow(0 0 120px rgba(244, 114, 182, 0.6)); }
+  50% { transform: scale(0.7); opacity: 0.45; filter: drop-shadow(0 0 8px rgba(244, 114, 182, 0.4)); }
+  95% { transform: scale(0.7); opacity: 0.45; filter: drop-shadow(0 0 8px rgba(244, 114, 182, 0.4)); }
+  97% { transform: scale(1.6); opacity: 1; filter: drop-shadow(0 0 48px rgba(244, 114, 182, 1)) drop-shadow(0 0 96px rgba(244, 114, 182, 0.95)) drop-shadow(0 0 140px rgba(244, 114, 182, 0.7)); }
+  100% { transform: scale(1.4); opacity: 1; filter: drop-shadow(0 0 40px rgba(244, 114, 182, 1)) drop-shadow(0 0 80px rgba(244, 114, 182, 0.9)) drop-shadow(0 0 120px rgba(244, 114, 182, 0.6)); }
+}
+
+@keyframes heart-rotate-b {
+  0% { transform: scale(0.7); opacity: 0.45; filter: drop-shadow(0 0 8px rgba(244, 114, 182, 0.4)); }
+  45% { transform: scale(0.7); opacity: 0.45; filter: drop-shadow(0 0 8px rgba(244, 114, 182, 0.4)); }
+  50% { transform: scale(1.6); opacity: 1; filter: drop-shadow(0 0 48px rgba(244, 114, 182, 1)) drop-shadow(0 0 96px rgba(244, 114, 182, 0.95)) drop-shadow(0 0 140px rgba(244, 114, 182, 0.7)); }
+  55% { transform: scale(1.4); opacity: 1; filter: drop-shadow(0 0 40px rgba(244, 114, 182, 1)) drop-shadow(0 0 80px rgba(244, 114, 182, 0.9)) drop-shadow(0 0 120px rgba(244, 114, 182, 0.6)); }
+  95% { transform: scale(1.4); opacity: 1; filter: drop-shadow(0 0 40px rgba(244, 114, 182, 1)) drop-shadow(0 0 80px rgba(244, 114, 182, 0.9)) drop-shadow(0 0 120px rgba(244, 114, 182, 0.6)); }
+  100% { transform: scale(0.7); opacity: 0.45; filter: drop-shadow(0 0 8px rgba(244, 114, 182, 0.4)); }
+}
+
+.heart-rotate-a {
+  animation: heart-rotate-a 6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+  transition: filter 0.2s ease;
+}
+
+.heart-rotate-b {
+  animation: heart-rotate-b 6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+  transition: filter 0.2s ease;
+}
+
+/* Hover: glow mult mai puternic pe inimi – overlay luminos */
+.logo-hearts {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9999px;
-  padding: 0.9rem 2.5rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-size: 0.75rem;
-  font-weight: 600;
-  border: 1px solid rgba(148, 163, 184, 0.55);
-  background:
-    radial-gradient(circle at 0 0, rgba(168, 85, 255, 0.32), rgba(15, 23, 42, 0.96));
-  color: #e5e7eb;
-  box-shadow:
-    0 0 24px rgba(168, 85, 255, 0.8),
-    0 0 52px rgba(34, 211, 238, 0.7);
-  transition:
-    transform 180ms ease-out,
-    box-shadow 180ms ease-out,
-    border-color 180ms ease-out,
-    background 200ms ease-out,
-    opacity 150ms ease-out;
+  transition: transform 0.2s ease;
 }
 
-.btn-neon::after {
+.logo-hearts::after {
   content: "";
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  border: 1px solid rgba(94, 234, 212, 0.4);
-  opacity: 0;
-  box-shadow:
-    0 0 40px rgba(94, 234, 212, 0.9),
-    0 0 80px rgba(168, 85, 255, 0.95);
-  transition: opacity 200ms ease-out;
-}
-
-.btn-neon:hover {
-  transform: translateY(-2px) scale(1.03);
-  background:
-    radial-gradient(circle at 100% 0, rgba(34, 211, 238, 0.4), rgba(15, 23, 42, 0.95));
-  box-shadow:
-    0 0 30px rgba(168, 85, 255, 0.9),
-    0 0 70px rgba(34, 211, 238, 0.9);
-  border-color: rgba(94, 234, 212, 0.85);
-}
-
-.btn-neon:hover::after {
-  opacity: 1;
-}
-
-.badge-neon {
-  border-radius: 9999px;
-  padding: 0.2rem 0.95rem;
-  border: 1px solid rgba(148, 163, 184, 0.45);
-  background: linear-gradient(
-    to right,
-    rgba(168, 85, 255, 0.2),
-    rgba(34, 211, 238, 0.22)
+  inset: -24px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(244, 114, 182, 0.5) 0%,
+    rgba(244, 114, 182, 0.25) 30%,
+    rgba(244, 114, 182, 0.1) 55%,
+    transparent 75%
   );
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: #e5e7eb;
-}
-
-.heading-glow {
-  text-shadow:
-    0 0 40px rgba(168, 85, 255, 0.95),
-    0 0 85px rgba(34, 211, 238, 0.9);
-}
-
-.card-premium {
-  position: relative;
-  border-radius: 1.5rem;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  background: radial-gradient(circle at top left, rgba(168, 85, 255, 0.16), #020617);
-  box-shadow:
-    0 0 40px rgba(15, 23, 42, 0.9),
-    0 0 72px rgba(15, 23, 42, 1);
-  overflow: hidden;
-  transition:
-    transform 180ms ease-out,
-    box-shadow 200ms ease-out,
-    border-color 180ms ease-out;
-}
-
-.card-premium-inner {
-  position: relative;
-  padding: 1.75rem 1.7rem;
-  background: radial-gradient(circle at top, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.98));
-  backdrop-filter: blur(20px);
-}
-
-.card-premium::before {
-  content: "";
-  position: absolute;
-  inset: -40%;
-  background: radial-gradient(circle at top, rgba(168, 85, 255, 0.32), transparent 60%);
   opacity: 0;
-  transition: opacity 220ms ease-out;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: -1;
 }
 
-.card-premium:hover {
-  transform: translateY(-4px) scale(1.03);
-  border-color: rgba(94, 234, 212, 0.7);
-  box-shadow:
-    0 0 55px rgba(168, 85, 255, 0.7),
-    0 0 95px rgba(15, 23, 42, 1);
+.logo-hearts:hover {
+  transform: scale(1.08);
 }
 
-.card-premium:hover::before {
+.logo-hearts:hover::after {
   opacity: 1;
-}
-
-.badge-tier {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 9999px;
-  padding: 0.18rem 0.7rem;
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  background: linear-gradient(
-    to right,
-    rgba(15, 23, 42, 0.96),
-    rgba(15, 23, 42, 0.8)
+  background: radial-gradient(
+    circle,
+    rgba(244, 114, 182, 0.9) 0%,
+    rgba(244, 114, 182, 0.6) 25%,
+    rgba(244, 114, 182, 0.35) 45%,
+    rgba(244, 114, 182, 0.15) 65%,
+    transparent 85%
   );
-  font-size: 0.65rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #e5e7eb;
 }
 
+/* CTA pulse glow (single property: box-shadow) */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 32px rgba(139, 92, 246, 0.5), 0 0 64px rgba(139, 92, 246, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(139, 92, 246, 0.6), 0 0 80px rgba(139, 92, 246, 0.35);
+  }
+}
+
+.btn-pulse-neon {
+  animation: pulse-glow 2.5s ease-in-out infinite;
+}
+
+/* CTA pulse on card buttons – once every 3s */
+@keyframes cta-pulse {
+  0%, 96%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  98% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.btn-cta-pulse {
+  animation: cta-pulse 3s ease-in-out infinite;
+}
+
+/* Video player neon border pulse */
+@keyframes neon-border-pulse {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.5), inset 0 0 0 1px rgba(139, 92, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(139, 92, 246, 0.7), inset 0 0 0 1px rgba(139, 92, 246, 0.6);
+  }
+}
+
+.video-player-wrap {
+  animation: neon-border-pulse 2.5s ease-in-out infinite;
+}
+
+/* Neon searching spinner */
+@keyframes neon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.searching-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(139, 92, 246, 0.3);
+  border-top-color: #8b5cf6;
+  border-radius: 50%;
+  animation: neon-spin 0.9s linear infinite;
+}
+
+/* Small inline neon spinner for loading states (coins, battery, etc.) */
+.neon-spinner-sm {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(139, 92, 246, 0.3);
+  border-top-color: #8b5cf6;
+  border-radius: 50%;
+  animation: neon-spin 0.9s linear infinite;
+  flex-shrink: 0;
+}
+
+/* VIP/Top Spender: animated Gold/Purple gradient glow */
+@keyframes vip-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.6), 0 0 24px rgba(139, 92, 246, 0.4), inset 0 0 0 2px rgba(251, 191, 36, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.9), 0 0 40px rgba(139, 92, 246, 0.6), inset 0 0 0 2px rgba(139, 92, 246, 0.5);
+  }
+}
+
+.vip-border-glow {
+  animation: vip-glow-pulse 2.5s ease-in-out infinite;
+}
+
+/* Rank-based glow intensity (Bronze → Neon God) */
+@keyframes rank-glow-pulse {
+  0%, 100% { box-shadow: 0 0 var(--rank-glow, 12px) rgba(139, 92, 246, 0.5); }
+  50% { box-shadow: 0 0 calc(var(--rank-glow, 12px) * 1.5) rgba(139, 92, 246, 0.7); }
+}
+
+.video-player-wrap.rank-glow-bronze { --rank-glow: 12px; animation: rank-glow-pulse 2.5s ease-in-out infinite; }
+.video-player-wrap.rank-glow-silver { --rank-glow: 18px; animation: rank-glow-pulse 2.5s ease-in-out infinite; }
+.video-player-wrap.rank-glow-gold { --rank-glow: 24px; animation: rank-glow-pulse 2.5s ease-in-out infinite; }
+.video-player-wrap.rank-glow-platinum { --rank-glow: 30px; animation: rank-glow-pulse 2.5s ease-in-out infinite; }
+.video-player-wrap.rank-glow-neon-god { --rank-glow: 40px; animation: rank-glow-pulse 2.5s ease-in-out infinite; }
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* Social proof: distinct, human feel */
+.notification-popup {
+  font-family: "Segoe Print", "Bradley Hand", "Brush Script MT", "Comic Sans MS", cursive;
+}
+
+.notification-time {
+  font-family: system-ui, -apple-system, sans-serif;
+  letter-spacing: 0.08em;
+}
+
+.notification-handwritten {
+  font-family: "Segoe Print", "Bradley Hand", "Brush Script MT", cursive;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}

@@ -1,134 +1,457 @@
 "use client";
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Shield, Zap, Lock, ChevronDown, Globe } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+import { useSession, signOut } from "next-auth/react";
+import { isVerificationValid } from "../lib/verification-storage";
+import { getBrowserLocale, getContentT } from "../lib/content-i18n";
+import { getRankFromCoinsSpent } from "../lib/ranks";
+import RankBadge from "../components/RankBadge";
+import RankProgressionBar from "../components/RankProgressionBar";
+import { INITIAL_COINS } from "../lib/coins";
+import {
+  getStoredGuestCoins,
+  setStoredGuestCoins,
+  clearGuestCoins,
+  hasReceivedFirstLoginBonus,
+  setFirstLoginBonusReceived,
+  getFirstLoginBonusAmount,
+} from "../lib/guest-storage";
+import { getStoredAttribution, clearStoredAttribution } from "../lib/utm-storage";
+import { feedbackSuccess, playSuccessSound } from "../lib/feedback";
+import { useWallet } from "../hooks/useWallet";
+import { useRewards } from "../hooks/useRewards";
+import { useSessionSpending } from "../hooks/useSessionSpending";
+import { useEnsureFilterAccess } from "../hooks/useEnsureFilterAccess";
+import { useMission } from "../hooks/useMission";
+
+const Hero = dynamic(() => import("../components/Hero"), { ssr: true });
+const MicroAd = dynamic(() => import("../components/MicroAd"), { ssr: false });
+const LiveIndicator = dynamic(() => import("../components/LiveIndicator"), { ssr: false });
+const FaqSection = dynamic(() => import("../components/FaqSection"), { ssr: true });
+const ComingSoonLevel50 = dynamic(() => import("../components/ComingSoonLevel50"), { ssr: true });
+const SocialProofPopup = dynamic(
+  () => import("../components/SocialProofPopup"),
+  { ssr: false }
+);
+const WelcomeToast = dynamic(
+  () => import("../components/WelcomeToast"),
+  { ssr: false }
+);
+const ContentSection = dynamic(
+  () => import("../components/ContentSection"),
+  { ssr: true }
+);
+const LoginWall = dynamic(() => import("../components/LoginWall"), { ssr: false });
+const VerificationOverlay = dynamic(
+  () => import("../components/VerificationOverlay"),
+  { ssr: false }
+);
+const BonusMultiplierPopup = dynamic(
+  () => import("../components/BonusMultiplierPopup"),
+  { ssr: false }
+);
+const GlobalNotificationToast = dynamic(
+  () => import("../components/GlobalNotificationToast"),
+  { ssr: false }
+);
+const LiveTicker = dynamic(
+  () => import("../components/LiveTicker"),
+  { ssr: false }
+);
+const MysteryBoxModal = dynamic(
+  () => import("../components/MysteryBoxModal"),
+  { ssr: false }
+);
+const DecryptRewardModal = dynamic(
+  () => import("../components/DecryptRewardModal"),
+  { ssr: false }
+);
 
 export default function NeonLanding() {
-  
-  const scrollToPricing = () => {
-    document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const { data: session, status } = useSession();
+  const wallet = useWallet(status === "authenticated");
+  const rewards = useRewards(status === "authenticated");
+  const mission = useMission(status === "authenticated");
+  const [verified, setVerified] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [coins, setCoins] = useState(INITIAL_COINS);
+  const [loginWallOpen, setLoginWallOpen] = useState(false);
+  const [showWelcomeToast, setShowWelcomeToast] = useState(false);
+  const [showBonusMultiplierPopup, setShowBonusMultiplierPopup] = useState(false);
+  const [showMysteryBox, setShowMysteryBox] = useState(false);
+  const [showDecryptReward, setShowDecryptReward] = useState(false);
+  const router = useRouter();
+  const hasAppliedFirstLoginRef = useRef(false);
+  const heartSoundCooldownRef = useRef(0);
+
+  const handleHeartHover = useCallback(() => {
+    const now = Date.now();
+    if (now - heartSoundCooldownRef.current < 800) return;
+    heartSoundCooldownRef.current = now;
+    playSuccessSound();
+  }, []);
+
+  useEffect(() => {
+    setMounted(true);
+    if (isVerificationValid()) setVerified(true);
+  }, []);
+
+  // Guest coins: init from storage when not signed in
+  useEffect(() => {
+    if (!mounted || status === "loading") return;
+    if (status === "unauthenticated") {
+      const stored = getStoredGuestCoins();
+      if (stored > 0) setCoins(stored);
+      else setCoins(INITIAL_COINS);
+    }
+  }, [mounted, status]);
+
+  // Persist guest coins when not signed in
+  useEffect(() => {
+    if (!mounted || status === "authenticated") return;
+    setStoredGuestCoins(coins);
+  }, [mounted, status, coins]);
+
+  // First-login bonus + merge guest coins when user signs in
+  useEffect(() => {
+    if (status !== "authenticated" || !session?.user || !mounted) return;
+    const userId = (session as any).userId ?? session.user?.email ?? session.user?.name ?? "id";
+    if (hasAppliedFirstLoginRef.current) return;
+    hasAppliedFirstLoginRef.current = true;
+    const guestCoins = getStoredGuestCoins();
+    clearGuestCoins();
+    const bonus = !hasReceivedFirstLoginBonus(userId) ? getFirstLoginBonusAmount() : 0;
+    const totalToAdd = guestCoins + bonus;
+    if (bonus > 0) {
+      setFirstLoginBonusReceived(userId);
+      feedbackSuccess();
+    }
+    if (totalToAdd > 0) {
+      fetch("/api/wallet/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: totalToAdd,
+          externalId: `first-login-${userId}`,
+          reason: "first_login_merge",
+        }),
+      }).then(() => wallet.refetch());
+    }
+    setCoins(INITIAL_COINS);
+  }, [status, session, mounted]);
+
+  // Ensure welcome coins for new OAuth users (Google/Apple/Snapchat)
+  const hasCheckedWelcomeRef = useRef(false);
+  useEffect(() => {
+    if (status !== "authenticated" || !mounted || hasCheckedWelcomeRef.current) return;
+    hasCheckedWelcomeRef.current = true;
+    fetch("/api/wallet/ensure-welcome")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.credited) {
+          setShowWelcomeToast(true);
+          wallet.refetch();
+        }
+      })
+      .catch(() => {});
+  }, [status, mounted, wallet]);
+
+  // Save UTM + ref attribution to user profile on sign-in
+  const hasSavedAttributionRef = useRef(false);
+  useEffect(() => {
+    if (status !== "authenticated" || !mounted || hasSavedAttributionRef.current) return;
+    const attribution = getStoredAttribution();
+    if (!attribution?.utm_source && !attribution?.utm_medium && !attribution?.utm_campaign && !attribution?.ref) return;
+    hasSavedAttributionRef.current = true;
+    fetch("/api/attribution/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        utm_source: attribution.utm_source,
+        utm_medium: attribution.utm_medium,
+        utm_campaign: attribution.utm_campaign,
+        ref: attribution.ref,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.saved) clearStoredAttribution();
+      })
+      .catch(() => {});
+  }, [status, mounted]);
+
+  const handleVerified = () => setVerified(true);
+
+  const handleOpenShop = () => router.push("/checkout");
+  const handleRechargeWithPayment = () => router.push("/checkout?bundle=starter");
+
+  const { addSpend: addSessionSpend, isWhale, sessionSpent } = useSessionSpending();
+
+  const handleSpend = useCallback(
+    async (amount: number, _reason?: string) => {
+      const res = await fetch("/api/wallet/spend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount, reason: _reason }),
+      });
+      if (res.ok) {
+        addSessionSpend(amount);
+        await wallet.refetch();
+        return true;
+      }
+      return false;
+    },
+    [wallet, addSessionSpend]
+  );
+
+  const ensureFilterAccess = useEnsureFilterAccess({
+    onDenied: handleOpenShop,
+    onSpend: status === "authenticated" ? handleSpend : undefined,
+    onRefetch: status === "authenticated" ? wallet.refetch : undefined,
+  });
+
+  const handleMissionIncrement = useCallback(async (connectionDurationMs: number) => {
+    const result = await mission.increment(connectionDurationMs);
+    if (result?.justCompleted) {
+      await wallet.refetch();
+      setShowBonusMultiplierPopup(true);
+    }
+    return result ? { justCompleted: result.justCompleted } : null;
+  }, [mission, wallet]);
+
+  const handleAddCoins = useCallback(
+    async (amount: number) => {
+      const res = await fetch("/api/wallet/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount, reason: "daily_quest" }),
+      });
+      if (res.ok) await wallet.refetch();
+    },
+    [wallet]
+  );
+
+  const displayCoins = status === "authenticated" ? (wallet.balance ?? 0) : coins;
+  const walletLoading = status === "authenticated" && wallet.isLoading;
+  const locale = mounted ? getBrowserLocale() : "en";
+  const t = getContentT(locale);
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-purple-500/30 font-sans">
-      
-      {/* Selector Limba */}
-      <div className="absolute top-6 right-6 z-50">
-        <button className="flex items-center gap-2 px-4 py-2 bg-white/5 backdrop-blur-md border border-white/10 rounded-full hover:bg-white/10 transition-all text-sm">
-          <Globe size={14} />
-          <span>RO / EN</span>
-        </button>
-      </div>
-
-      {/* HERO SECTION */}
-      <section className="relative h-screen flex flex-col items-center justify-center px-4 overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-purple-600/20 blur-[120px] rounded-full" />
-        
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-center z-10"
-        >
-          <span className="inline-block px-4 py-1.5 mb-6 text-xs font-medium tracking-[0.2em] uppercase bg-purple-500/10 border border-purple-500/20 rounded-full text-purple-400">
-            Acces Privat • 2026
-          </span>
-          <h1 className="text-6xl md:text-8xl font-bold tracking-tighter mb-6 bg-gradient-to-b from-white to-white/40 bg-clip-text text-transparent">
-            NEON.
-          </h1>
-          <p className="max-w-xl mx-auto text-lg md:text-xl text-zinc-400 font-light leading-relaxed mb-10">
-            Unii doar privesc. Alții fac parte din poveste. <br />
-            O experiență digitală privată, dincolo de algoritmi.
-          </p>
-          
-          <button 
-            onClick={scrollToPricing}
-            className="group relative px-8 py-4 bg-white text-black font-semibold rounded-full overflow-hidden transition-all hover:scale-105 active:scale-95"
-          >
-            <span className="relative z-10">VERIFICĂ DISPONIBILITATEA</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </button>
-        </motion.div>
-
-        <motion.div 
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="absolute bottom-10"
-        >
-          <ChevronDown className="text-zinc-600" />
-        </motion.div>
-      </section>
-
-      {/* PROOF SECTION */}
-      <section className="py-32 px-4 max-w-6xl mx-auto">
-        <div className="grid md:grid-cols-3 gap-12">
-          {[
-            { icon: <Lock className="text-purple-500" />, title: "100% Anonim", desc: "Identitatea ta rămâne a ta. Fără date colectate, fără urme lăsate." },
-            { icon: <Zap className="text-blue-500" />, title: "Acces Instant", desc: "Fără timpi de așteptare. Intri în universul NEON în 3 secunde." },
-            { icon: <Shield className="text-purple-400" />, title: "Fără Filtru", desc: "Conținut brut, autentic și exclusiv pentru membrii elite." }
-          ].map((item, i) => (
-            <motion.div 
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.2 }}
-              className="p-8 bg-white/[0.02] border border-white/5 rounded-[2rem] hover:bg-white/[0.04] transition-colors"
+    <div className="min-h-screen bg-[#000000] text-white antialiased">
+      <div
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 60% at 50% 40%, rgba(139, 92, 246, 0.12) 0%, transparent 60%)",
+        }}
+      />
+      {/* Header: Titlu + Conectare / Profile */}
+      {verified && mounted && (
+        <header className="relative z-20 flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <div className="flex items-center gap-3">
+            <h1
+              className="flex items-center text-xl font-light italic tracking-tight text-white sm:text-2xl"
+              style={{ fontFamily: "var(--font-script), system-ui" }}
             >
-              <div className="mb-4">{item.icon}</div>
-              <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
-              <p className="text-zinc-500 leading-relaxed">{item.desc}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* PRICING SECTION */}
-      <section id="pricing" className="py-32 px-4 bg-zinc-950/50">
-        <div className="max-w-5xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-16">Alege nivelul de acces</h2>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="p-8 bg-white/[0.02] border border-white/5 rounded-[2.5rem] flex flex-col">
-              <h4 className="text-zinc-400 mb-2">Curious</h4>
-              <div className="text-4xl font-bold mb-6">$5<span className="text-sm text-zinc-600">/lună</span></div>
-              <ul className="text-sm text-zinc-500 space-y-4 mb-8 text-left">
-                <li>• Acces la feed-ul de bază</li>
-                <li>• Notificări prioritare</li>
-              </ul>
-              <button className="mt-auto py-3 border border-white/10 rounded-full hover:bg-white hover:text-black transition-all">Selectează</button>
-            </div>
-
-            <div className="p-8 bg-purple-600/10 border-2 border-purple-500/50 rounded-[2.5rem] flex flex-col relative scale-105 shadow-[0_0_40px_rgba(147,51,234,0.1)]">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-purple-500 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">Recomandat</div>
-              <h4 className="text-purple-400 mb-2 font-semibold">Elite</h4>
-              <div className="text-4xl font-bold mb-6">$7<span className="text-sm text-zinc-600">/lună</span></div>
-              <ul className="text-sm text-zinc-300 space-y-4 mb-8 text-left">
-                <li>• Tot ce e în Curious</li>
-                <li>• Conținut privat HD</li>
-                <li>• Chat direct cu creatorul</li>
-              </ul>
-              <button className="mt-auto py-3 bg-purple-500 text-white rounded-full hover:bg-purple-400 transition-all shadow-lg shadow-purple-500/20">Devino Elite</button>
-            </div>
-
-            <div className="p-8 bg-white/[0.02] border border-white/5 rounded-[2.5rem] flex flex-col">
-              <h4 className="text-zinc-400 mb-2">Legend</h4>
-              <div className="text-4xl font-bold mb-6">$10<span className="text-sm text-zinc-600">/lună</span></div>
-              <ul className="text-sm text-zinc-500 space-y-4 mb-8 text-left">
-                <li>• Acces Ultra Premium</li>
-                <li>• Întâlniri 1-la-1</li>
-                <li>• Badge VIP 'Legend'</li>
-              </ul>
-              <button className="mt-auto py-3 border border-white/10 rounded-full hover:bg-white hover:text-black transition-all">Alege Legend</button>
-            </div>
+              <span className="mr-0.5 sm:mr-1">Neon</span>
+              <span
+                className="logo-hearts group ml-2 flex cursor-pointer items-center gap-1 sm:ml-3 sm:gap-1.5"
+                onMouseEnter={handleHeartHover}
+                role="img"
+                aria-label="Neon"
+              >
+                <span
+                  className="heart-rotate-a relative inline-flex h-5 w-5 items-center justify-center sm:h-6 sm:w-6"
+                >
+                  <svg viewBox="0 0 24 24" fill="#f472b6" className="h-full w-full">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                  </svg>
+                </span>
+                <span
+                  className="heart-rotate-b relative inline-flex h-5 w-5 items-center justify-center sm:h-6 sm:w-6"
+                >
+                  <svg viewBox="0 0 24 24" fill="#f472b6" className="h-full w-full">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                  </svg>
+                </span>
+              </span>
+            </h1>
+            <LiveIndicator />
           </div>
+          <div className="flex items-center gap-2 sm:gap-4">
+            {rewards.pendingCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowDecryptReward(true)}
+                className="flex items-center justify-center gap-1.5 rounded-full border border-emerald-500/50 bg-emerald-950/60 px-3 py-2 text-sm font-medium text-emerald-400 transition-all hover:bg-emerald-900/50 hover:border-emerald-500/70"
+                title="Decrypt Reward"
+              >
+                <span>🔓</span>
+                <span className="hidden sm:inline">Decrypt Reward</span>
+                {rewards.pendingCount > 1 && (
+                  <span className="rounded-full bg-emerald-500/30 px-1.5 text-[10px] font-bold">
+                    {rewards.pendingCount}
+                  </span>
+                )}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowMysteryBox(true)}
+              className="flex items-center justify-center gap-1.5 rounded-full border border-amber-500/50 bg-amber-950/60 px-3 py-2 text-sm font-medium text-amber-400 transition-all hover:bg-amber-900/50 hover:border-amber-500/70"
+              title={t.mysteryBoxTitle}
+            >
+              <span>📦</span>
+              <span className="hidden sm:inline">{t.mysteryBoxTitle}</span>
+            </button>
+            <div className="flex flex-col items-end gap-1">
+              <button
+                type="button"
+                onClick={handleOpenShop}
+                className="flex min-h-[48px] min-w-[100px] items-center justify-center gap-2 rounded-full px-4 py-3 text-base font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.98] sm:min-h-[52px] sm:min-w-[120px] sm:px-5"
+                style={{ background: "#8b5cf6", boxShadow: "0 0 20px rgba(139, 92, 246, 0.4)" }}
+              >
+                {walletLoading ? (
+                  <span className="neon-spinner-sm" aria-hidden />
+                ) : (
+                  <span>{displayCoins}</span>
+                )}
+                <span className="text-white/90">{t.coinsLabel}</span>
+              </button>
+              <div className="w-24 sm:w-28">
+                <RankProgressionBar coinsSpent={sessionSpent} />
+              </div>
+            </div>
+            {status === "authenticated" && session?.user ? (
+            <div className="flex items-center gap-3">
+              <span className="hidden items-center gap-2 text-sm text-white/80 sm:inline-flex">
+                <RankBadge rank={getRankFromCoinsSpent(sessionSpent)} size="sm" />
+                {session?.user?.name ?? session?.user?.email ?? "User"}
+              </span>
+              {session?.user?.image && (
+                <img
+                  src={session?.user?.image}
+                  alt=""
+                  className="h-8 w-8 rounded-full border border-white/20 object-cover"
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => signOut()}
+                className="rounded-full border border-white/20 px-3 py-1.5 text-xs font-medium text-white/80 transition-colors hover:bg-white/10"
+              >
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setLoginWallOpen(true)}
+              className="rounded-full bg-[#8b5cf6] px-4 py-2 text-sm font-semibold text-white transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.5)]"
+            >
+              {t.connectAccount}
+            </button>
+          )}
+          </div>
+        </header>
+      )}
+      {verified && mounted && (
+        <LiveTicker locale={locale} />
+      )}
+      {/* Guest banner: link account to save progress */}
+      {verified && mounted && status === "unauthenticated" && coins > 0 && (
+        <div className="relative z-20 mx-4 mt-2 flex items-center justify-center gap-2 rounded-xl border border-[#8b5cf6]/30 bg-[#8b5cf6]/10 px-4 py-2.5 text-center text-sm text-white/90 sm:mx-6">
+          <span>{t.linkAccountToSaveProgress}</span>
+          <button
+            type="button"
+            onClick={() => setLoginWallOpen(true)}
+            className="font-semibold text-[#a78bfa] underline hover:opacity-90"
+          >
+            {t.connectAccount}
+          </button>
         </div>
-      </section>
-
-      <footer className="py-12 border-t border-white/5 text-center text-zinc-600 text-xs tracking-widest uppercase">
-        <p>© 2026 NEON DIGITAL • Confidentiality First</p>
-      </footer>
+      )}
+      <main className="relative z-10 mx-auto max-w-6xl px-4 pt-4 pb-10 sm:px-6 sm:pt-6 sm:pb-14 md:pb-20">
+        {verified && (
+          <>
+            <ContentSection
+              locale={locale}
+              coins={displayCoins}
+              setCoins={setCoins}
+              onOpenShop={handleOpenShop}
+              onRechargeWithPayment={handleRechargeWithPayment}
+              onOpenGenderFilter={() => router.push("/checkout?plan=gender")}
+              onSpend={status === "authenticated" ? handleSpend : undefined}
+              onAddCoins={status === "authenticated" ? handleAddCoins : undefined}
+              ensureFilterAccess={status === "authenticated" ? ensureFilterAccess : undefined}
+              missionCount={status === "authenticated" ? mission.count : undefined}
+              missionCompleted={status === "authenticated" ? mission.completed : undefined}
+              onMissionIncrement={status === "authenticated" ? handleMissionIncrement : undefined}
+              useRealMatching={status === "authenticated"}
+              userId={status === "authenticated" ? ((session as any)?.userId ?? session?.user?.id) ?? null : null}
+              onWalletRefetch={status === "authenticated" ? wallet.refetch : undefined}
+              onNavigateToPrivate={(roomId) => router.push(`/private/${roomId}`)}
+              isWhale={status === "authenticated" ? isWhale : false}
+              sessionSpent={sessionSpent}
+            />
+            <Hero />
+            <div className="mx-auto mt-8 flex justify-center">
+              <MicroAd format="horizontal" />
+            </div>
+            <FaqSection locale={locale} />
+            <ComingSoonLevel50 locale={locale} />
+          </>
+        )}
+      </main>
+      {verified && <SocialProofPopup locale={locale} />}
+      {verified && mounted && (
+        <GlobalNotificationToast locale={locale} />
+      )}
+      {showWelcomeToast && (
+        <WelcomeToast
+          message={t.welcomeToastMessage}
+          onDismiss={() => setShowWelcomeToast(false)}
+        />
+      )}
+      {status === "authenticated" && (
+        <BonusMultiplierPopup
+          visible={showBonusMultiplierPopup}
+          onClose={() => setShowBonusMultiplierPopup(false)}
+          balance={displayCoins}
+          onRefetch={wallet.refetch}
+          locale={locale}
+        />
+      )}
+      {verified && (
+        <LoginWall
+          open={loginWallOpen}
+          onClose={() => setLoginWallOpen(false)}
+          locale={locale}
+        />
+      )}
+      {status === "authenticated" && (
+        <DecryptRewardModal
+          visible={showDecryptReward}
+          onClose={() => setShowDecryptReward(false)}
+          onDecrypted={() => rewards.refetch()}
+        />
+      )}
+      {verified && mounted && (
+        <MysteryBoxModal
+          visible={showMysteryBox}
+          onClose={() => setShowMysteryBox(false)}
+          coins={displayCoins}
+          onSpend={status === "authenticated" ? handleSpend : undefined}
+          setCoins={status === "authenticated" ? undefined : setCoins}
+          onOpenShop={handleOpenShop}
+          onWalletRefetch={status === "authenticated" ? wallet.refetch : undefined}
+        />
+      )}
+      {mounted && !verified && (
+        <VerificationOverlay locale={locale} onVerified={handleVerified} />
+      )}
     </div>
   );
 }
