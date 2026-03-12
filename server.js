@@ -10,7 +10,15 @@ const hostname = process.env.HOSTNAME || "localhost";
 const port = parseInt(process.env.PORT || "3000", 10);
 
 const app = next({ dev, hostname, port });
-const handler = app.getRequestHandler();
+
+/**
+ * getRequestHandler() servește automat:
+ * - Fișiere statice din .next/static (/_next/static/*)
+ * - Fișiere din public/ la rădăcină (ex: /favicon.ico, /og-image.png)
+ * - Toate rutele aplicației (pages, API)
+ * - Catch-all: rute necunoscute → app/not-found.tsx (redirect la /)
+ */
+const nextHandler = app.getRequestHandler();
 
 const CORS_ORIGINS = [
   "https://neonlive.chat",
@@ -20,7 +28,9 @@ const CORS_ORIGINS = [
 ];
 
 app.prepare().then(() => {
-  const httpServer = createServer(handler);
+  const httpServer = createServer((req, res) => {
+    nextHandler(req, res);
+  });
   const io = new Server(httpServer, {
     path: "/api/socketio",
     addTrailingSlash: false,
