@@ -41,7 +41,14 @@ const WelcomeToast = dynamic(
 );
 const ContentSection = dynamic(
   () => import("../components/ContentSection"),
-  { ssr: true }
+  {
+    ssr: true,
+    loading: () => (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+      </div>
+    ),
+  }
 );
 const LoginWall = dynamic(() => import("../components/LoginWall"), { ssr: false });
 const VerificationOverlay = dynamic(

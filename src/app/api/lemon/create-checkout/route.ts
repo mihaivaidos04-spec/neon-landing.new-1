@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     variantId,
     {
       productOptions: {
-        redirect_url: redirectUrl,
+        redirectUrl,
       },
       checkoutOptions: {
         embed: true,

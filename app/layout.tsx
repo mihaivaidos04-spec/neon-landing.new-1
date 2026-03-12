@@ -12,17 +12,20 @@ const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const scriptFont = Dancing_Script({
   variable: "--font-script",
   subsets: ["latin"],
   weight: ["400", "500", "600"],
+  display: "swap",
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://neonlive.chat";
@@ -65,15 +68,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ro">
-      {adsenseClient && (
-        <head>
-          <script
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`}
-            crossOrigin="anonymous"
-          />
-        </head>
-      )}
+      <head>
+        <link rel="preconnect" href="https://app.lemonsqueezy.com" />
+        <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
+      </head>
       <body
         className={`${poppins.variable} ${geistMono.variable} ${scriptFont.variable} bg-black text-white antialiased`}
       >
@@ -96,14 +94,15 @@ export default function RootLayout({
           <div className="mx-4 h-28 rounded-3xl bg-gradient-to-br from-white/10 to-white/0" />
           <div className="mx-2 h-24 rounded-3xl bg-gradient-to-br from-white/14 to-white/0" />
         </div>
+        {/* Lemon Squeezy – lazyOnload: încarcă după ce pagina e interactivă, nu blochează FCP */}
         <Script
           src="https://app.lemonsqueezy.com/js/lemon.js"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
         {adsenseClient && (
           <Script
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`}
-            strategy="afterInteractive"
+            strategy="lazyOnload"
             crossOrigin="anonymous"
           />
         )}

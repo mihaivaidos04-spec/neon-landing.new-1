@@ -1,6 +1,9 @@
+import env from "@next/env";
 import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
+
+env.loadEnvConfig(process.cwd(), process.env.NODE_ENV !== "production");
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = process.env.HOSTNAME || "localhost";
@@ -9,11 +12,22 @@ const port = parseInt(process.env.PORT || "3000", 10);
 const app = next({ dev, hostname, port });
 const handler = app.getRequestHandler();
 
+const CORS_ORIGINS = [
+  "https://neonlive.chat",
+  "https://www.neonlive.chat",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+];
+
 app.prepare().then(() => {
   const httpServer = createServer(handler);
   const io = new Server(httpServer, {
     path: "/api/socketio",
     addTrailingSlash: false,
+    cors: {
+      origin: CORS_ORIGINS,
+      methods: ["GET", "POST"],
+    },
   });
 
   // userId -> socketId mapping for peer signaling
@@ -102,7 +116,7 @@ app.prepare().then(() => {
       console.error(err);
       process.exit(1);
     })
-    .listen(port, () => {
-      console.log(`> Ready on http://${hostname}:${port}`);
+    .listen(port, "0.0.0.0", () => {
+      console.log(`> Ready on http://0.0.0.0:${port}`);
     });
 });
