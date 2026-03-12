@@ -37,14 +37,29 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-lg font-medium text-white sm:text-xl">
-              Digital Rewards – No Refunds
+              Neon Rewards – Digital Goods for Entertainment
             </h2>
             <p className="mt-3 leading-relaxed">
-              <strong>All purchases of Digital Rewards are final.</strong> Once the
-              decryption process is available, the digital service is considered
-              consumed and non-refundable. Digital Rewards (e.g. Chat Time, Golden
-              Avatar Border, Extended Battery) are delivered instantly upon
-              decryption and cannot be reversed or refunded.
+              <strong>Neon Rewards</strong> are digital goods intended solely for
+              entertainment within the NEON platform. They have{" "}
+              <strong>no cash value</strong> and cannot be exchanged for money,
+              refunded, or transferred outside the app. Neon Rewards (e.g. Chat
+              Time, Golden Avatar Border, Extended Battery) are consumed in-app
+              and are provided for enjoyment only.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-medium text-white sm:text-xl">
+              No Refunds
+            </h2>
+            <p className="mt-3 leading-relaxed">
+              <strong>All purchases of Neon Rewards and virtual currency are
+              final and non-refundable.</strong> Once the decryption process is
+              completed or the digital service is delivered, it is considered
+              consumed. We do not offer refunds for digital goods, regardless of
+              whether they have been used. By proceeding with a purchase, you
+              acknowledge and accept this no-refund policy.
             </p>
           </section>
 

@@ -25,7 +25,7 @@ const scriptFont = Dancing_Script({
   weight: ["400", "500", "600"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://neon.app";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://neonlive.chat";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

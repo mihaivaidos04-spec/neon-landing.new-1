@@ -41,10 +41,16 @@ export async function POST(req: NextRequest) {
 
   lemonSqueezySetup({ apiKey });
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://neonlive.chat";
+  const redirectUrl = `${baseUrl.replace(/\/$/, "")}/checkout/success`;
+
   const { data, error } = await createCheckout(
     storeId,
     variantId,
     {
+      productOptions: {
+        redirect_url: redirectUrl,
+      },
       checkoutOptions: {
         embed: true,
       },

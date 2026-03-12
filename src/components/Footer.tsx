@@ -23,13 +23,18 @@ export default function Footer({ locale = "ro" }: Props) {
       <p className="mt-2 max-w-2xl text-center text-[11px] text-white/40">
         {t.digitalItemsDisclaimer}
       </p>
-      <nav className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-white/50">
-        <Link href="/privacy" className="underline hover:text-white/70">
-          Privacy
+      <nav className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+        <Link
+          href="/terms"
+          className="text-sm font-medium text-white/80 underline decoration-white/40 underline-offset-2 transition hover:text-white hover:decoration-white/70"
+        >
+          Terms of Service
         </Link>
-        <span aria-hidden className="text-white/30">·</span>
-        <Link href="/terms" className="underline hover:text-white/70">
-          Terms
+        <Link
+          href="/privacy"
+          className="text-sm font-medium text-white/80 underline decoration-white/40 underline-offset-2 transition hover:text-white hover:decoration-white/70"
+        >
+          Privacy Policy
         </Link>
       </nav>
       <p className="mt-4 text-center text-xs text-white/40">

@@ -50,13 +50,27 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-lg font-medium text-white sm:text-xl">
+              Payments & Card Data
+            </h2>
+            <p className="mt-3 leading-relaxed">
+              Payment processing is handled entirely by{" "}
+              <strong>Lemon Squeezy</strong> (lemonsqueezy.com), a third-party
+              payment provider. <strong>We do not store</strong> credit card
+              numbers, CVV codes, or any other sensitive payment data. NEON does
+              not have access to your full payment details. We only receive
+              transaction confirmation (amount, date, product type) to credit your
+              account. For payment-related questions, contact Lemon Squeezy or
+              refer to their privacy policy.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-medium text-white sm:text-xl">
               Digital Entertainment
             </h2>
             <p className="mt-3 leading-relaxed">
-              NEON is a platform for digital entertainment. Transaction data
-              related to purchases (amount, date, product type) is processed via
-              our payment provider. We do not store full card numbers or CVV.
-              Digital items have no cash value and are for in-app use only.
+              NEON is a platform for digital entertainment. Digital items have no
+              cash value and are for in-app use only.
             </p>
           </section>
 
