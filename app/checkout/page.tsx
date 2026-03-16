@@ -4,6 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import toast from "react-hot-toast";
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { LEMON_PRODUCTS, formatPrice } from "@/src/lib/lemon-products";
 
 const MicroAd = dynamic(() => import("@/src/components/MicroAd"), { ssr: false });
@@ -18,7 +19,9 @@ declare global {
 }
 
 export default function CheckoutPage() {
+  const { data: session } = useSession();
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const userId = (session as any)?.userId ?? session?.user?.id;
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.createLemonSqueezy) {
@@ -36,7 +39,7 @@ export default function CheckoutPage() {
       const res = await fetch("/api/lemon/create-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ variantId }),
+        body: JSON.stringify({ variantId, userId: userId ?? undefined }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {

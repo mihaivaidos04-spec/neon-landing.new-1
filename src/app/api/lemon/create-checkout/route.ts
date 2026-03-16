@@ -22,9 +22,11 @@ export async function POST(req: NextRequest) {
   }
 
   let variantId: string | number;
+  let userId: string | undefined;
   try {
     const body = await req.json().catch(() => ({}));
     variantId = body.variantId ?? body.variant_id;
+    userId = typeof body.userId === "string" ? body.userId : undefined;
     if (variantId == null || variantId === "") {
       return NextResponse.json(
         { error: "variantId is required" },
@@ -44,6 +46,9 @@ export async function POST(req: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://neonlive.chat";
   const redirectUrl = `${baseUrl.replace(/\/$/, "")}/checkout/success`;
 
+  const checkoutData: Record<string, unknown> = {};
+  if (userId) checkoutData.custom = { user_id: userId };
+
   const { data, error } = await createCheckout(
     storeId,
     variantId,
@@ -54,6 +59,7 @@ export async function POST(req: NextRequest) {
       checkoutOptions: {
         embed: true,
       },
+      checkoutData,
     }
   );
 
