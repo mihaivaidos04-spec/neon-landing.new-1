@@ -57,40 +57,69 @@ async function sendVerificationRequest(params: {
   }
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
-  secret: process.env.AUTH_SECRET || (process.env.NODE_ENV === "development" ? "dev-secret-min-32-chars-for-local" : undefined),
-  providers: [
-    Apple({
-      clientId: process.env.AUTH_APPLE_ID ?? "",
-      clientSecret: process.env.AUTH_APPLE_SECRET ?? "",
-      allowDangerousEmailAccountLinking: true,
-    }),
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID ?? "",
-      clientSecret: process.env.AUTH_GOOGLE_SECRET ?? "",
-      allowDangerousEmailAccountLinking: true,
-    }),
-    Snapchat({
-      clientId: process.env.AUTH_SNAPCHAT_ID ?? "",
-      clientSecret: process.env.AUTH_SNAPCHAT_SECRET ?? "",
-    }),
-    Discord({
-      clientId: process.env.AUTH_DISCORD_ID ?? "",
-      clientSecret: process.env.AUTH_DISCORD_SECRET ?? "",
-      allowDangerousEmailAccountLinking: true,
-    }),
-    Reddit({
-      clientId: process.env.AUTH_REDDIT_ID ?? "",
-      clientSecret: process.env.AUTH_REDDIT_SECRET ?? "",
-      allowDangerousEmailAccountLinking: true,
-    }),
+/** Include only providers with valid credentials to avoid "Missing client_id" errors */
+function getProviders() {
+  const providers: any[] = [];
+
+  if (process.env.AUTH_APPLE_ID && process.env.AUTH_APPLE_SECRET) {
+    providers.push(
+      Apple({
+        clientId: process.env.AUTH_APPLE_ID,
+        clientSecret: process.env.AUTH_APPLE_SECRET,
+        allowDangerousEmailAccountLinking: true,
+      })
+    );
+  }
+  if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
+    providers.push(
+      Google({
+        clientId: process.env.AUTH_GOOGLE_ID,
+        clientSecret: process.env.AUTH_GOOGLE_SECRET,
+        allowDangerousEmailAccountLinking: true,
+      })
+    );
+  }
+  if (process.env.AUTH_SNAPCHAT_ID && process.env.AUTH_SNAPCHAT_SECRET) {
+    providers.push(
+      Snapchat({
+        clientId: process.env.AUTH_SNAPCHAT_ID,
+        clientSecret: process.env.AUTH_SNAPCHAT_SECRET,
+      })
+    );
+  }
+  if (process.env.AUTH_DISCORD_ID && process.env.AUTH_DISCORD_SECRET) {
+    providers.push(
+      Discord({
+        clientId: process.env.AUTH_DISCORD_ID,
+        clientSecret: process.env.AUTH_DISCORD_SECRET,
+        allowDangerousEmailAccountLinking: true,
+      })
+    );
+  }
+  if (process.env.AUTH_REDDIT_ID && process.env.AUTH_REDDIT_SECRET) {
+    providers.push(
+      Reddit({
+        clientId: process.env.AUTH_REDDIT_ID,
+        clientSecret: process.env.AUTH_REDDIT_SECRET,
+        allowDangerousEmailAccountLinking: true,
+      })
+    );
+  }
+  providers.push(
     EmailProvider({
       server: {},
       from: process.env.EMAIL_FROM ?? "noreply@neon.app",
       sendVerificationRequest: async (p) => sendVerificationRequest({ identifier: p.identifier, url: p.url }),
-    }),
-  ],
+    })
+  );
+
+  return providers;
+}
+
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  adapter: PrismaAdapter(prisma),
+  secret: process.env.AUTH_SECRET || (process.env.NODE_ENV === "development" ? "dev-secret-min-32-chars-for-local" : undefined),
+  providers: getProviders(),
   pages: {
     signIn: "/",
     error: "/",

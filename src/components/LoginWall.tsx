@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { signIn, getProviders } from "next-auth/react";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
 
@@ -48,10 +48,15 @@ type Props = {
 
 export default function LoginWall({ open, onClose, locale }: Props) {
   const t = getContentT(locale);
+  const [providers, setProviders] = useState<Record<string, { id: string; name: string }> | null>(null);
   const [showOther, setShowOther] = useState(false);
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) getProviders().then(setProviders);
+  }, [open]);
 
   if (!open) return null;
 
@@ -104,35 +109,41 @@ export default function LoginWall({ open, onClose, locale }: Props) {
           {t.firstLoginBonus}
         </p>
 
-        {/* Top 3: Apple, Google, Snap – glassmorphism with official icons */}
+        {/* OAuth providers – only show if configured (avoids "Missing client_id" error) */}
         <div className="space-y-3">
-          <button
-            type="button"
-            onClick={() => handleOAuth("apple")}
-            disabled={!!loading}
-            className={`${AUTH_BUTTON_BASE} hover:border-white/30 hover:bg-white/10 hover:shadow-[0_0_24px_rgba(255,255,255,0.15)]`}
-          >
-            <AppleIcon className="h-5 w-5 shrink-0 text-white" />
-            <span className="text-center">{t.loginWithApple}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleOAuth("google")}
-            disabled={!!loading}
-            className={`${AUTH_BUTTON_BASE} hover:border-[#4285F4]/50 hover:bg-[#4285F4]/10 hover:shadow-[0_0_24px_rgba(66,133,244,0.35)]`}
-          >
-            <GoogleIcon className="h-5 w-5 shrink-0" />
-            <span className="text-center">{t.loginWithGoogle}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleOAuth("snapchat")}
-            disabled={!!loading}
-            className={`${AUTH_BUTTON_BASE} text-[#FFFC00] hover:border-[#FFFC00]/50 hover:bg-[#FFFC00]/10 hover:shadow-[0_0_24px_rgba(255,252,0,0.35)]`}
-          >
-            <SnapchatIcon className="h-5 w-5 shrink-0" />
-            <span className="text-center">{t.loginWithSnapchat}</span>
-          </button>
+          {providers?.apple && (
+            <button
+              type="button"
+              onClick={() => handleOAuth("apple")}
+              disabled={!!loading}
+              className={`${AUTH_BUTTON_BASE} hover:border-white/30 hover:bg-white/10 hover:shadow-[0_0_24px_rgba(255,255,255,0.15)]`}
+            >
+              <AppleIcon className="h-5 w-5 shrink-0 text-white" />
+              <span className="text-center">{t.loginWithApple}</span>
+            </button>
+          )}
+          {providers?.google && (
+            <button
+              type="button"
+              onClick={() => handleOAuth("google")}
+              disabled={!!loading}
+              className={`${AUTH_BUTTON_BASE} hover:border-[#4285F4]/50 hover:bg-[#4285F4]/10 hover:shadow-[0_0_24px_rgba(66,133,244,0.35)]`}
+            >
+              <GoogleIcon className="h-5 w-5 shrink-0" />
+              <span className="text-center">{t.loginWithGoogle}</span>
+            </button>
+          )}
+          {providers?.snapchat && (
+            <button
+              type="button"
+              onClick={() => handleOAuth("snapchat")}
+              disabled={!!loading}
+              className={`${AUTH_BUTTON_BASE} text-[#FFFC00] hover:border-[#FFFC00]/50 hover:bg-[#FFFC00]/10 hover:shadow-[0_0_24px_rgba(255,252,0,0.35)]`}
+            >
+              <SnapchatIcon className="h-5 w-5 shrink-0" />
+              <span className="text-center">{t.loginWithSnapchat}</span>
+            </button>
+          )}
         </div>
 
         {/* Alte metode */}
@@ -163,14 +174,16 @@ export default function LoginWall({ open, onClose, locale }: Props) {
                   {emailSent ? "✓ Link trimis" : t.emailProceed}
                 </button>
               </form>
-              <button
-                type="button"
-                onClick={() => handleOAuth("reddit")}
-                disabled={!!loading}
-                className="flex w-full items-center justify-center gap-2 rounded-full border border-orange-500/40 bg-orange-500/10 py-2.5 text-sm font-semibold text-orange-300 transition-opacity hover:opacity-90 disabled:opacity-60"
-              >
-                {t.loginWithReddit}
-              </button>
+              {providers?.reddit && (
+                <button
+                  type="button"
+                  onClick={() => handleOAuth("reddit")}
+                  disabled={!!loading}
+                  className="flex w-full items-center justify-center gap-2 rounded-full border border-orange-500/40 bg-orange-500/10 py-2.5 text-sm font-semibold text-orange-300 transition-opacity hover:opacity-90 disabled:opacity-60"
+                >
+                  {t.loginWithReddit}
+                </button>
+              )}
               <button
                 type="button"
                 disabled
