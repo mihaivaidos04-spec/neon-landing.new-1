@@ -1,10 +1,12 @@
 import NextAuth from "next-auth";
+import { PrismaAdapter } from "@auth/prisma-adapter";
 import Apple from "next-auth/providers/apple";
 import Google from "next-auth/providers/google";
 import Discord from "next-auth/providers/discord";
 import Reddit from "next-auth/providers/reddit";
 import EmailProvider from "next-auth/providers/email";
 import type { OAuthConfig } from "next-auth/providers";
+import { prisma } from "./lib/prisma";
 
 /** Snapchat OAuth2 (Snap Kit) – custom provider */
 function Snapchat(options: { clientId: string; clientSecret: string }): OAuthConfig<any> {
@@ -56,6 +58,7 @@ async function sendVerificationRequest(params: {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  adapter: PrismaAdapter(prisma),
   secret: process.env.AUTH_SECRET || (process.env.NODE_ENV === "development" ? "dev-secret-min-32-chars-for-local" : undefined),
   providers: [
     Apple({
