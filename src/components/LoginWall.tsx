@@ -109,7 +109,7 @@ export default function LoginWall({ open, onClose, locale }: Props) {
           {t.firstLoginBonus}
         </p>
 
-        {/* OAuth providers – only show if configured (avoids "Missing client_id" error) */}
+        {/* OAuth providers – Google mereu vizibil; celelalte doar dacă configurate */}
         <div className="space-y-3">
           {providers?.apple && (
             <button
@@ -122,17 +122,15 @@ export default function LoginWall({ open, onClose, locale }: Props) {
               <span className="text-center">{t.loginWithApple}</span>
             </button>
           )}
-          {providers?.google && (
-            <button
-              type="button"
-              onClick={() => handleOAuth("google")}
-              disabled={!!loading}
-              className={`${AUTH_BUTTON_BASE} hover:border-[#4285F4]/50 hover:bg-[#4285F4]/10 hover:shadow-[0_0_24px_rgba(66,133,244,0.35)]`}
-            >
-              <GoogleIcon className="h-5 w-5 shrink-0" />
-              <span className="text-center">{t.loginWithGoogle}</span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => handleOAuth("google")}
+            disabled={!!loading || !providers?.google}
+            className={`${AUTH_BUTTON_BASE} hover:border-[#4285F4]/50 hover:bg-[#4285F4]/10 hover:shadow-[0_0_24px_rgba(66,133,244,0.35)] disabled:opacity-60`}
+          >
+            <GoogleIcon className="h-5 w-5 shrink-0" />
+            <span className="text-center">{t.loginWithGoogle}</span>
+          </button>
           {providers?.snapchat && (
             <button
               type="button"
