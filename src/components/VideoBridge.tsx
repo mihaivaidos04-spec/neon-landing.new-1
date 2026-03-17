@@ -217,6 +217,8 @@ export default function VideoBridge({
             muted
             loop
             playsInline
+            disableRemotePlayback
+            disablePictureInPicture
           />
         </div>
         {/* Self-view (small corner) - VIP Avatar when Ghost Mode, else "Tu"; Whale = golden border */}

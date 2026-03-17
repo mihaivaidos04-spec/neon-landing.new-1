@@ -1,0 +1,4 @@
+# Prisma 7 requires Node ^20.19 || ^22.12 || >=24.0
+# Railway/Nixpacks default was 22.11 - pin nixpkgs for Node 22.13+
+[phases.setup]
+nixpkgsArchive = "51ad838b03a05b1de6f9f2a0fffecee64a9788ee"

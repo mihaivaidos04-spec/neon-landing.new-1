@@ -13,6 +13,8 @@ export default function VideoPlayer() {
         muted
         loop
         playsInline
+        disableRemotePlayback
+        disablePictureInPicture
       />
     </div>
   );
