@@ -84,6 +84,7 @@ export type ContentMessagesType = {
   loginWithReddit: string;
   loginWithPhone: string;
   emailPlaceholder: string;
+  emailProceed: string;
   sendMagicLink: string;
   firstLoginBonus: string;
   linkAccountToSaveProgress: string;
@@ -249,6 +250,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWithReddit: "Continuă cu Reddit",
     loginWithPhone: "Număr de telefon (OTP)",
     emailPlaceholder: "email@exemplu.com",
+    emailProceed: "Continuă",
     sendMagicLink: "Trimite link de conectare",
     firstLoginBonus: "+10 Bănuți la prima conectare",
     linkAccountToSaveProgress: "Leagă-ți contul ca să nu pierzi bănuții și progresul.",
@@ -395,6 +397,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWithReddit: "Continue with Reddit",
     loginWithPhone: "Phone number (OTP)",
     emailPlaceholder: "email@example.com",
+    emailProceed: "Proceed",
     sendMagicLink: "Send login link",
     firstLoginBonus: "+10 Coins on first sign-in",
     linkAccountToSaveProgress: "Link your account so you don't lose coins and progress.",
@@ -541,6 +544,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWithReddit: "Mit Reddit fortfahren",
     loginWithPhone: "Telefonnummer (OTP)",
     emailPlaceholder: "email@beispiel.de",
+    emailProceed: "Weiter",
     sendMagicLink: "Anmeldelink senden",
     firstLoginBonus: "+10 Coins bei erster Anmeldung",
     linkAccountToSaveProgress: "Konto verknüpfen, um Coins und Fortschritt zu behalten.",
@@ -687,6 +691,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWithReddit: "Continua con Reddit",
     loginWithPhone: "Numero di telefono (OTP)",
     emailPlaceholder: "email@esempio.com",
+    emailProceed: "Continua",
     sendMagicLink: "Invia link di accesso",
     firstLoginBonus: "+10 Monete al primo accesso",
     linkAccountToSaveProgress: "Collega l'account per non perdere monete e progressi.",
@@ -833,6 +838,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWithReddit: "Continuar con Reddit",
     loginWithPhone: "Teléfono (OTP)",
     emailPlaceholder: "email@ejemplo.com",
+    emailProceed: "Continuar",
     sendMagicLink: "Enviar enlace",
     firstLoginBonus: "+10 monedas en el primer acceso",
     linkAccountToSaveProgress: "Vincula tu cuenta para no perder monedas ni progreso.",
@@ -979,6 +985,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWithReddit: "Continuer avec Reddit",
     loginWithPhone: "Téléphone (OTP)",
     emailPlaceholder: "email@exemple.fr",
+    emailProceed: "Continuer",
     sendMagicLink: "Envoyer le lien",
     firstLoginBonus: "+10 pièces à la première connexion",
     linkAccountToSaveProgress: "Liez votre compte pour ne pas perdre vos pièces et votre progression.",
@@ -1125,6 +1132,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWithReddit: "Continuar com Reddit",
     loginWithPhone: "Telemóvel (OTP)",
     emailPlaceholder: "email@exemplo.pt",
+    emailProceed: "Continuar",
     sendMagicLink: "Enviar link",
     firstLoginBonus: "+10 moedas no primeiro acesso",
     linkAccountToSaveProgress: "Vincule a conta para não perder moedas e progresso.",
@@ -1271,6 +1279,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWithReddit: "Doorgaan met Reddit",
     loginWithPhone: "Telefoon (OTP)",
     emailPlaceholder: "email@voorbeeld.nl",
+    emailProceed: "Doorgaan",
     sendMagicLink: "Stuur inloglink",
     firstLoginBonus: "+10 munten bij eerste inlog",
     linkAccountToSaveProgress: "Koppel je account om munten en voortgang te behouden.",
@@ -1417,6 +1426,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWithReddit: "Kontynuuj z Reddit",
     loginWithPhone: "Telefon (OTP)",
     emailPlaceholder: "email@przyklad.pl",
+    emailProceed: "Kontynuuj",
     sendMagicLink: "Wyślij link",
     firstLoginBonus: "+10 monet przy pierwszym logowaniu",
     linkAccountToSaveProgress: "Połącz konto, aby nie stracić monet i postępów.",
@@ -1563,6 +1573,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWithReddit: "Reddit ile devam",
     loginWithPhone: "Telefon (OTP)",
     emailPlaceholder: "email@ornek.com",
+    emailProceed: "Devam",
     sendMagicLink: "Giriş linki gönder",
     firstLoginBonus: "İlk girişte +10 jeton",
     linkAccountToSaveProgress: "Jeton ve ilerlemenizi kaybetmemek için hesabı bağlayın.",

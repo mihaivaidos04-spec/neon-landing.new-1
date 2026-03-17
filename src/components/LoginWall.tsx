@@ -160,7 +160,7 @@ export default function LoginWall({ open, onClose, locale }: Props) {
                   disabled={!!loading || !email.trim()}
                   className="rounded-full py-2.5 text-sm font-semibold text-[#8b5cf6] transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
-                  {emailSent ? "✓ Link trimis" : t.sendMagicLink}
+                  {emailSent ? "✓ Link trimis" : t.emailProceed}
                 </button>
               </form>
               <button
