@@ -2,7 +2,6 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["nodemailer"],
-  // Permite conexiuni din Chrome / localhost în dev și din domeniul de producție
   allowedDevOrigins: [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -10,6 +9,20 @@ const nextConfig: NextConfig = {
     "https://neonlive.chat",
     "https://www.neonlive.chat",
   ],
+  // Edge Caching: optimizează livrarea în Asia (imagini, fonturi, assets)
+  // s-maxage permite CDN-ului (Cloudflare, Railway Edge) să cache-uiască la edge
+  async headers() {
+    return [
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      { source: "/favicon.ico", headers: [{ key: "Cache-Control", value: "public, max-age=86400, s-maxage=604800" }] },
+      { source: "/og-image.png", headers: [{ key: "Cache-Control", value: "public, max-age=86400, s-maxage=604800" }] },
+    ];
+  },
 };
 
 export default nextConfig;

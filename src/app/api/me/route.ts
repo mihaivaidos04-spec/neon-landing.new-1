@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/src/auth";
-import { getDailyQuestProgress } from "@/src/lib/daily-quest";
+import { prisma } from "@/src/lib/prisma";
 
 export async function GET() {
   try {
@@ -9,14 +9,17 @@ export async function GET() {
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const progress = await getDailyQuestProgress(userId);
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { hasEverPurchased: true },
+    });
+
     return NextResponse.json({
-      count: progress.count,
-      completed: progress.completed,
-      taskType: progress.taskType,
+      hasEverPurchased: user?.hasEverPurchased ?? false,
     });
   } catch (err) {
-    console.error("[api/missions GET]", err);
+    console.error("[api/me]", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

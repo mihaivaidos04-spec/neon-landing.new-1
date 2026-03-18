@@ -5,7 +5,7 @@ import { signIn, getProviders } from "next-auth/react";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
 
-const NEON_VIOLET = "#8b5cf6";
+const VIOLET_GLOW = "rgba(139, 92, 246, 0.25)";
 
 /** Official Google "G" logo – multicolor per brand guidelines */
 function GoogleIcon({ className }: { className?: string }) {
@@ -38,7 +38,7 @@ function SnapchatIcon({ className }: { className?: string }) {
 }
 
 const AUTH_BUTTON_BASE =
-  "flex w-full items-center justify-center gap-3 rounded-xl border border-white/20 bg-white/[0.06] py-3.5 text-base font-medium text-white backdrop-blur-sm transition-all duration-200 disabled:opacity-60";
+  "flex w-full items-center justify-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.04] py-3.5 text-base font-medium text-[#faf5eb] backdrop-blur-sm transition-all duration-200 disabled:opacity-60 hover:bg-white/[0.08] hover:border-violet-500/20";
 
 type Props = {
   open: boolean;
@@ -85,14 +85,14 @@ export default function LoginWall({ open, onClose, locale }: Props) {
         onClick={onClose}
       />
       <div
-        className="modal-neon fixed left-1/2 top-1/2 z-[310] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 px-6 py-8 shadow-2xl"
-        style={{ boxShadow: `0 0 60px ${NEON_VIOLET}40` }}
+        className="modal-neon fixed left-1/2 top-1/2 z-[310] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/[0.08] px-6 py-8 shadow-2xl"
+        style={{ boxShadow: `0 0 80px ${VIOLET_GLOW}, 0 25px 50px -12px rgba(0,0,0,0.5)` }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="login-wall-title"
       >
         <div className="mb-6 flex items-center justify-between">
-          <h2 id="login-wall-title" className="text-xl font-semibold text-white">
+          <h2 id="login-wall-title" className="text-xl font-semibold text-[#faf5eb]" style={{ fontFamily: "var(--font-syne), system-ui" }}>
             {t.loginWallTitle}
           </h2>
           <button
@@ -105,93 +105,95 @@ export default function LoginWall({ open, onClose, locale }: Props) {
           </button>
         </div>
 
-        <p className="mb-6 text-center text-sm text-emerald-400/90">
+        <p className="mb-6 text-center text-sm text-violet-300/90">
           {t.firstLoginBonus}
         </p>
 
-        {/* OAuth providers – Google mereu vizibil; celelalte doar dacă configurate */}
+        {/* Google = Primary (Asia: 90%+ Android) */}
+        {providers?.google && (
+          <button
+            type="button"
+            onClick={() => handleOAuth("google")}
+            disabled={!!loading}
+            className="mb-4 flex w-full items-center justify-center gap-3 rounded-xl border-2 border-white/30 bg-white py-3.5 text-base font-semibold text-gray-900 shadow-[0_0_24px_rgba(255,255,255,0.3)] transition-all hover:bg-gray-100 hover:shadow-[0_0_32px_rgba(57,255,20,0.2)] disabled:opacity-60"
+          >
+            <GoogleIcon className="h-5 w-5 shrink-0" />
+            <span>{t.loginWithGoogle}</span>
+          </button>
+        )}
+
+        {/* Magic Link – prominent for Asia (no password, mobile-friendly) */}
+        <div className="mb-4">
+          <form onSubmit={handleMagicLink} className="flex flex-col gap-2">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t.emailPlaceholder}
+              className="rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:border-violet-500/50 focus:outline-none"
+            />
+            <p className="text-center text-xs text-white/50">{t.emailNoPasswordNeeded}</p>
+            <button
+              type="submit"
+              disabled={!!loading || !email.trim()}
+              className="rounded-xl py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-50"
+              style={{ background: "linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)" }}
+            >
+              {emailSent ? t.emailLinkSent : t.emailProceed}
+            </button>
+          </form>
+        </div>
+
+        {/* Divider */}
+        <div className="mb-4 flex items-center gap-3">
+          <div className="h-px flex-1 bg-white/10" />
+          <span className="text-xs text-white/40">{t.otherMethods}</span>
+          <div className="h-px flex-1 bg-white/10" />
+        </div>
+
+        {/* Other OAuth */}
         <div className="space-y-3">
           {providers?.apple && (
             <button
               type="button"
               onClick={() => handleOAuth("apple")}
               disabled={!!loading}
-              className={`${AUTH_BUTTON_BASE} hover:border-white/30 hover:bg-white/10 hover:shadow-[0_0_24px_rgba(255,255,255,0.15)]`}
+              className={`${AUTH_BUTTON_BASE} hover:border-white/30 hover:bg-white/10`}
             >
               <AppleIcon className="h-5 w-5 shrink-0 text-white" />
-              <span className="text-center">{t.loginWithApple}</span>
+              <span>{t.loginWithApple}</span>
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => handleOAuth("google")}
-            disabled={!!loading || !providers?.google}
-            className={`${AUTH_BUTTON_BASE} hover:border-[#4285F4]/50 hover:bg-[#4285F4]/10 hover:shadow-[0_0_24px_rgba(66,133,244,0.35)] disabled:opacity-60`}
-          >
-            <GoogleIcon className="h-5 w-5 shrink-0" />
-            <span className="text-center">{t.loginWithGoogle}</span>
-          </button>
           {providers?.snapchat && (
             <button
               type="button"
               onClick={() => handleOAuth("snapchat")}
               disabled={!!loading}
-              className={`${AUTH_BUTTON_BASE} text-[#FFFC00] hover:border-[#FFFC00]/50 hover:bg-[#FFFC00]/10 hover:shadow-[0_0_24px_rgba(255,252,0,0.35)]`}
+              className={`${AUTH_BUTTON_BASE} text-[#FFFC00] hover:border-[#FFFC00]/50 hover:bg-[#FFFC00]/10`}
             >
               <SnapchatIcon className="h-5 w-5 shrink-0" />
-              <span className="text-center">{t.loginWithSnapchat}</span>
+              <span>{t.loginWithSnapchat}</span>
+            </button>
+          )}
+          {showOther && providers?.reddit && (
+            <button
+              type="button"
+              onClick={() => handleOAuth("reddit")}
+              disabled={!!loading}
+              className="flex w-full items-center justify-center gap-2 rounded-full border border-orange-500/40 bg-orange-500/10 py-2.5 text-sm font-semibold text-orange-300 transition-opacity hover:opacity-90 disabled:opacity-60"
+            >
+              {t.loginWithReddit}
             </button>
           )}
         </div>
 
-        {/* Alte metode */}
-        <div className="mt-6">
-          <button
-            type="button"
-            onClick={() => setShowOther((o) => !o)}
-            className="w-full rounded-full border border-white/15 py-2.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/5 hover:text-white"
-          >
-            {t.otherMethods} {showOther ? "▲" : "▼"}
-          </button>
-
-          {showOther && (
-            <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
-              <form onSubmit={handleMagicLink} className="flex flex-col gap-2">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t.emailPlaceholder}
-                  className="rounded-xl border border-white/20 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40"
-                />
-                <button
-                  type="submit"
-                  disabled={!!loading || !email.trim()}
-                  className="rounded-full py-2.5 text-sm font-semibold text-[#8b5cf6] transition-opacity hover:opacity-90 disabled:opacity-50"
-                >
-                  {emailSent ? "✓ Link trimis" : t.emailProceed}
-                </button>
-              </form>
-              {providers?.reddit && (
-                <button
-                  type="button"
-                  onClick={() => handleOAuth("reddit")}
-                  disabled={!!loading}
-                  className="flex w-full items-center justify-center gap-2 rounded-full border border-orange-500/40 bg-orange-500/10 py-2.5 text-sm font-semibold text-orange-300 transition-opacity hover:opacity-90 disabled:opacity-60"
-                >
-                  {t.loginWithReddit}
-                </button>
-              )}
-              <button
-                type="button"
-                disabled
-                className="w-full rounded-full border border-white/10 bg-white/5 py-2.5 text-sm text-white/50"
-              >
-                {t.loginWithPhone} (în curând)
-              </button>
-            </div>
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={() => setShowOther((o) => !o)}
+          className="mt-4 w-full rounded-full border border-white/10 py-2 text-xs text-white/50 transition-colors hover:text-white/70"
+        >
+          {showOther ? "▲" : "▼"} {t.otherMethods}
+        </button>
       </div>
     </>
   );

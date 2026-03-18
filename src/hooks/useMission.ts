@@ -7,6 +7,7 @@ const POLL_INTERVAL_MS = 5000;
 export type UseMissionResult = {
   count: number;
   completed: boolean;
+  taskType: "connections" | "messages";
   isLoading: boolean;
   refetch: () => Promise<void>;
   increment: (connectionDurationMs: number) => Promise<{ count: number; completed: boolean; justCompleted: boolean } | null>;
@@ -15,6 +16,7 @@ export type UseMissionResult = {
 export function useMission(enabled: boolean = true): UseMissionResult {
   const [count, setCount] = useState(0);
   const [completed, setCompleted] = useState(false);
+  const [taskType, setTaskType] = useState<"connections" | "messages">("connections");
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProgress = useCallback(async () => {
@@ -35,6 +37,7 @@ export function useMission(enabled: boolean = true): UseMissionResult {
       const data = await res.json();
       setCount(data.count ?? 0);
       setCompleted(data.completed ?? false);
+      setTaskType(data.taskType ?? "connections");
     } catch {
       setCount(0);
       setCompleted(false);
@@ -71,5 +74,5 @@ export function useMission(enabled: boolean = true): UseMissionResult {
     }
   }, [enabled]);
 
-  return { count, completed, isLoading, refetch: fetchProgress, increment };
+  return { count, completed, taskType, isLoading, refetch: fetchProgress, increment };
 }

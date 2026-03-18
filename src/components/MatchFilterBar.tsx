@@ -51,7 +51,7 @@ export default function MatchFilterBar({
               isActive
                 ? "bg-[#8b5cf6] text-white ring-1 ring-[#a78bfa]/50"
                 : locked
-                ? "border border-amber-500/50 bg-amber-950/40 text-amber-400/80"
+                ? "border border-violet-500/50 bg-violet-950/40 text-violet-300/80"
                 : "border border-white/20 text-white/80 hover:bg-white/10"
             }`}
             title={locked ? `${GENDER_FILTER_MIN_COINS} coins required` : undefined}

@@ -7,15 +7,22 @@ generator client {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  name             String?
+  email            String    @unique
+  emailVerified    DateTime?
+  image            String?
+  country          String?   // ISO 3166-1 alpha-2 (e.g. RO, SA, US)
+  referralCount    Int       @default(0) // Number of users who signed up via this user's link
+  totalCoinsSpent   Int       @default(0) // Cached sum of all coin spends
+  hasEverPurchased  Boolean   @default(false) // True after first real-money purchase
+  tier              String    @default("ROOKIE")
+  lastLogin         DateTime  @default(now())
+  streakCount       Int       @default(0)
+  accounts          Account[]
+  sessions         Session[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }
 
 model Account {
@@ -55,4 +62,16 @@ model VerificationToken {
   expires    DateTime
 
   @@id([identifier, token])
+}
+
+model Streak {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  streakCount          Int       @default(0)
+  lastLoginDate        DateTime?
+  loyalBadgeUnlockedAt DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([userId])
 }

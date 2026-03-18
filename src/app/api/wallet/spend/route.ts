@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/src/auth";
 import { spendCoins } from "@/src/lib/wallet";
+import { prisma } from "@/src/lib/prisma";
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,6 +22,15 @@ export async function POST(req: NextRequest) {
         { error: result.error ?? "Insufficient balance", newBalance: result.newBalance },
         { status: 400 }
       );
+    }
+    // Update Prisma User.totalCoinsSpent
+    try {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { totalCoinsSpent: { increment: amount } },
+      });
+    } catch (e) {
+      console.error("[api/wallet/spend] totalCoinsSpent update", e);
     }
     return NextResponse.json({ success: true, newBalance: result.newBalance });
   } catch (err) {

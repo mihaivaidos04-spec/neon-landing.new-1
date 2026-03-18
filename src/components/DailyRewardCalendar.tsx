@@ -31,19 +31,26 @@ export default function DailyRewardCalendar({
       <div className="flex items-center gap-1.5 sm:gap-2">
         {[1, 2, 3, 4, 5, 6, 7].map((day) => {
           const isClaimed = day <= streak;
-          const isGoldDay = day === 7;
+          const isLoyalDay = day === 7;
           return (
             <div
               key={day}
               className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs sm:h-8 sm:w-8 ${
                 isClaimed
-                  ? isGoldDay && goldBadge
+                  ? isLoyalDay && goldBadge
                     ? "bg-amber-500/30 ring-1 ring-amber-400/60"
                     : "bg-emerald-500/20 ring-1 ring-emerald-400/40"
                   : "bg-white/5 ring-1 ring-white/10"
               }`}
+              style={
+                isClaimed && !isLoyalDay
+                  ? { boxShadow: "0 0 8px rgba(16, 185, 129, 0.4)" }
+                  : isLoyalDay && goldBadge
+                    ? { boxShadow: "0 0 12px rgba(251, 191, 36, 0.6)" }
+                    : undefined
+              }
               title={
-                isGoldDay
+                isLoyalDay
                   ? t.dailyRewardGoldBadge
                   : isClaimed
                     ? t.dailyRewardClaimed
@@ -51,10 +58,12 @@ export default function DailyRewardCalendar({
               }
             >
               {isClaimed ? (
-                isGoldDay && goldBadge ? (
+                isLoyalDay && goldBadge ? (
                   <span className="text-amber-400">★</span>
                 ) : (
-                  <span className="text-emerald-400">✓</span>
+                  <span className="text-orange-400" style={{ filter: "drop-shadow(0 0 4px rgba(251, 146, 60, 0.8))" }}>
+                    🔥
+                  </span>
                 )
               ) : (
                 <span className="text-white/30">{day}</span>
@@ -65,7 +74,7 @@ export default function DailyRewardCalendar({
       </div>
       {goldBadge && (
         <p className="text-[10px] font-medium text-amber-400/90">
-          ★ {t.dailyRewardGoldBadge}
+          ★ Loyal {t.dailyRewardGoldBadge} + 50 coins
         </p>
       )}
     </div>

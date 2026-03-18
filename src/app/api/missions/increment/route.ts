@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/src/auth";
-import { incrementMission, getStreakDays, STREAK_FOR_NOTIFICATION } from "@/src/lib/missions";
+import { incrementConnections, getStreakDays } from "@/src/lib/daily-quest";
 import { insertGlobalNotification } from "@/src/lib/global-notifications";
+
+const STREAK_FOR_NOTIFICATION = 7;
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,7 +16,7 @@ export async function POST(req: NextRequest) {
     const connectionDurationMs = typeof body.connectionDurationMs === "number"
       ? body.connectionDurationMs
       : parseInt(body.connectionDurationMs, 10) || 0;
-    const result = await incrementMission(userId, connectionDurationMs);
+    const result = await incrementConnections(userId, connectionDurationMs);
 
     if (result.justCompleted) {
       const streak = await getStreakDays(userId);

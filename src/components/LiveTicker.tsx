@@ -95,7 +95,7 @@ export default function LiveTicker({ locale }: Props) {
             key={`${i}-${msg.slice(0, 20)}`}
             className="flex shrink-0 items-center gap-2"
           >
-            <LightningIcon className="h-3.5 w-3.5 shrink-0 text-amber-400/90" />
+            <LightningIcon className="h-3.5 w-3.5 shrink-0 text-violet-400/90" />
             <span className="text-[11px] font-medium tracking-wide text-white/80 sm:text-xs">
               {msg}
             </span>

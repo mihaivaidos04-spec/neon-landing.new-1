@@ -10,6 +10,8 @@ import LiveSubtitles from "./LiveSubtitles";
 import ReactionOverlay from "./ReactionOverlay";
 import CrownOverlay from "./CrownOverlay";
 import LiveLeaderboard from "./LiveLeaderboard";
+import InviteFriendsButton from "./InviteFriendsButton";
+import CountrySelector from "./CountrySelector";
 import GiftLayer, { type ActiveGift } from "./GiftLayer";
 import BioCard from "./BioCard";
 import VideoSkeletonLoader from "./VideoSkeletonLoader";
@@ -48,9 +50,13 @@ type Props = {
   /** Leaderboard crown: show on self-view if current user is #1 */
   showCrownOnSelf?: boolean;
   /** Leaderboard entries for overlay */
-  leaderboard?: { userId: string; totalSpent: number; rank: number }[];
+  leaderboard?: { userId: string; totalSpent: number; rank: number; isGhostModeEnabled?: boolean }[];
   /** Locale for leaderboard label */
   leaderboardLocale?: ContentLocale;
+  /** Current user ID (for Go Ghost CTA in leaderboard, Invite Friends) */
+  leaderboardCurrentUserId?: string | null;
+  /** Open Ghost Mode checkout */
+  onGoGhost?: () => void;
   /** Partner video: blur until 5s countdown or Instant Reveal */
   partnerVideoBlurred?: boolean;
   /** Seconds left until auto-reveal (5, 4, 3, 2, 1) */
@@ -140,7 +146,13 @@ export default function VideoBridge({
   return (
     <div className={`video-player-wrap video-glow relative w-full overflow-hidden rounded-xl bg-black ${rankGlowClass}`}>
       <div className="relative aspect-video w-full">
-        <LiveLeaderboard leaderboard={leaderboard} locale={leaderboardLocale} />
+        <div className="flex flex-col gap-2">
+          <LiveLeaderboard leaderboard={leaderboard} locale={leaderboardLocale} currentUserId={leaderboardCurrentUserId} onGoGhost={onGoGhost} />
+          <div className="flex items-center gap-1.5">
+            <InviteFriendsButton locale={leaderboardLocale} userId={leaderboardCurrentUserId} compact />
+            <CountrySelector userId={leaderboardCurrentUserId} compact />
+          </div>
+        </div>
         {/* Partner video (main) - blur when connection degraded or initial 5s; VIP gradient border */}
         <div
           className={`relative h-full w-full transition-[filter] duration-500 ${
@@ -169,8 +181,8 @@ export default function VideoBridge({
                   onClick={canAffordInstantReveal ? onInstantReveal : onOpenShop}
                   className={`rounded-full px-5 py-2.5 text-sm font-semibold transition-all ${
                     canAffordInstantReveal
-                      ? "bg-amber-500 text-black hover:bg-amber-400"
-                      : "border border-amber-500/60 text-amber-400"
+                      ? "bg-violet-500 text-white hover:bg-violet-400"
+                      : "border border-violet-500/60 text-violet-300"
                   }`}
                 >
                   {t.instantRevealBtn}
@@ -181,7 +193,7 @@ export default function VideoBridge({
           <CrownOverlay visible={showCrownOnPartner} position="partner" />
           {partnerIsPremium && (
             <div
-              className="absolute left-3 top-12 z-20 rounded-md border border-amber-500/40 bg-amber-950/80 px-2.5 py-1.5 text-[11px] font-medium text-amber-300/95 shadow-lg"
+              className="absolute left-3 top-12 z-20 rounded-md border border-violet-500/40 bg-violet-950/80 px-2.5 py-1.5 text-[11px] font-medium text-violet-300/95 shadow-lg"
               role="status"
             >
               You&apos;re with a Premium User
@@ -226,7 +238,7 @@ export default function VideoBridge({
           className={`absolute bottom-3 right-3 h-24 w-32 overflow-hidden rounded-lg border-2 bg-black sm:h-28 sm:w-36 ${
             isWhale
               ? "border-amber-400/90 shadow-[0_0_12px_rgba(251,191,36,0.6)]"
-              : "border-[#8b5cf6]/60"
+              : "border-amber-500/50"
           }`}
         >
           <div
@@ -240,18 +252,18 @@ export default function VideoBridge({
           <CrownOverlay visible={showCrownOnSelf} position="self" />
             {ghostMode ? (
               <div
-                className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[#8b5cf6]/30 to-[#4c1d95]/50"
+                className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-violet-500/25 to-violet-900/40"
                 title="VIP Avatar"
               >
                 <svg
-                  className="h-10 w-10 text-[#a78bfa] sm:h-12 sm:w-12"
+                  className="h-10 w-10 text-violet-400 sm:h-12 sm:w-12"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                   aria-hidden
                 >
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
                 </svg>
-                <span className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-[#a78bfa]">
+                <span className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-violet-400">
                   VIP
                 </span>
               </div>
@@ -298,7 +310,7 @@ export default function VideoBridge({
             className="h-full rounded-b transition-all duration-1000 ease-linear"
             style={{
               width: `${percent}%`,
-              background: "linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%)",
+              background: "linear-gradient(90deg, #8b5cf6 0%, #39ff14 100%)",
               boxShadow: "0 0 8px rgba(139, 92, 246, 0.5)",
             }}
           />

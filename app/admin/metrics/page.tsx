@@ -9,7 +9,9 @@ type Metrics = {
   totalReferrals: number;
   totalTestRevenue: number;
   totalTestRevenueCents: number;
+  totalCoinsSold?: number;
   utmTable: { source: string; count: number }[];
+  lemonTransactions?: { id: string; userEmail: string; coinsAdded: number; amountCents: number | null; status: string; createdAt: string }[];
   paymentLog: {
     id: string;
     eventType: string;
@@ -91,7 +93,7 @@ export default function AdminMetricsPage() {
       <div className="mx-auto max-w-6xl px-4 py-12">
         <h1 className="mb-8 text-2xl font-bold">Admin Metrics</h1>
 
-        <div className="mb-10 grid gap-4 sm:grid-cols-3">
+        <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl border border-white/10 bg-white/5 p-6">
             <p className="text-sm text-white/60">Total Users</p>
             <p className="mt-1 text-3xl font-bold">{metrics.totalUsers}</p>
@@ -103,6 +105,10 @@ export default function AdminMetricsPage() {
           <div className="rounded-xl border border-white/10 bg-white/5 p-6">
             <p className="text-sm text-white/60">Total Test Revenue</p>
             <p className="mt-1 text-3xl font-bold">${metrics.totalTestRevenue.toFixed(2)}</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 p-6">
+            <p className="text-sm text-white/60">Total Coins Sold</p>
+            <p className="mt-1 text-3xl font-bold">{(metrics.totalCoinsSold ?? 0).toLocaleString()}</p>
           </div>
         </div>
 
@@ -136,8 +142,44 @@ export default function AdminMetricsPage() {
           </div>
         </section>
 
+        {metrics.lemonTransactions && metrics.lemonTransactions.length > 0 && (
+          <section className="mb-10">
+            <h2 className="mb-4 text-lg font-semibold">Last 10 Lemon Squeezy Transactions</h2>
+            <div className="overflow-x-auto rounded-xl border border-white/10">
+              <table className="w-full min-w-[500px]">
+                <thead>
+                  <tr className="border-b border-white/10 bg-white/5">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-white/80">Time</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-white/80">Email</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-white/80">Coins</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-white/80">Amount</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-white/80">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {metrics.lemonTransactions.map((r) => (
+                    <tr key={r.id} className="border-b border-white/5">
+                      <td className="whitespace-nowrap px-4 py-2 text-xs text-white/70">
+                        {new Date(r.createdAt).toLocaleString()}
+                      </td>
+                      <td className="max-w-[180px] truncate px-4 py-2 text-xs">{r.userEmail}</td>
+                      <td className="px-4 py-2 text-right text-xs font-medium text-emerald-400">+{r.coinsAdded}</td>
+                      <td className="px-4 py-2 text-right text-xs">
+                        {r.amountCents != null ? `$${(r.amountCents / 100).toFixed(2)}` : "—"}
+                      </td>
+                      <td className="px-4 py-2">
+                        <span className="rounded px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-400">{r.status}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
         <section>
-          <h2 className="mb-4 text-lg font-semibold">Payment Intent Log (real-time)</h2>
+          <h2 className="mb-4 text-lg font-semibold">Payment Intent Log (Stripe, real-time)</h2>
           <p className="mb-4 text-sm text-white/50">
             Last 100 events · Refreshes every 10s · Includes failed & test mode
           </p>

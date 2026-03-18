@@ -26,6 +26,12 @@ import { useSessionSpending } from "../hooks/useSessionSpending";
 import { useEnsureFilterAccess } from "../hooks/useEnsureFilterAccess";
 import { useMission } from "../hooks/useMission";
 
+const UserAvatar = dynamic(() => import("../components/UserAvatar"), { ssr: false });
+const GhostModeToggle = dynamic(() => import("../components/GhostModeToggle"), { ssr: false });
+const FirstPurchaseBonusTimer = dynamic(
+  () => import("../components/FirstPurchaseBonusTimer"),
+  { ssr: false }
+);
 const Hero = dynamic(() => import("../components/Hero"), { ssr: true });
 const MicroAd = dynamic(() => import("../components/MicroAd"), { ssr: false });
 const LiveIndicator = dynamic(() => import("../components/LiveIndicator"), { ssr: false });
@@ -89,6 +95,8 @@ export default function NeonLanding() {
   const [showBonusMultiplierPopup, setShowBonusMultiplierPopup] = useState(false);
   const [showMysteryBox, setShowMysteryBox] = useState(false);
   const [showDecryptReward, setShowDecryptReward] = useState(false);
+  const [hasEverPurchased, setHasEverPurchased] = useState(true);
+  const [loginAt, setLoginAt] = useState(0);
   const router = useRouter();
   const hasAppliedFirstLoginRef = useRef(false);
   const heartSoundCooldownRef = useRef(0);
@@ -104,6 +112,22 @@ export default function NeonLanding() {
     setMounted(true);
     if (isVerificationValid()) setVerified(true);
   }, []);
+
+  // Track login time for First Purchase Bonus timer
+  useEffect(() => {
+    if (status === "authenticated" && loginAt === 0) {
+      setLoginAt(Date.now());
+    }
+  }, [status, loginAt]);
+
+  // Fetch hasEverPurchased for First Purchase Bonus
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((d) => setHasEverPurchased(d.hasEverPurchased ?? true))
+      .catch(() => setHasEverPurchased(true));
+  }, [status]);
 
   // Guest coins: init from storage when not signed in
   useEffect(() => {
@@ -251,7 +275,7 @@ export default function NeonLanding() {
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            "radial-gradient(ellipse 80% 60% at 50% 40%, rgba(139, 92, 246, 0.12) 0%, transparent 60%)",
+            "radial-gradient(ellipse 90% 70% at 50% 30%, rgba(139, 92, 246, 0.05) 0%, rgba(57, 255, 20, 0.02) 40%, transparent 70%)",
         }}
       />
       {/* Header: Titlu + Conectare / Profile */}
@@ -259,8 +283,8 @@ export default function NeonLanding() {
         <header className="relative z-20 flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
             <h1
-              className="flex items-center text-xl font-light italic tracking-tight text-white sm:text-2xl"
-              style={{ fontFamily: "var(--font-script), system-ui" }}
+              className="flex items-center text-xl font-light tracking-tight text-[#faf5eb] sm:text-2xl"
+              style={{ fontFamily: "var(--font-cormorant), Georgia, serif" }}
             >
               <span className="mr-0.5 sm:mr-1">Neon</span>
               <span
@@ -272,14 +296,14 @@ export default function NeonLanding() {
                 <span
                   className="heart-rotate-a relative inline-flex h-5 w-5 items-center justify-center sm:h-6 sm:w-6"
                 >
-                  <svg viewBox="0 0 24 24" fill="#f472b6" className="h-full w-full">
+                  <svg viewBox="0 0 24 24" fill="#8b5cf6" className="h-full w-full">
                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                   </svg>
                 </span>
                 <span
                   className="heart-rotate-b relative inline-flex h-5 w-5 items-center justify-center sm:h-6 sm:w-6"
                 >
-                  <svg viewBox="0 0 24 24" fill="#f472b6" className="h-full w-full">
+                  <svg viewBox="0 0 24 24" fill="#8b5cf6" className="h-full w-full">
                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                   </svg>
                 </span>
@@ -307,18 +331,25 @@ export default function NeonLanding() {
             <button
               type="button"
               onClick={() => setShowMysteryBox(true)}
-              className="flex items-center justify-center gap-1.5 rounded-full border border-amber-500/50 bg-amber-950/60 px-3 py-2 text-sm font-medium text-amber-400 transition-all hover:bg-amber-900/50 hover:border-amber-500/70"
+              className="flex items-center justify-center gap-1.5 rounded-full border border-violet-500/50 bg-violet-950/60 px-3 py-2 text-sm font-medium text-violet-300 transition-all hover:bg-violet-900/50 hover:border-violet-500/70"
               title={t.mysteryBoxTitle}
             >
               <span>📦</span>
               <span className="hidden sm:inline">{t.mysteryBoxTitle}</span>
             </button>
+            {status === "authenticated" && (
+              <GhostModeToggle
+                locale={locale}
+                userId={(session as any)?.userId ?? session?.user?.id ?? null}
+                onOpenShop={handleOpenShop}
+              />
+            )}
             <div className="flex flex-col items-end gap-1">
               <button
                 type="button"
                 onClick={handleOpenShop}
                 className="flex min-h-[48px] min-w-[100px] items-center justify-center gap-2 rounded-full px-4 py-3 text-base font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.98] sm:min-h-[52px] sm:min-w-[120px] sm:px-5"
-                style={{ background: "#8b5cf6", boxShadow: "0 0 20px rgba(139, 92, 246, 0.4)" }}
+                style={{ background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)", boxShadow: "0 0 24px rgba(139, 92, 246, 0.35)" }}
               >
                 {walletLoading ? (
                   <span className="neon-spinner-sm" aria-hidden />
@@ -337,13 +368,12 @@ export default function NeonLanding() {
                 <RankBadge rank={getRankFromCoinsSpent(sessionSpent)} size="sm" />
                 {session?.user?.name ?? session?.user?.email ?? "User"}
               </span>
-              {session?.user?.image && (
-                <img
-                  src={session?.user?.image}
-                  alt=""
-                  className="h-8 w-8 rounded-full border border-white/20 object-cover"
-                />
-              )}
+              <UserAvatar
+                src={session?.user?.image}
+                tier={isWhale ? "whale" : sessionSpent < 50 ? "new" : "premium"}
+                isPremium={isWhale || sessionSpent >= 50}
+                size="sm"
+              />
               <button
                 type="button"
                 onClick={() => signOut()}
@@ -356,7 +386,8 @@ export default function NeonLanding() {
             <button
               type="button"
               onClick={() => setLoginWallOpen(true)}
-              className="rounded-full bg-[#8b5cf6] px-4 py-2 text-sm font-semibold text-white transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.5)]"
+              className="rounded-full px-4 py-2 text-sm font-semibold text-white transition-all hover:shadow-[0_0_24px_rgba(139,92,246,0.5)]"
+              style={{ background: "linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)" }}
             >
               {t.connectAccount}
             </button>
@@ -369,12 +400,12 @@ export default function NeonLanding() {
       )}
       {/* Guest banner: link account to save progress */}
       {verified && mounted && status === "unauthenticated" && coins > 0 && (
-        <div className="relative z-20 mx-4 mt-2 flex items-center justify-center gap-2 rounded-xl border border-[#8b5cf6]/30 bg-[#8b5cf6]/10 px-4 py-2.5 text-center text-sm text-white/90 sm:mx-6">
+        <div className="relative z-20 mx-auto mt-2 flex max-w-6xl items-center justify-center gap-2 rounded-xl border border-violet-500/20 bg-violet-950/30 px-4 py-2.5 text-center text-sm text-[#faf5eb]/90 sm:mx-6">
           <span>{t.linkAccountToSaveProgress}</span>
           <button
             type="button"
             onClick={() => setLoginWallOpen(true)}
-            className="font-semibold text-[#a78bfa] underline hover:opacity-90"
+            className="font-semibold text-violet-300 underline hover:text-violet-200"
           >
             {t.connectAccount}
           </button>
@@ -395,6 +426,7 @@ export default function NeonLanding() {
               ensureFilterAccess={status === "authenticated" ? ensureFilterAccess : undefined}
               missionCount={status === "authenticated" ? mission.count : undefined}
               missionCompleted={status === "authenticated" ? mission.completed : undefined}
+              missionTaskType={status === "authenticated" ? mission.taskType : undefined}
               onMissionIncrement={status === "authenticated" ? handleMissionIncrement : undefined}
               useRealMatching={status === "authenticated"}
               userId={status === "authenticated" ? ((session as any)?.userId ?? session?.user?.id) ?? null : null}
@@ -404,7 +436,7 @@ export default function NeonLanding() {
               sessionSpent={sessionSpent}
             />
             <Hero />
-            <div className="mx-auto mt-8 flex justify-center">
+            <div className="mx-auto mt-12 flex max-w-6xl justify-center px-4">
               <MicroAd format="horizontal" />
             </div>
             <FaqSection locale={locale} />
@@ -415,6 +447,13 @@ export default function NeonLanding() {
       {verified && <SocialProofPopup locale={locale} />}
       {verified && mounted && (
         <GlobalNotificationToast locale={locale} />
+      )}
+      {status === "authenticated" && (
+        <FirstPurchaseBonusTimer
+          hasEverPurchased={hasEverPurchased}
+          loginAt={loginAt || Date.now()}
+          onOpenShop={handleOpenShop}
+        />
       )}
       {showWelcomeToast && (
         <WelcomeToast

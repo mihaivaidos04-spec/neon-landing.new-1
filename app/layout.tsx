@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Poppins, Geist_Mono, Dancing_Script } from "next/font/google";
+import { Syne, Geist_Mono, Cormorant_Garamond } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import AuthProvider from "@/src/components/AuthProvider";
 import Footer from "@/src/components/Footer";
@@ -8,10 +8,10 @@ import UtmCapture from "@/src/components/UtmCapture";
 import { SocketProviderWithAuth } from "@/src/contexts/SocketContext";
 import "./globals.css";
 
-const poppins = Poppins({
-  variable: "--font-poppins",
+const syne = Syne({
+  variable: "--font-syne",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -21,10 +21,10 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-const scriptFont = Dancing_Script({
-  variable: "--font-script",
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -73,27 +73,24 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
       </head>
       <body
-        className={`${poppins.variable} ${geistMono.variable} ${scriptFont.variable} bg-black text-white antialiased`}
+        className={`${syne.variable} ${geistMono.variable} ${cormorant.variable} bg-[#050508] text-[#faf5eb] antialiased`}
       >
-        {/* Memory Wall – colaj blurat pe margini (desktop) */}
+        {/* Violet + neon green ambient glow */}
         <div
           aria-hidden
-          className="pointer-events-none fixed inset-y-0 left-0 z-0 hidden w-32 -skew-y-3 flex-col gap-4 opacity-30 blur-md sm:flex lg:w-40"
-        >
-          <div className="mx-2 h-28 rounded-3xl bg-gradient-to-br from-white/15 to-white/0" />
-          <div className="mx-4 h-32 rounded-3xl bg-gradient-to-br from-white/12 to-white/0" />
-          <div className="mx-6 h-24 rounded-3xl bg-gradient-to-br from-white/10 to-white/0" />
-          <div className="mx-3 h-28 rounded-3xl bg-gradient-to-br from-white/14 to-white/0" />
-        </div>
+          className="pointer-events-none fixed inset-0 z-0"
+          style={{
+            background: "radial-gradient(ellipse 120% 80% at 50% -20%, rgba(139, 92, 246, 0.05) 0%, rgba(57, 255, 20, 0.02) 35%, transparent 55%)",
+          }}
+        />
+        {/* Subtle grain texture */}
         <div
           aria-hidden
-          className="pointer-events-none fixed inset-y-0 right-0 z-0 hidden w-32 skew-y-3 flex-col gap-4 opacity-30 blur-md sm:flex lg:w-40"
-        >
-          <div className="mx-3 h-24 rounded-3xl bg-gradient-to-br from-white/12 to-white/0" />
-          <div className="mx-5 h-32 rounded-3xl bg-gradient-to-br from-white/16 to-white/0" />
-          <div className="mx-4 h-28 rounded-3xl bg-gradient-to-br from-white/10 to-white/0" />
-          <div className="mx-2 h-24 rounded-3xl bg-gradient-to-br from-white/14 to-white/0" />
-        </div>
+          className="pointer-events-none fixed inset-0 z-0 opacity-[0.03]"
+          style={{
+            backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")",
+          }}
+        />
         {/* Lemon Squeezy – lazyOnload: încarcă după ce pagina e interactivă, nu blochează FCP */}
         <Script
           src="https://app.lemonsqueezy.com/js/lemon.js"
@@ -116,10 +113,10 @@ export default function RootLayout({
             toastOptions={{
               duration: 4000,
               style: {
-                background: "rgba(15, 23, 42, 0.95)",
-                color: "#fff",
-                border: "1px solid rgba(255,255,255,0.1)",
-                backdropFilter: "blur(12px)",
+                background: "rgba(5, 5, 8, 0.95)",
+                color: "#faf5eb",
+                border: "1px solid rgba(139, 92, 246, 0.2)",
+                backdropFilter: "blur(16px)",
               },
             }}
           />

@@ -1,22 +1,18 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/src/auth";
-import { getDailyQuestProgress } from "@/src/lib/daily-quest";
+import { incrementMessages } from "@/src/lib/daily-quest";
 
-export async function GET() {
+export async function POST() {
   try {
     const session = await auth();
     const userId = (session as any)?.userId ?? session?.user?.id;
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const progress = await getDailyQuestProgress(userId);
-    return NextResponse.json({
-      count: progress.count,
-      completed: progress.completed,
-      taskType: progress.taskType,
-    });
+    const result = await incrementMessages(userId);
+    return NextResponse.json(result);
   } catch (err) {
-    console.error("[api/missions GET]", err);
+    console.error("[api/missions/increment-messages]", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

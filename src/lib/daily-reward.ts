@@ -1,12 +1,15 @@
 /**
- * Daily Reward – first login of day = 5% battery, 7-day streak = Gold Badge.
+ * Daily Reward – first login of day = 5% battery, 7-day streak = Gold Badge + Loyal badge + 50 coins.
  */
 
 import { getSupabase } from "./supabase";
 import { chargeBattery } from "./battery";
+import { addCoins } from "./wallet";
+import { prisma } from "./prisma";
 
 export const DAILY_BATTERY_REWARD = 5; // 5% = un sfert de segment (segment = ~20%)
 export const STREAK_FOR_GOLD_BADGE = 7;
+export const LOYAL_BADGE_COINS = 50;
 export const GOLD_BADGE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export type DailyRewardResult = {
@@ -15,6 +18,7 @@ export type DailyRewardResult = {
   streak: number;
   goldBadge?: boolean;
   goldBadgeExpiresAt?: string;
+  loyalBadge?: boolean;
 };
 
 function todayDate(): string {
@@ -59,6 +63,15 @@ export async function claimDailyReward(
     if (upsertErr) {
       console.error("[daily-reward claim]", upsertErr);
       return { claimed: false, streak: 1 };
+    }
+    try {
+      await prisma.streak.upsert({
+        where: { userId },
+        create: { userId, streakCount: 1, lastLoginDate: new Date(today + "T12:00:00Z") },
+        update: { streakCount: 1, lastLoginDate: new Date(today + "T12:00:00Z") },
+      });
+    } catch (e) {
+      console.error("[daily-reward streak init]", e);
     }
     const { battery } = await chargeBattery(userId, DAILY_BATTERY_REWARD);
     return { claimed: true, battery, streak: 1 };
@@ -108,12 +121,52 @@ export async function claimDailyReward(
 
   const { battery } = await chargeBattery(userId, DAILY_BATTERY_REWARD);
 
+  // Sync to Prisma Streak + grant 50 coins when FIRST hitting 7-day Loyal badge
+  const justHitLoyal = newStreak === STREAK_FOR_GOLD_BADGE;
+  if (justHitLoyal) {
+    try {
+      const todayDt = new Date(today + "T12:00:00Z");
+      await prisma.streak.upsert({
+        where: { userId },
+        create: {
+          userId,
+          streakCount: newStreak,
+          lastLoginDate: todayDt,
+          loyalBadgeUnlockedAt: new Date(),
+        },
+        update: {
+          streakCount: newStreak,
+          lastLoginDate: todayDt,
+          loyalBadgeUnlockedAt: new Date(),
+        },
+      });
+      await addCoins(userId, LOYAL_BADGE_COINS, {
+        externalId: `loyal_streak_7_${today}`,
+        reason: "loyal_streak_7",
+      });
+    } catch (e) {
+      console.error("[daily-reward loyal]", e);
+    }
+  } else {
+    try {
+      const todayDt = new Date(today + "T12:00:00Z");
+      await prisma.streak.upsert({
+        where: { userId },
+        create: { userId, streakCount: newStreak, lastLoginDate: todayDt },
+        update: { streakCount: newStreak, lastLoginDate: todayDt },
+      });
+    } catch (e) {
+      console.error("[daily-reward streak sync]", e);
+    }
+  }
+
   return {
     claimed: true,
     battery,
     streak: newStreak,
-    goldBadge: newStreak >= STREAK_FOR_GOLD_BADGE,
+    goldBadge: justHitLoyal,
     goldBadgeExpiresAt: goldBadgeExpiresAt ?? undefined,
+    loyalBadge: justHitLoyal,
   };
 }
 
@@ -128,6 +181,7 @@ export async function getDailyRewardStatus(
   claimedToday: boolean;
   goldBadge: boolean;
   goldBadgeExpiresAt: string | null;
+  loyalBadge?: boolean;
 }> {
   const supabase = getSupabase();
   const today = todayDate();
@@ -159,5 +213,6 @@ export async function getDailyRewardStatus(
     claimedToday: lastLogin === today,
     goldBadge,
     goldBadgeExpiresAt: expiresAt,
+    loyalBadge: goldBadge, // 7-day = Loyal
   };
 }

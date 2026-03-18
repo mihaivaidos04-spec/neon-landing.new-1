@@ -23,11 +23,11 @@ export default function WelcomeToast({ message, onDismiss }: Props) {
 
   return (
     <div
-      className="fixed bottom-4 left-4 z-[60] max-w-[320px] rounded-xl border border-emerald-400/30 bg-black/90 px-4 py-3 shadow-[0_0_24px_rgba(74,222,128,0.2)] sm:bottom-6 sm:left-6"
+      className="fixed left-1/2 top-1/2 z-[60] w-full max-w-[340px] -translate-x-1/2 -translate-y-1/2 rounded-2xl border-2 border-violet-500/50 bg-black/95 px-6 py-5 shadow-[0_0_48px_rgba(139,92,246,0.4),0_0_24px_rgba(57,255,20,0.15)] backdrop-blur-xl"
       role="status"
       aria-live="polite"
     >
-      <p className="text-sm font-medium text-white">{message}</p>
+      <p className="text-center text-base font-semibold text-white">{message}</p>
     </div>
   );
 }

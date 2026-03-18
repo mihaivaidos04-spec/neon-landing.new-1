@@ -63,6 +63,7 @@ type Props = {
   /** When provided (auth users), mission progress from API; otherwise uses localStorage */
   missionCount?: number;
   missionCompleted?: boolean;
+  missionTaskType?: "connections" | "messages";
   onMissionIncrement?: (connectionDurationMs: number) => Promise<{ justCompleted: boolean } | null>;
   /** When true, use real priority-based matching API instead of simulated delay */
   useRealMatching?: boolean;
@@ -95,6 +96,7 @@ export default function ContentSection({
   ensureFilterAccess,
   missionCount,
   missionCompleted,
+  missionTaskType,
   onMissionIncrement,
   useRealMatching = false,
   userId = null,
@@ -120,6 +122,28 @@ export default function ContentSection({
   const [beautyBlurOverlayVisible, setBeautyBlurOverlayVisible] = useState(false);
   const [beautyBlurLoading, setBeautyBlurLoading] = useState(false);
   const [ghostMode, setGhostMode] = useState(false);
+  // Load initial ghost status + sync with header Ghost toggle
+  useEffect(() => {
+    if (userId) {
+      fetch("/api/ghost/status")
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.isGhostModeEnabled) {
+            setGhostMode(true);
+            setGhostModeChargedAt(Date.now());
+          }
+        })
+        .catch(() => {});
+    }
+  }, [userId]);
+  useEffect(() => {
+    const handler = (e: CustomEvent<{ enabled: boolean }>) => {
+      setGhostMode(!!e.detail?.enabled);
+      if (e.detail?.enabled) setGhostModeChargedAt(Date.now());
+    };
+    window.addEventListener("ghost-mode-changed", handler as EventListener);
+    return () => window.removeEventListener("ghost-mode-changed", handler as EventListener);
+  }, []);
   const [liveTranslationEnabled, setLiveTranslationEnabled] = useState(false);
   const [partnerId, setPartnerId] = useState<string | null>(null);
   const [previousPartnerId, setPreviousPartnerId] = useState<string | null>(null);
@@ -481,8 +505,11 @@ export default function ContentSection({
         ...prev,
         { id: `msg-${Date.now()}`, user: "You", text: result.filtered, isSystem: false, isDonor: false },
       ]);
+      if (userId) {
+        fetch("/api/missions/increment-messages", { method: "POST" }).catch(() => {});
+      }
     }
-  }, []);
+  }, [userId]);
 
   const handleLiveTranslationToggle = useCallback(() => {
     if (liveTranslationEnabled) {
@@ -1200,6 +1227,7 @@ export default function ContentSection({
             locale={locale}
             current={onMissionIncrement ? (missionCount ?? 0) : dailyQuestCount}
             completed={onMissionIncrement ? (missionCompleted ?? false) : dailyQuestCompleted}
+            taskType={missionTaskType}
           />
           {userId && (
             <div className="mt-3">
@@ -1251,6 +1279,8 @@ export default function ContentSection({
             showCrownOnSelf={!!(userId && top1UserId === userId)}
             leaderboard={leaderboard}
             leaderboardLocale={locale}
+            leaderboardCurrentUserId={userId}
+            onGoGhost={() => router.push("/checkout")}
             partnerVideoBlurred={connected && !searching && !partnerVideoRevealed}
             partnerVideoCountdown={partnerVideoCountdown}
             onInstantReveal={handleInstantReveal}
@@ -1404,7 +1434,7 @@ export default function ContentSection({
                   type="button"
                   onClick={handleUndoNext}
                   disabled={coins < UNDO_NEXT_COST}
-                  className="min-h-[40px] rounded-full border border-amber-500/60 bg-amber-950/70 px-4 py-2 text-sm font-medium text-amber-400 transition-all hover:bg-amber-900/60 active:scale-[0.98] disabled:opacity-50"
+                  className="min-h-[40px] rounded-full border border-violet-500/60 bg-violet-950/70 px-4 py-2 text-sm font-medium text-violet-300 transition-all hover:bg-violet-900/60 active:scale-[0.98] disabled:opacity-50"
                 >
                   {t.undoBackBtn}
                 </button>
@@ -1458,7 +1488,7 @@ export default function ContentSection({
           chatBlockedMinutes={Math.ceil(chatBlockRemainingMs / 60000)}
         />
         {commonInterestFlash && (
-          <div className="absolute left-1/2 top-24 z-30 -translate-x-1/2 rounded-lg bg-amber-500/90 px-4 py-2 text-sm font-semibold text-black shadow-lg animate-in fade-in duration-300">
+          <div className="absolute left-1/2 top-24 z-30 -translate-x-1/2 rounded-lg bg-violet-500/90 px-4 py-2 text-sm font-semibold text-white shadow-lg animate-in fade-in duration-300">
             {commonInterestFlash}
           </div>
         )}

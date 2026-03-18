@@ -34,6 +34,16 @@ export const LEMON_PRODUCTS = [
     badge: "BEST VALUE" as string | null,
     isBestValue: true,
   },
+  {
+    id: "ghost",
+    name: "Go Ghost",
+    price: 1.99,
+    rewards: 0,
+    variantId: process.env.NEXT_PUBLIC_LEMON_VARIANT_GHOST ?? "",
+    features: ["Hide your profile in leaderboard", "Privacy in live list"],
+    badge: null as string | null,
+    isBestValue: false,
+  },
 ] as const;
 
 export type LemonProductId = (typeof LEMON_PRODUCTS)[number]["id"];

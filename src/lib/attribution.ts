@@ -1,9 +1,12 @@
 /**
  * Attribution – save UTM and referral data to user_profiles.
  * Only updates when attribution is not yet set (first sign-in).
+ * When ref (referral) is saved, awards 5 coins to the referrer.
  */
 
 import { getSupabase } from "./supabase";
+import { addCoins } from "./wallet";
+import { prisma } from "./prisma";
 
 export type AttributionInput = {
   utm_source?: string;
@@ -52,5 +55,27 @@ export async function saveAttribution(
     console.error("[attribution save]", error);
     return { saved: false, error: error.message };
   }
+
+  // Referral bonus: give 5 coins to referrer when someone signs up via their link
+  if (input.ref) {
+    const referrerId = input.ref;
+    if (referrerId !== userId) {
+      const externalId = `referral_${userId}`;
+      const res = await addCoins(referrerId, 5, { externalId, reason: "referral" });
+      if (!res.success && res.error !== "Already credited") {
+        console.error("[attribution referral bonus]", res.error);
+      }
+      // Update Prisma User.referralCount
+      try {
+        await prisma.user.update({
+          where: { id: referrerId },
+          data: { referralCount: { increment: 1 } },
+        });
+      } catch (e) {
+        console.error("[attribution referralCount update]", e);
+      }
+    }
+  }
+
   return { saved: true };
 }

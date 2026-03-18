@@ -7,6 +7,8 @@ export type LeaderboardEntry = {
   userId: string;
   totalSpent: number;
   rank: number;
+  isGhostModeEnabled?: boolean;
+  countryCode?: string | null;
 };
 
 export function useLeaderboard() {
