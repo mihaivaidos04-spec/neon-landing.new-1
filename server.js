@@ -26,6 +26,8 @@ const app = next({ dev, hostname, port });
 const nextHandler = app.getRequestHandler();
 
 const CORS_ORIGINS = [
+  "https://neonchat.live",
+  "https://www.neonchat.live",
   "https://neonlive.chat",
   "https://www.neonlive.chat",
   "http://localhost:3000",

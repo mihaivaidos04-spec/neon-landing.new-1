@@ -1,3 +1,1 @@
-export const runtime = "nodejs";
-
-export { stripeWebhookPOST as POST } from "@/src/lib/stripe-webhook-http";
+export { runtime, dynamic, POST } from "@/app/api/webhook/stripe/route";

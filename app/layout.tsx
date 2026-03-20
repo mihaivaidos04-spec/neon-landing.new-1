@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Syne, Geist_Mono, Cormorant_Garamond, Great_Vibes } from "next/font/google";
 import { Toaster } from "react-hot-toast";
+import { getPublicSiteOrigin } from "@/src/lib/public-site-url";
 import AuthProvider from "@/src/components/AuthProvider";
 import Footer from "@/src/components/Footer";
 import CookieConsentBanner from "@/src/components/CookieConsentBanner";
@@ -38,7 +39,7 @@ const neonLiveMark = Great_Vibes({
   display: "swap",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://neonlive.chat";
+const siteUrl = getPublicSiteOrigin();
 
 export const viewport: Viewport = {
   width: "device-width",

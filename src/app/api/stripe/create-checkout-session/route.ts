@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/src/auth";
 import { getStripeService } from "@/src/lib/stripe-service";
+import { getPublicSiteOrigin } from "@/src/lib/public-site-url";
 import type { StripePlanId } from "@/src/lib/stripe-products";
 import { getStripePlanById } from "@/src/lib/stripe-products";
 
@@ -26,12 +27,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Plan not found" }, { status: 400 });
     }
 
-    const baseUrl =
-      process.env.NEXT_PUBLIC_APP_URL ??
-      process.env.NEXT_PUBLIC_SITE_URL ??
-      process.env.AUTH_URL ??
-      "http://localhost:3000";
-    const origin = baseUrl.replace(/\/$/, "");
+    const origin = getPublicSiteOrigin();
 
     const userEmail = (session?.user as { email?: string })?.email;
 
@@ -40,8 +36,8 @@ export async function POST(req: NextRequest) {
       userId,
       userEmail,
       planId: planId as StripePlanId,
-      successUrl: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${origin}/checkout?canceled=1`,
+      successUrl: `${origin}/billing?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${origin}/billing?canceled=1`,
       promocodeId,
     });
 

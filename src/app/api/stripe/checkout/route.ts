@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/src/auth";
 import { stripe } from "@/lib/stripe";
 import { findBillingPackByAmountAndCoins } from "@/src/lib/billing-packs";
+import { getPublicSiteOrigin } from "@/src/lib/public-site-url";
+import {
+  stripeCheckoutAutomaticPaymentMethods,
+  stripeCheckoutComplianceParams,
+} from "@/src/lib/stripe-checkout-shared";
 
 export const runtime = "nodejs";
 
@@ -53,12 +58,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Amount rounding mismatch" }, { status: 400 });
     }
 
-    const baseUrl =
-      process.env.NEXT_PUBLIC_APP_URL ??
-      process.env.NEXT_PUBLIC_SITE_URL ??
-      process.env.AUTH_URL ??
-      "http://localhost:3000";
-    const origin = baseUrl.replace(/\/$/, "");
+    const origin = getPublicSiteOrigin();
 
     const userEmail = (session?.user as { email?: string })?.email;
 
@@ -80,11 +80,12 @@ export async function POST(req: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${origin}/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/billing`,
+      success_url: `${origin}/billing?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/billing?canceled=1`,
       metadata: {
         userId,
         coinsAmount: String(coinsAmount),
+        coinAmount: String(pack.coins),
         coinsToBuy: String(pack.coins),
         checkout_kind: "billing_pack",
         packId: pack.id,
@@ -92,6 +93,8 @@ export async function POST(req: NextRequest) {
       },
       client_reference_id: userId,
       ...(userEmail ? { customer_email: userEmail } : {}),
+      ...stripeCheckoutAutomaticPaymentMethods(),
+      ...stripeCheckoutComplianceParams(),
     });
 
     if (!checkoutSession.url) {

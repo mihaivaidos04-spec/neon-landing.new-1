@@ -1,24 +1,10 @@
-import Stripe from "stripe";
+import type Stripe from "stripe";
+import { getStripe } from "@/lib/stripe";
 import { getStripePlanById, type StripePlanId } from "./stripe-products";
-
-function requireSecret(): string {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) {
-    throw new Error("STRIPE_SECRET_KEY is not configured");
-  }
-  return key;
-}
-
-let stripeSingleton: Stripe | null = null;
-
-function getStripe(): Stripe {
-  if (!stripeSingleton) {
-    stripeSingleton = new Stripe(requireSecret(), {
-      typescript: true,
-    });
-  }
-  return stripeSingleton;
-}
+import {
+  stripeCheckoutAutomaticPaymentMethods,
+  stripeCheckoutComplianceParams,
+} from "./stripe-checkout-shared";
 
 export type CreateCheckoutParams = {
   userId: string;
@@ -81,6 +67,8 @@ export class StripeService {
       metadata,
       client_reference_id: params.userId,
       ...(params.userEmail ? { customer_email: params.userEmail } : {}),
+      ...stripeCheckoutAutomaticPaymentMethods(),
+      ...stripeCheckoutComplianceParams(),
     });
 
     return { url: session.url };

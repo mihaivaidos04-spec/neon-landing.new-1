@@ -1,3 +1,8 @@
+/** NextAuth v4-style NEXTAUTH_URL still used in hosting templates — mirror to AUTH_URL for Auth.js v5 */
+if (process.env.NEXTAUTH_URL && !process.env.AUTH_URL) {
+  process.env.AUTH_URL = process.env.NEXTAUTH_URL;
+}
+
 import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import Google from "next-auth/providers/google";
@@ -8,6 +13,11 @@ import { prisma } from "@/src/lib/prisma";
 import { getWalletBalance } from "@/src/lib/wallet";
 import { getSupabase } from "@/src/lib/supabase";
 import { addLoginXp } from "@/src/lib/login-xp";
+
+/** Hosting often sets NEXTAUTH_URL; Auth.js v5 reads AUTH_URL for OAuth redirect base. */
+if (process.env.NEXTAUTH_URL && !process.env.AUTH_URL) {
+  process.env.AUTH_URL = process.env.NEXTAUTH_URL;
+}
 
 /** Email Magic Link – no password (Resend sau EMAIL_SERVER) */
 async function sendVerificationRequest(params: { identifier: string; url: string }) {
@@ -76,7 +86,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   pages: {
     signIn: "/login",
-    error: "/",
+    /** La eșec OAuth (ex. deschizi callback fără `code`), nu trimite la / — rămâi pe login */
+    error: "/login",
   },
   callbacks: {
     async signIn({ user }) {

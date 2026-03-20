@@ -8,10 +8,12 @@ Add these to `.env` / `.env.local` (never commit secrets):
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `STRIPE_SECRET_KEY` | **Yes** | Secret key from [Stripe Dashboard → API keys](https://dashboard.stripe.com/apikeys) (`sk_live_...` or `sk_test_...`). |
+| `STRIPE_SECRET_KEY` | **Yes** | Secret key from [Stripe Dashboard → API keys](https://dashboard.stripe.com/apikeys) (`sk_live_...` / `sk_test_...`). Alias: `STRIPE_API_KEY`. |
+| `NEXT_PUBLIC_STRIPE_PUBLIC_KEY` | Optional | Publishable key (`pk_...`) for client-side Stripe.js. Server-only: `STRIPE_PUBLIC_KEY`. |
 | `STRIPE_WEBHOOK_SECRET` | **Yes (production)** | Signing secret for your webhook endpoint (`whsec_...`). |
-| `NEXT_PUBLIC_APP_URL` or `NEXT_PUBLIC_SITE_URL` | Recommended | Public site origin **without** trailing slash, e.g. `https://neonlive.chat`. Used for Stripe success/cancel URLs. |
-| `AUTH_URL` | If needed | Same idea as app URL for auth/callback consistency. |
+| `STRIPE_AUTOMATIC_TAX` | Optional | Default: automatic tax **on** (`automatic_tax.enabled` + billing address). Set `false` if Stripe Tax isn’t enabled in the Dashboard. |
+| `NEXT_PUBLIC_APP_URL` or `NEXT_PUBLIC_SITE_URL` | Recommended | Public origin **without** trailing slash, e.g. `https://www.neonchat.live`. Used for Stripe success/cancel URLs. |
+| `AUTH_URL` / `NEXTAUTH_URL` | Production | Same origin as the live site so OAuth redirect URIs match. Set both to e.g. `https://www.neonchat.live` if your templates use `NEXTAUTH_URL`. |
 
 Optional: keep existing DB/Supabase and auth variables as already documented for the app.
 

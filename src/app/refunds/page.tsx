@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 const UPDATED = "March 12, 2026";
-const CONTACT = "support@neonlive.chat";
+const CONTACT = "support@neonchat.live";
 
 export default function RefundsPage() {
   return (

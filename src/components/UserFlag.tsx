@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { FlagIcon, type FlagIconCode } from "react-flag-kit";
+import * as FlagIcons from "country-flag-icons/react/3x2";
+import type { ComponentType, SVGAttributes } from "react";
 import { getCountryDisplayName } from "../lib/country-names";
 import { isPlausibleCountryCode } from "../lib/valid-country-code";
+
+type FlagSvgProps = SVGAttributes<SVGSVGElement> & { title?: string };
 
 export type UserFlagSize = "sm" | "md";
 
@@ -57,7 +59,7 @@ function GlobalGlobe({
 }
 
 /**
- * Small flag via react-flag-kit (CDN SVG). Unknown / API miss → globe icon.
+ * Steag mic (country-flag-icons, SVG). Cod necunoscut / lipsă din pachet → icon glob.
  */
 export default function UserFlag({
   code,
@@ -65,12 +67,15 @@ export default function UserFlag({
   size = "sm",
   className = "",
 }: Props) {
-  const [broken, setBroken] = useState(false);
-  const onError = useCallback(() => setBroken(true), []);
   const { w, h } = DIMS[size];
+  const upper = code?.toUpperCase() ?? "";
+  const label =
+    code && isPlausibleCountryCode(code) ? getCountryDisplayName(code.toUpperCase(), locale) : "Global";
 
-  const showGlobe = !code || !isPlausibleCountryCode(code) || broken;
-  const label = code && isPlausibleCountryCode(code) ? getCountryDisplayName(code.toUpperCase(), locale) : "Global";
+  const FlagComponent = upper
+    ? (FlagIcons as Record<string, ComponentType<FlagSvgProps>>)[upper]
+    : undefined;
+  const showGlobe = !code || !isPlausibleCountryCode(code) || typeof FlagComponent !== "function";
 
   if (showGlobe) {
     return (
@@ -83,21 +88,16 @@ export default function UserFlag({
     );
   }
 
-  const upper = code.toUpperCase() as FlagIconCode;
-
   return (
     <span
       className={`inline-flex shrink-0 items-center justify-center align-middle leading-none ${className}`}
       title={label || undefined}
     >
-      <FlagIcon
-        code={upper}
-        width={w}
-        height={h}
-        alt=""
+      <FlagComponent
+        title={label}
         aria-hidden
-        className="rounded-[2px] object-cover shadow-sm ring-1 ring-white/10"
-        onError={onError}
+        className="rounded-[2px] shadow-sm ring-1 ring-white/10"
+        style={{ width: w, height: h, display: "block" }}
       />
     </span>
   );

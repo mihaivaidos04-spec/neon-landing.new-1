@@ -3,6 +3,7 @@ import {
   createCheckout,
   lemonSqueezySetup,
 } from "@lemonsqueezy/lemonsqueezy.js";
+import { getPublicSiteOrigin } from "@/src/lib/public-site-url";
 
 const apiKey = process.env.LEMON_SQUEEZY_API_KEY;
 const storeId = process.env.LEMON_SQUEEZY_STORE_ID;
@@ -45,8 +46,8 @@ export async function POST(req: NextRequest) {
 
   lemonSqueezySetup({ apiKey });
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://neonlive.chat";
-  const redirectUrl = `${baseUrl.replace(/\/$/, "")}/checkout/success`;
+  const baseUrl = getPublicSiteOrigin();
+  const redirectUrl = `${baseUrl}/checkout/success`;
 
   const checkoutData: Record<string, unknown> = {};
   const custom: Record<string, string> = {};

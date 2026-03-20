@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://192.168.1.136:3000",
+    "https://neonchat.live",
+    "https://www.neonchat.live",
     "https://neonlive.chat",
     "https://www.neonlive.chat",
   ],

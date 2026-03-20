@@ -43,10 +43,12 @@ function BillingPageInner() {
   }, [loadBalance]);
 
   useEffect(() => {
-    if (searchParams.get("checkout") !== "success") return;
+    const ok =
+      searchParams.get("checkout") === "success" || searchParams.get("success") === "true";
+    if (!ok) return;
     if (successToastShownRef.current) return;
     successToastShownRef.current = true;
-    toast.success("Payment successful! Your coins have been added to your wallet.", {
+    toast.success("Payment successful! If you topped up coins, your wallet updates in a few seconds.", {
       duration: 5000,
       icon: "✓",
     });

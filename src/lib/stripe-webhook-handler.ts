@@ -22,7 +22,10 @@ export async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Se
     return;
   }
 
-  const coinsAmountRaw = parseInt(String(meta.coinsAmount ?? meta.coinsToBuy ?? "0"), 10);
+  const coinsAmountRaw = parseInt(
+    String(meta.coinsAmount ?? meta.coinAmount ?? meta.coinsToBuy ?? "0"),
+    10
+  );
   if (meta.checkout_kind === "billing_pack" && (!Number.isFinite(coinsAmountRaw) || coinsAmountRaw <= 0)) {
     console.error("[stripe webhook] Invalid or missing coinsAmount in metadata for billing_pack");
     return;
@@ -61,6 +64,16 @@ export async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Se
       where: { stripeSessionId: sessionId },
       data: { status: "completed" },
     });
+
+    const paidCoins = parseInt(
+      String(meta.coinAmount ?? meta.coinsAmount ?? meta.coinsToBuy ?? "0"),
+      10
+    );
+    console.log(
+      "Banii au intrat!",
+      `${amountUsd} USD`,
+      Number.isFinite(paidCoins) && paidCoins > 0 ? `(${paidCoins} coins)` : ""
+    );
   } catch (err) {
     console.error("[stripe webhook] fulfillment failed", err);
     await prisma.stripePurchase.updateMany({
@@ -81,7 +94,7 @@ async function fulfillBillingPack(
   const expectedCents = meta.amount_cents ? parseInt(meta.amount_cents, 10) : NaN;
   const coinsFromMetadata = Math.max(
     0,
-    parseInt(String(meta.coinsAmount ?? meta.coinsToBuy ?? "0"), 10) || 0
+    parseInt(String(meta.coinsAmount ?? meta.coinAmount ?? meta.coinsToBuy ?? "0"), 10) || 0
   );
 
   if (!pack || pack.coins !== coinsFromMetadata || pack.amountCents !== expectedCents) {

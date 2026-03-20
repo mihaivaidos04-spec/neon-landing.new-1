@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import LegalShell from "@/src/components/legal/LegalShell";
 
-const SITE = "https://neonlive.chat";
+const SITE = "https://www.neonchat.live";
 
 export const metadata: Metadata = {
   title: "Terms of Service | NeonLive — Digital Gifting for Creators",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 
 const UPDATED = "March 12, 2026";
 const COMPANY = "NeonLive";
-const CONTACT = "legal@neonlive.chat";
+const CONTACT = "legal@neonchat.live";
 
 export default function TermsPage() {
   return (

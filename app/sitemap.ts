@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
+import { getPublicSiteOrigin } from "@/src/lib/public-site-url";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://neonlive.chat";
+const siteUrl = getPublicSiteOrigin();
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [

@@ -18,8 +18,8 @@ export const metadata: Metadata = {
 };
 
 const UPDATED = "March 12, 2026";
-const CONTACT = "privacy@neonlive.chat";
-const DPO = "privacy@neonlive.chat";
+const CONTACT = "privacy@neonchat.live";
+const DPO = "privacy@neonchat.live";
 
 export default function PrivacyPage() {
   return (

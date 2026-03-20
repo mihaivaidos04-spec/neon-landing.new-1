@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 
-/** Deferred flag kit chunk — placeholder matches final size (globe) */
+/** Deferred UserFlag chunk — placeholder matches final size (globe) */
 const UserFlag = dynamic(() => import("./UserFlag"), {
   ssr: false,
   loading: () => (
