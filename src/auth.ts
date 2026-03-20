@@ -1,6 +1,13 @@
-/** NextAuth v4-style NEXTAUTH_URL still used in hosting templates — mirror to AUTH_URL for Auth.js v5 */
-if (process.env.NEXTAUTH_URL && !process.env.AUTH_URL) {
-  process.env.AUTH_URL = process.env.NEXTAUTH_URL;
+/**
+ * Auth.js v5 reads AUTH_SECRET / AUTH_URL. Many hosts still set NEXTAUTH_* — mirror before NextAuth loads.
+ */
+if (typeof process !== "undefined") {
+  if (process.env.NEXTAUTH_SECRET?.trim() && !process.env.AUTH_SECRET?.trim()) {
+    process.env.AUTH_SECRET = process.env.NEXTAUTH_SECRET.trim();
+  }
+  if (process.env.NEXTAUTH_URL?.trim() && !process.env.AUTH_URL?.trim()) {
+    process.env.AUTH_URL = process.env.NEXTAUTH_URL.trim();
+  }
 }
 
 import NextAuth from "next-auth";
@@ -13,11 +20,6 @@ import { prisma } from "@/src/lib/prisma";
 import { getWalletBalance } from "@/src/lib/wallet";
 import { getSupabase } from "@/src/lib/supabase";
 import { addLoginXp } from "@/src/lib/login-xp";
-
-/** Hosting often sets NEXTAUTH_URL; Auth.js v5 reads AUTH_URL for OAuth redirect base. */
-if (process.env.NEXTAUTH_URL && !process.env.AUTH_URL) {
-  process.env.AUTH_URL = process.env.NEXTAUTH_URL;
-}
 
 /** Email Magic Link – no password (Resend sau EMAIL_SERVER) */
 async function sendVerificationRequest(params: { identifier: string; url: string }) {
@@ -47,9 +49,25 @@ const FACEBOOK_SECRET = process.env.FACEBOOK_CLIENT_SECRET ?? process.env.AUTH_F
 const DISCORD_ID = process.env.DISCORD_CLIENT_ID ?? process.env.AUTH_DISCORD_ID;
 const DISCORD_SECRET = process.env.DISCORD_CLIENT_SECRET ?? process.env.AUTH_DISCORD_SECRET;
 
+function resolveAuthSecret(): string | undefined {
+  const s =
+    process.env.AUTH_SECRET?.trim() ||
+    process.env.NEXTAUTH_SECRET?.trim() ||
+    (process.env.NODE_ENV === "development" ? "dev-secret-min-32-chars-for-local" : undefined);
+  if (!s && process.env.NODE_ENV === "production") {
+    console.error(
+      "[auth] Set AUTH_SECRET or NEXTAUTH_SECRET in production — without it JWT cookies cannot persist across requests."
+    );
+  }
+  return s;
+}
+
+/** Exported for `app/api/auth/[...nextauth]/route.ts` — Google OAuth persists `User` + `Account` here. */
+export const prismaAuthAdapter = PrismaAdapter(prisma);
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
-  secret: process.env.AUTH_SECRET || (process.env.NODE_ENV === "development" ? "dev-secret-min-32-chars-for-local" : undefined),
+  adapter: prismaAuthAdapter,
+  secret: resolveAuthSecret(),
   providers: [
     ...(GOOGLE_ID && GOOGLE_SECRET
       ? [
@@ -99,9 +117,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       const userId = (token?.sub ?? token?.id) as string | undefined;
       if (session?.user && userId && typeof userId === "string") {
-        (session.user as unknown as Record<string, unknown>).id = userId;
-        (session as unknown as Record<string, unknown>).userId = userId;
-        // Fetch user data from DB for frontend
+        session.userId = userId;
+        session.user.id = userId;
         try {
           const user = await prisma.user.findUnique({
             where: { id: userId },
@@ -112,27 +129,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               ghostModeUntil: true,
               isGhost: true,
               country: true,
+              coins: true,
             },
           });
           if (user) {
-            (session as unknown as Record<string, unknown>).tier = user.tier;
-            (session as unknown as Record<string, unknown>).xp = user.xp;
-            (session as unknown as Record<string, unknown>).currentLevel = user.currentLevel;
-            (session as unknown as Record<string, unknown>).countryCode =
-              user.country ?? null;
+            session.tier = user.tier;
+            session.xp = user.xp;
+            session.currentLevel = user.currentLevel;
+            session.countryCode = user.country ?? null;
             const ghostActive = user.ghostModeUntil ? user.ghostModeUntil > new Date() : user.isGhost;
-            (session as unknown as Record<string, unknown>).isGhost = ghostActive;
+            session.isGhost = ghostActive;
           }
-          const coins = await getWalletBalance(userId);
-          (session as unknown as Record<string, unknown>).coins = coins ?? 0;
+          const walletCoins = await getWalletBalance(userId);
+          const coins = walletCoins ?? user?.coins ?? 0;
+          session.coins = coins;
+          session.user.coins = coins;
           const supabase = getSupabase();
-          if ((session as unknown as Record<string, unknown>).isGhost === undefined) {
+          if (session.isGhost === undefined) {
             const { data: profile } = await supabase
               .from("user_profiles")
               .select("is_ghost_mode_enabled")
               .eq("user_id", userId)
               .single();
-            (session as unknown as Record<string, unknown>).isGhost = !!profile?.is_ghost_mode_enabled;
+            session.isGhost = !!profile?.is_ghost_mode_enabled;
           }
         } catch (e) {
           console.error("[auth session]", e);
@@ -141,7 +160,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
     async jwt({ token, user }) {
-      if (user) token.id = user.id;
+      if (user?.id && typeof user.id === "string") {
+        token.id = user.id;
+        token.sub = user.id;
+      }
       return token;
     },
   },

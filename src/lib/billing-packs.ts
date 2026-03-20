@@ -3,14 +3,18 @@
  * Clients send { amount, coinsAmount }; we validate against this list (anti-tamper).
  */
 
-export type BillingPackId = "micro" | "standard" | "mega";
+export type BillingPackId = "starter" | "popular" | "whale";
 
 export type BillingPack = {
   id: BillingPackId;
   /** Card title in UI */
   label: string;
+  /** Total coins credited (base + bonus) */
   coins: number;
-  /** USD (e.g. 0.69) */
+  /** Shown on card: coins before bonus */
+  baseCoins: number;
+  bonusCoins: number;
+  /** USD (e.g. 0.99) */
   priceUsd: number;
   /** Stripe unit_amount = Math.round(priceUsd * 100) — always integer cents */
   amountCents: number;
@@ -19,26 +23,32 @@ export type BillingPack = {
 
 export const BILLING_PACKS: BillingPack[] = [
   {
-    id: "micro",
-    label: "Micro Pack",
+    id: "starter",
+    label: "Starter Pack",
+    baseCoins: 100,
+    bonusCoins: 0,
     coins: 100,
-    priceUsd: 0.69,
-    amountCents: 69,
+    priceUsd: 0.99,
+    amountCents: 99,
   },
   {
-    id: "standard",
-    label: "Standard Pack",
-    coins: 350,
-    priceUsd: 1.99,
-    amountCents: 199,
+    id: "popular",
+    label: "Popular",
+    baseCoins: 500,
+    bonusCoins: 50,
+    coins: 550,
+    priceUsd: 4.99,
+    amountCents: 499,
     popular: true,
   },
   {
-    id: "mega",
-    label: "Mega Pack",
-    coins: 500,
-    priceUsd: 2.49,
-    amountCents: 249,
+    id: "whale",
+    label: "Whale Pack",
+    baseCoins: 2000,
+    bonusCoins: 300,
+    coins: 2300,
+    priceUsd: 18.99,
+    amountCents: 1899,
   },
 ];
 
@@ -60,5 +70,5 @@ export function findBillingPackByAmountAndCoins(
 }
 
 export function isBillingPackId(id: string): id is BillingPackId {
-  return id === "micro" || id === "standard" || id === "mega";
+  return id === "starter" || id === "popular" || id === "whale";
 }

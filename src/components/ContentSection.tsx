@@ -79,6 +79,8 @@ type Props = {
   /** Guest: sensitive interactions open login instead of acting */
   isGuest?: boolean;
   onRequireAuth?: () => void;
+  /** Shown on gift overlay (e.g. session name) */
+  viewerDisplayName?: string | null;
 };
 
 const MATCH_POLL_MS = 500;
@@ -111,8 +113,10 @@ export default function ContentSection({
   viewerCountryCode = null,
   isGuest = false,
   onRequireAuth,
+  viewerDisplayName = null,
 }: Props) {
   const [activeGift, setActiveGift] = useState<ActiveGift | null>(null);
+  const [topSupportersRefreshKey, setTopSupportersRefreshKey] = useState(0);
   const [searching, setSearching] = useState(true);
   const [connected, setConnected] = useState(false);
   const [premiumSecondsLeft, setPremiumSecondsLeft] = useState<number | null>(PREMIUM_DURATION_SEC);
@@ -697,7 +701,15 @@ export default function ContentSection({
       } else {
         setCoins((c) => c - cost);
       }
-      setActiveGift({ giftId, receivedAt: Date.now() });
+      const sender = viewerDisplayName?.trim() || "You";
+      const giftLabel = getGiftName(giftId, locale);
+      setActiveGift({
+        giftId,
+        receivedAt: Date.now(),
+        senderLabel: sender,
+        giftLabel,
+      });
+      setTopSupportersRefreshKey((k) => k + 1);
       playGiftSound();
       if (cost >= 10 && typeof navigator !== "undefined" && "vibrate" in navigator) {
         triggerPremiumGiftHaptic();
@@ -705,7 +717,7 @@ export default function ContentSection({
       const giftName = getGiftName(giftId, locale);
       toast(t.giftSentToast.replace("{{giftName}}", giftName));
     },
-    [coins, t.needCoinsMessage, t.giftSentToast, setCoins, onOpenShop, onSpend, locale, requireAuth]
+    [coins, t.needCoinsMessage, t.giftSentToast, setCoins, onOpenShop, onSpend, locale, requireAuth, viewerDisplayName]
   );
 
   const handleGiftComplete = useCallback(() => {
@@ -1250,6 +1262,7 @@ export default function ContentSection({
                 theaterGiftsEnabled={connected && !searching && !!partnerId}
                 theaterGiftCoins={coins}
                 onTheaterGift={handleSendGift}
+                topSupportersRefreshKey={topSupportersRefreshKey}
               />
               </div>
               {searching && useRealMatching && (

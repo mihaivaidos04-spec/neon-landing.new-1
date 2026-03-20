@@ -5,6 +5,7 @@ import { signIn, getProviders } from "next-auth/react";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
 import NeonLiveLogo from "./NeonLiveLogo";
+import NeonPinkSpinner from "./NeonPinkSpinner";
 
 /** Official Google "G" logo – multicolor per brand guidelines */
 function GoogleIcon({ className }: { className?: string }) {
@@ -146,8 +147,14 @@ export default function LoginWall({ open, onClose, locale }: Props) {
                   disabled={!!loading}
                   className="flex min-h-[58px] w-full items-center justify-center gap-3 rounded-2xl border-2 border-white/30 bg-white py-4 text-base font-bold text-gray-900 shadow-[0_0_32px_rgba(255,255,255,0.2)] transition-all hover:scale-[1.01] hover:bg-gray-50 hover:shadow-[0_0_44px_rgba(66,133,244,0.35)] disabled:cursor-not-allowed disabled:opacity-55 active:scale-[0.99] sm:min-h-16 sm:text-lg md:text-xl"
                 >
-                  <GoogleIcon className="h-8 w-8 shrink-0 sm:h-9 sm:w-9" />
-                  <span>{t.loginWithGoogle}</span>
+                  {loading === "google" ? (
+                    <NeonPinkSpinner label="Connecting…" labelClassName="text-gray-800" />
+                  ) : (
+                    <>
+                      <GoogleIcon className="h-8 w-8 shrink-0 sm:h-9 sm:w-9" />
+                      <span>{t.loginWithGoogle}</span>
+                    </>
+                  )}
                 </button>
               )}
 
@@ -158,8 +165,14 @@ export default function LoginWall({ open, onClose, locale }: Props) {
                   disabled={!!loading}
                   className="flex min-h-[58px] w-full items-center justify-center gap-3 rounded-2xl bg-[#1877F2] py-4 text-base font-bold text-white shadow-[0_0_32px_rgba(24,119,242,0.5)] transition-all hover:scale-[1.01] hover:bg-[#166fe5] hover:shadow-[0_0_48px_rgba(24,119,242,0.6)] disabled:cursor-not-allowed disabled:opacity-55 active:scale-[0.99] sm:min-h-16 sm:text-lg md:text-xl"
                 >
-                  <FacebookIcon className="h-8 w-8 shrink-0 text-white sm:h-9 sm:w-9" />
-                  <span>{t.loginWithFacebook}</span>
+                  {loading === "facebook" ? (
+                    <NeonPinkSpinner label="Connecting…" className="text-white" />
+                  ) : (
+                    <>
+                      <FacebookIcon className="h-8 w-8 shrink-0 text-white sm:h-9 sm:w-9" />
+                      <span>{t.loginWithFacebook}</span>
+                    </>
+                  )}
                 </button>
               )}
 
@@ -170,8 +183,14 @@ export default function LoginWall({ open, onClose, locale }: Props) {
                   disabled={!!loading}
                   className="flex min-h-[58px] w-full items-center justify-center gap-3 rounded-2xl bg-[#5865F2] py-4 text-base font-bold text-white shadow-[0_0_32px_rgba(88,101,242,0.55)] transition-all hover:scale-[1.01] hover:bg-[#4752C4] hover:shadow-[0_0_48px_rgba(88,101,242,0.65)] disabled:cursor-not-allowed disabled:opacity-55 active:scale-[0.99] sm:min-h-16 sm:text-lg md:text-xl"
                 >
-                  <DiscordIcon className="h-8 w-8 shrink-0 text-white sm:h-9 sm:w-9" />
-                  <span>{t.loginWithDiscord}</span>
+                  {loading === "discord" ? (
+                    <NeonPinkSpinner label="Connecting…" className="text-white" />
+                  ) : (
+                    <>
+                      <DiscordIcon className="h-8 w-8 shrink-0 text-white sm:h-9 sm:w-9" />
+                      <span>{t.loginWithDiscord}</span>
+                    </>
+                  )}
                 </button>
               )}
             </div>
@@ -200,10 +219,16 @@ export default function LoginWall({ open, onClose, locale }: Props) {
                   <button
                     type="submit"
                     disabled={!!loading || !email.trim()}
-                    className="min-h-[52px] rounded-2xl py-3.5 text-base font-bold text-white transition-opacity disabled:opacity-45"
+                    className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl py-3.5 text-base font-bold text-white transition-opacity disabled:opacity-45"
                     style={{ background: "linear-gradient(135deg, #db2777 0%, #a855f7 50%, #c026d3 100%)" }}
                   >
-                    {emailSent ? t.emailLinkSent : t.emailProceed}
+                    {loading === "email" ? (
+                      <NeonPinkSpinner label="Sending…" className="text-white" />
+                    ) : emailSent ? (
+                      t.emailLinkSent
+                    ) : (
+                      t.emailProceed
+                    )}
                   </button>
                 </form>
 
@@ -214,7 +239,11 @@ export default function LoginWall({ open, onClose, locale }: Props) {
                     disabled={!!loading}
                     className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl border border-orange-500/45 bg-orange-500/15 py-3.5 text-base font-semibold text-orange-100 transition-opacity hover:bg-orange-500/25 disabled:opacity-50"
                   >
-                    {t.loginWithReddit}
+                    {loading === "reddit" ? (
+                      <NeonPinkSpinner label="Connecting…" className="text-orange-100" />
+                    ) : (
+                      t.loginWithReddit
+                    )}
                   </button>
                 )}
               </div>

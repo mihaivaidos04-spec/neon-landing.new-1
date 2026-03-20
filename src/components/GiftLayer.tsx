@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import Lottie from "lottie-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { GiftId } from "./GiftsBar";
+import { GIFTS } from "./GiftsBar";
 import { getGiftCost } from "../lib/coins";
 
 /** Cadouri ieftine (heart, rose) → inimi. Cadouri scumpe (coffee, diamond) → artificii. */
@@ -17,6 +18,10 @@ const MAX_DURATION_MS = 5000;
 export type ActiveGift = {
   giftId: GiftId;
   receivedAt: number;
+  /** e.g. viewer display name */
+  senderLabel?: string;
+  /** Localized gift name e.g. "Rose" */
+  giftLabel?: string;
 };
 
 type Props = {
@@ -76,9 +81,17 @@ export default function GiftLayer({ gift, onComplete }: Props) {
 
   if (!gift) return null;
 
+  const emoji = GIFTS.find((g) => g.id === gift.giftId)?.emoji ?? "🎁";
+  const overlayText =
+    gift.senderLabel && gift.giftLabel
+      ? `${gift.senderLabel} sent a ${gift.giftLabel}!`
+      : gift.giftLabel
+        ? `${gift.giftLabel}!`
+        : "Gift!";
+
   return (
     <div
-      className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center overflow-hidden"
+      className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center overflow-hidden"
       aria-hidden
     >
       <AnimatePresence mode="wait">
@@ -103,6 +116,17 @@ export default function GiftLayer({ gift, onComplete }: Props) {
           </motion.div>
         )}
       </AnimatePresence>
+      <motion.div
+        key={`banner-${gift.receivedAt}`}
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0 }}
+        transition={{ type: "spring", stiffness: 380, damping: 28 }}
+        className="absolute bottom-6 left-1/2 z-30 flex max-w-[90%] -translate-x-1/2 items-center gap-2 rounded-2xl border border-fuchsia-400/40 bg-black/75 px-4 py-2.5 shadow-[0_0_28px_rgba(236,72,153,0.35)] backdrop-blur-md"
+      >
+        <span className="text-2xl drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]">{emoji}</span>
+        <span className="text-center text-sm font-bold text-fuchsia-100">{overlayText}</span>
+      </motion.div>
     </div>
   );
 }

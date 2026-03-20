@@ -539,8 +539,15 @@ export default function NeonLanding() {
       <main className="relative z-10 mx-auto w-full max-w-[100vw] overflow-x-clip px-2 pt-4 pb-28 sm:px-4 sm:pt-6 sm:pb-14 md:pb-20 lg:pb-14 xl:px-5">
         {verified && (
           <>
+            <Hero
+              onStartConnecting={() => setLoginWallOpen(true)}
+              isAuthenticated={status === "authenticated"}
+              onGoToStage={() =>
+                document.getElementById("neon-stage")?.scrollIntoView({ behavior: "smooth", block: "start" })
+              }
+            />
             {/* Theater row: wide video stage + narrow Global Pulse (mobile: stacked, scrollable) */}
-            <div className="flex w-full flex-col gap-4 xl:flex-row xl:items-start xl:justify-start xl:gap-3 2xl:gap-4">
+            <div className="mt-8 flex w-full flex-col gap-4 xl:flex-row xl:items-start xl:justify-start xl:gap-3 2xl:gap-4">
               <div
                 id="neon-stage"
                 className="min-w-0 w-full flex-1 scroll-mt-4"
@@ -568,6 +575,11 @@ export default function NeonLanding() {
                   viewerCountryCode={viewerCountryCode}
                   isGuest={status === "unauthenticated"}
                   onRequireAuth={() => setLoginWallOpen(true)}
+                  viewerDisplayName={
+                    status === "authenticated"
+                      ? (session?.user?.name ?? session?.user?.email ?? "You")
+                      : "Guest"
+                  }
                 />
               </div>
               <div
@@ -581,7 +593,6 @@ export default function NeonLanding() {
                 )}
               </div>
             </div>
-            <Hero />
             <div className="mx-auto mt-12 flex max-w-6xl justify-center px-4">
               <div className="w-full max-w-sm">
                 <LiveUsersInfinite />

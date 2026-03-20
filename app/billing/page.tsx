@@ -5,10 +5,35 @@ import { useCallback, useEffect, useState, Suspense, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { BILLING_PACKS } from "@/src/lib/billing-packs";
+import { BILLING_PACKS, type BillingPack } from "@/src/lib/billing-packs";
 
 function formatUsd(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+}
+
+function CoinStackIcon({ tier }: { tier: 1 | 2 | 3 }) {
+  const layers = tier === 1 ? 3 : tier === 2 ? 5 : 7;
+  return (
+    <svg viewBox="0 0 40 44" className="mx-auto h-11 w-11 text-amber-300/90" aria-hidden>
+      {Array.from({ length: layers }).map((_, i) => (
+        <ellipse
+          key={i}
+          cx="20"
+          cy={40 - i * 4.5}
+          rx="14"
+          ry="3.2"
+          fill="currentColor"
+          opacity={0.2 + i * 0.1}
+        />
+      ))}
+    </svg>
+  );
+}
+
+function packTier(pack: BillingPack): 1 | 2 | 3 {
+  if (pack.id === "starter") return 1;
+  if (pack.id === "popular") return 2;
+  return 3;
 }
 
 function BillingPageInner() {
@@ -48,10 +73,13 @@ function BillingPageInner() {
     if (!ok) return;
     if (successToastShownRef.current) return;
     successToastShownRef.current = true;
-    toast.success("Payment successful! If you topped up coins, your wallet updates in a few seconds.", {
-      duration: 5000,
-      icon: "✓",
-    });
+    const paymentVibe = searchParams.get("payment") === "success";
+    toast.success(
+      paymentVibe
+        ? "Coins added successfully! Enjoy the vibe."
+        : "Payment successful! If you topped up coins, your wallet updates in a few seconds.",
+      { duration: 5000, icon: paymentVibe ? "✨" : "✓" }
+    );
     void loadBalance();
     router.replace("/billing", { scroll: false });
   }, [searchParams, router, loadBalance]);
@@ -149,19 +177,35 @@ function BillingPageInner() {
               key={pack.id}
               className={`relative flex flex-col rounded-2xl border p-6 transition-all ${
                 pack.popular
-                  ? "border-violet-400/60 bg-gradient-to-b from-violet-950/90 to-zinc-950/90 shadow-[0_0_40px_rgba(139,92,246,0.2)]"
-                  : "border-white/10 bg-white/[0.03]"
+                  ? "border-fuchsia-500/55 bg-gradient-to-b from-fuchsia-950/35 via-violet-950/80 to-zinc-950/95 shadow-[0_0_48px_rgba(236,72,153,0.22)]"
+                  : "border-fuchsia-500/20 border-white/10 bg-zinc-950/80 bg-gradient-to-b from-white/[0.04] to-transparent"
               }`}
             >
               {pack.popular && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-violet-500 px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-lg shadow-violet-500/40">
-                  Most Popular
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500 px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-lg shadow-fuchsia-500/50">
+                  Best Value
                 </span>
               )}
+              <div className="mb-2">
+                <CoinStackIcon tier={packTier(pack)} />
+              </div>
               <h2 className="text-lg font-semibold text-white">{pack.label}</h2>
               <p className="mt-1 text-3xl font-light text-white">{formatUsd(pack.priceUsd)}</p>
               <p className="mt-2 text-sm text-violet-200/90">
-                <span className="font-semibold">{pack.coins.toLocaleString()}</span> coins
+                {pack.bonusCoins > 0 ? (
+                  <>
+                    <span className="font-semibold">{pack.baseCoins.toLocaleString()}</span>
+                    <span className="text-white/50"> + </span>
+                    <span className="font-semibold text-fuchsia-300">{pack.bonusCoins} bonus</span>
+                    <span className="block text-xs text-white/45">
+                      = {pack.coins.toLocaleString()} coins total
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-semibold">{pack.coins.toLocaleString()}</span> coins
+                  </>
+                )}
               </p>
               <ul className="mt-4 flex-1 space-y-2 text-xs text-white/55">
                 <li className="flex gap-2">
@@ -175,9 +219,9 @@ function BillingPageInner() {
                 type="button"
                 disabled={loadingPack !== null || status === "loading"}
                 onClick={() => buyPack(pack.priceUsd, pack.coins, pack.id)}
-                className="mt-6 min-h-[48px] w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-40"
+                className="mt-6 min-h-[48px] w-full rounded-xl border border-fuchsia-500/30 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_0_24px_rgba(192,38,211,0.35)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {loadingPack === pack.id ? "Redirecting…" : "Buy Now"}
+                {loadingPack === pack.id ? "Redirecting…" : "Buy"}
               </button>
             </div>
           ))}

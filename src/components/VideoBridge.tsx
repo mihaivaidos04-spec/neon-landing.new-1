@@ -13,6 +13,7 @@ import LiveLeaderboard from "./LiveLeaderboard";
 import InviteFriendsButton from "./InviteFriendsButton";
 import CountrySelector from "./CountrySelector";
 import GiftLayer, { type ActiveGift } from "./GiftLayer";
+import TopSupportersSidebar from "./TopSupportersSidebar";
 import BioCard from "./BioCard";
 import VideoSkeletonLoader from "./VideoSkeletonLoader";
 import TheaterGiftDrawer from "./TheaterGiftDrawer";
@@ -99,6 +100,8 @@ type Props = {
   theaterGiftsEnabled?: boolean;
   theaterGiftCoins?: number;
   onTheaterGift?: (giftId: GiftId) => void | Promise<void>;
+  /** Bumps Top Supporters SWR refetch after local gift send */
+  topSupportersRefreshKey?: number;
 };
 
 export default function VideoBridge({
@@ -149,6 +152,7 @@ export default function VideoBridge({
   theaterGiftsEnabled = false,
   theaterGiftCoins = 0,
   onTheaterGift,
+  topSupportersRefreshKey = 0,
 }: Props) {
   const t = getContentT(locale);
   const showVipBorder = partnerIsPremium || partnerIsVipOrTopSpender;
@@ -160,7 +164,10 @@ export default function VideoBridge({
   const percent = showBar ? (premiumSecondsLeft / premiumTotal) * 100 : 100;
 
   return (
-    <div className={`video-player-wrap video-glow relative w-full overflow-hidden rounded-2xl bg-black ${rankGlowClass}`}>
+    <div className="flex w-full flex-col gap-3 overflow-visible xl:flex-row xl:items-stretch xl:gap-2">
+      <div
+        className={`video-player-wrap video-glow relative min-w-0 flex-1 overflow-hidden rounded-2xl bg-black ${rankGlowClass}`}
+      >
       <div className="relative aspect-video w-full">
         {theaterGiftsEnabled && onTheaterGift && (
           <TheaterGiftDrawer
@@ -342,6 +349,12 @@ export default function VideoBridge({
           />
         </div>
       )}
+      </div>
+      <TopSupportersSidebar
+        locale={locale}
+        refreshKey={topSupportersRefreshKey}
+        className="mt-3 w-full shrink-0 xl:mt-0 xl:w-[12.5rem]"
+      />
     </div>
   );
 }

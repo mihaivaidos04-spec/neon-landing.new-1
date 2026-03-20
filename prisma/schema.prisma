@@ -6,13 +6,14 @@ generator client {
   provider = "prisma-client-js"
 }
 
+/// NextAuth / Auth.js `User` — extended with app fields. OAuth links via `Account`.
 model User {
   id               String    @id @default(cuid())
   name             String?
   email            String?   @unique
   emailVerified    DateTime?
   image            String?
-  coins            Int       @default(10)
+  coins            Int       @default(0)
   isGhost          Boolean   @default(false)
   country          String?
   referralCount    Int       @default(0)
@@ -139,6 +140,7 @@ model Account {
   @@id([provider, providerAccountId])
 }
 
+/// NextAuth `Session` — used when session strategy is `database`; kept for adapter compatibility.
 model Session {
   sessionToken String   @unique
   userId       String
@@ -149,6 +151,7 @@ model Session {
   updatedAt DateTime @updatedAt
 }
 
+/// NextAuth `VerificationToken` — email magic links.
 model VerificationToken {
   identifier String
   token      String

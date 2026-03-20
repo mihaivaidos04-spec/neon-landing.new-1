@@ -5,8 +5,8 @@
 import type { GiftId } from "../components/GiftsBar";
 import { BILLING_PACKS } from "./billing-packs";
 
-/** Micro pack rate for ~USD hints in UI (100 coins ≈ $0.69). */
-const GIFT_USD_REFERENCE_PACK = BILLING_PACKS.find((p) => p.id === "micro") ?? BILLING_PACKS[0];
+/** Starter pack rate for ~USD hints in UI (100 coins ≈ $0.99). */
+const GIFT_USD_REFERENCE_PACK = BILLING_PACKS.find((p) => p.id === "starter") ?? BILLING_PACKS[0];
 
 /** Cost in coins per gift */
 export const GIFT_COST: Record<GiftId, number> = {
@@ -92,7 +92,7 @@ export function canAffordGift(balance: number, giftId: GiftId): boolean {
   return balance >= getGiftCost(giftId);
 }
 
-/** Approximate fiat label from micro-pack pricing (theater / shop hints). */
+/** Approximate fiat label from starter-pack pricing (theater / shop hints). */
 export function getGiftApproxUsdLabel(giftId: GiftId): string {
   const cost = getGiftCost(giftId);
   const usd =

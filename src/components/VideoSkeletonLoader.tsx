@@ -3,17 +3,12 @@
 export default function VideoSkeletonLoader() {
   return (
     <div
-      className="absolute inset-0 flex items-center justify-center bg-zinc-900"
+      className="absolute inset-0 flex items-center justify-center bg-zinc-950/90"
       aria-hidden
     >
       <div className="flex flex-col items-center gap-3">
-        <div
-          className="h-12 w-12 animate-pulse rounded-full bg-zinc-700"
-          style={{
-            animation: "skeleton-pulse 1.5s ease-in-out infinite",
-          }}
-        />
-        <div className="h-3 w-24 animate-pulse rounded bg-zinc-700/80" />
+        <div className="h-14 w-14 animate-spin rounded-full border-[3px] border-fuchsia-500/15 border-t-fuchsia-400 shadow-[0_0_24px_rgba(236,72,153,0.4)]" />
+        <p className="text-xs font-medium uppercase tracking-wider text-fuchsia-200/70">Loading stream…</p>
       </div>
     </div>
   );

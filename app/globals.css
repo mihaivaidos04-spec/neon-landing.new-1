@@ -344,3 +344,72 @@ body {
       0 0 40px rgba(124, 58, 237, 0.3);
   }
 }
+
+/* Landing hero — neon pink title + pulsing purple CTA ring */
+@keyframes hero-neon-text-glow {
+  0%,
+  100% {
+    text-shadow:
+      0 0 20px rgba(244, 114, 182, 0.95),
+      0 0 42px rgba(236, 72, 153, 0.65),
+      0 0 72px rgba(192, 38, 211, 0.45);
+  }
+  50% {
+    text-shadow:
+      0 0 28px rgba(251, 113, 133, 1),
+      0 0 56px rgba(244, 114, 182, 0.8),
+      0 0 96px rgba(168, 85, 247, 0.5);
+  }
+}
+
+@keyframes hero-cta-purple-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px rgba(168, 85, 247, 0.85),
+      0 0 24px rgba(147, 51, 234, 0.55),
+      0 0 48px rgba(192, 38, 211, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px rgba(196, 181, 253, 0.95),
+      0 0 36px rgba(168, 85, 247, 0.75),
+      0 0 64px rgba(236, 72, 153, 0.45);
+  }
+}
+
+.hero-neon-h1 {
+  color: #fdf2f8;
+  animation: hero-neon-text-glow 3.2s ease-in-out infinite;
+}
+
+.hero-cta-connect {
+  animation: hero-cta-purple-pulse 2.2s ease-in-out infinite;
+}
+
+.live-dot {
+  animation: live-dot-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes live-dot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 6px rgba(52, 211, 153, 0.9);
+  }
+  50% {
+    opacity: 0.65;
+    box-shadow: 0 0 12px rgba(52, 211, 153, 0.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-neon-h1,
+  .hero-cta-connect,
+  .live-dot {
+    animation: none;
+  }
+  .hero-neon-h1 {
+    text-shadow: 0 0 20px rgba(244, 114, 182, 0.8), 0 0 40px rgba(192, 38, 211, 0.4);
+  }
+}
