@@ -4,22 +4,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ContentLocale } from "../lib/content-i18n";
 import type { FilterType } from "../lib/access";
 import { getContentT } from "../lib/content-i18n";
-import { canAffordGift, getGiftCost, BEAUTY_BLUR_COST_PER_MIN, GHOST_MODE_COST_PER_2MIN, GHOST_MODE_INTERVAL_MS, LIVE_TRANSLATION_COST_PER_MIN, UNDO_NEXT_COST, INSTANT_REVEAL_COST, BATTERY_QUICK_CHARGE_COST, BATTERY_QUICK_CHARGE_AMOUNT, PRIVATE_ROOM_COST_PER_MIN, ICEBREAKER_COST } from "../lib/coins";
+import { canAffordGift, getGiftCost, BEAUTY_BLUR_COST_PER_MIN, GHOST_MODE_COST_PER_2MIN, GHOST_MODE_INTERVAL_MS, LIVE_TRANSLATION_COST_PER_MIN, UNDO_NEXT_COST, INSTANT_REVEAL_COST, BATTERY_QUICK_CHARGE_COST, BATTERY_QUICK_CHARGE_AMOUNT, PRIVATE_ROOM_COST_PER_MIN } from "../lib/coins";
 import { feedbackClick, feedbackSuccess, playLowBatterySound, playGiftSound, playWhooshSound, triggerPremiumGiftHaptic } from "../lib/feedback";
 import { getDailyQuestProgress, setDailyQuestProgress } from "../lib/daily-quest-storage";
-import ChatPanel, { type ChatMessage } from "./ChatPanel";
 import DailyQuestPanel, { DAILY_GOAL, DAILY_REWARD_COINS } from "./DailyQuestPanel";
 import DailyRewardCalendar from "./DailyRewardCalendar";
-import { generateFakeMessage } from "../lib/chat-messages-data";
-import GiftsBar, { type GiftId, getGiftName } from "./GiftsBar";
+import { type GiftId, getGiftName } from "./GiftsBar";
+import { GiftShopQuestStack } from "./GiftShopPanel";
+import StageLeftRail from "./StageLeftRail";
 import type { ActiveGift } from "./GiftLayer";
 import VideoBridge from "./VideoBridge";
 import VideoAdOverlay from "./VideoAdOverlay";
 import GenderFilterCTA from "./GenderFilterCTA";
 import MatchFilterBar, { type MatchFilter } from "./MatchFilterBar";
-import VideoFilterBar from "./VideoFilterBar";
-import ReactionBar from "./ReactionBar";
-import ReactionOverlay from "./ReactionOverlay";
 import QueuePreview from "./QueuePreview";
 import PrivateInviteModal from "./PrivateInviteModal";
 import { useSocketContext } from "../contexts/SocketContext";
@@ -38,9 +35,9 @@ import { useVideoModeration } from "../hooks/useVideoModeration";
 import { getStoredGuestBattery, setStoredGuestBattery } from "../lib/guest-storage";
 import { getRankFromCoinsSpent } from "../lib/ranks";
 import { isShadowBanned } from "../lib/report-shadow-ban";
-import { moderateText, isSpamLike } from "../lib/text-moderation";
-import { isChatBlocked, getChatBlockRemainingMs, recordSpamMessage, recordCleanMessage } from "../lib/chat-block-store";
+import { pickRandomDemoCountry } from "../lib/demo-country-pool";
 import toast from "react-hot-toast";
+import confetti from "canvas-confetti";
 
 /** Demo: 2 min premium countdown; when 0, silent downgrade + blur + system messages */
 const PREMIUM_DURATION_SEC = 120;
@@ -77,12 +74,19 @@ type Props = {
   isWhale?: boolean;
   /** Total coins spent this session (for rank display) */
   sessionSpent?: number;
+  /** ISO country for current user (chat flags) */
+  viewerCountryCode?: string | null;
+  /** Guest: sensitive interactions open login instead of acting */
+  isGuest?: boolean;
+  onRequireAuth?: () => void;
 };
 
 const MATCH_POLL_MS = 500;
 const MATCH_TIMEOUT_MS = 30000;
-const BATTERY_DRAIN_MS = 60 * 1000; // 60 sec – heartbeat every minute, -5 units
-const BATTERY_DRAIN_VIP_MS = 2 * 60 * 1000; // 2 min for VIP (2x slower)
+/** ~3% / min apel — ~25% în ~8–9 min (mai lent decât 5%/min) */
+const BATTERY_DRAIN_MS = 60 * 1000;
+const BATTERY_DRAIN_VIP_MS = 2 * 60 * 1000; // VIP: același drain la 2× interval
+const BATTERY_HEARTBEAT_DRAIN = 3;
 
 export default function ContentSection({
   locale = "en",
@@ -104,8 +108,10 @@ export default function ContentSection({
   onNavigateToPrivate,
   isWhale = false,
   sessionSpent = 0,
+  viewerCountryCode = null,
+  isGuest = false,
+  onRequireAuth,
 }: Props) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [activeGift, setActiveGift] = useState<ActiveGift | null>(null);
   const [searching, setSearching] = useState(true);
   const [connected, setConnected] = useState(false);
@@ -165,10 +171,11 @@ export default function ContentSection({
   const [showBioCard, setShowBioCard] = useState(true);
   const [ghostModeChargedAt, setGhostModeChargedAt] = useState<number>(0);
   const [sessionSummaryVisible, setSessionSummaryVisible] = useState(false);
-  const [chatBlockRemainingMs, setChatBlockRemainingMs] = useState(0);
   const [giftsReceivedCount, setGiftsReceivedCount] = useState(0);
   const [commonInterestFlash, setCommonInterestFlash] = useState<string | null>(null);
   const [showPartnerSkeleton, setShowPartnerSkeleton] = useState(false);
+  const [partnerCountryCode, setPartnerCountryCode] = useState<string | null>(null);
+  const prevPartnerIdRef = useRef<string | null>(null);
   const [shadowBanned, setShadowBanned] = useState(false);
   const [moderationViolationVisible, setModerationViolationVisible] = useState(false);
   const { socket, connected: socketConnected } = useSocketContext();
@@ -188,7 +195,6 @@ export default function ContentSection({
   coinsRef.current = coins;
   const hasNoAdsPass = false; // TODO: verifica din backend – Gender Pass, Full Pass sau Full Month (orice pass fără reclame)
   const countdownSentRef = useRef<Set<number>>(new Set());
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const nextSoundRef = useRef<HTMLAudioElement | null>(null);
   const undoBackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const connectionStartedAtRef = useRef<number>(0);
@@ -197,8 +203,28 @@ export default function ContentSection({
   const hasPlayedLowBatteryRef = useRef(false);
   const t = getContentT(locale);
 
+  const requireAuth = useCallback(() => {
+    if (isGuest && onRequireAuth) {
+      onRequireAuth();
+      return true;
+    }
+    return false;
+  }, [isGuest, onRequireAuth]);
+
+  useEffect(() => {
+    if (partnerId && partnerId !== prevPartnerIdRef.current) {
+      prevPartnerIdRef.current = partnerId;
+      setPartnerCountryCode(pickRandomDemoCountry());
+    }
+    if (!partnerId) {
+      prevPartnerIdRef.current = null;
+      setPartnerCountryCode(null);
+    }
+  }, [partnerId]);
+
   // ─── Handlers (useCallback) – toate la început, înainte de useEffect ───
   const handleInstantReveal = useCallback(async () => {
+    if (requireAuth()) return;
     if (coinsRef.current < INSTANT_REVEAL_COST && !onSpend) {
       onOpenShop();
       return;
@@ -215,7 +241,7 @@ export default function ContentSection({
       setPartnerVideoRevealed(true);
       setPartnerVideoCountdown(null);
     }
-  }, [onSpend, setCoins, onWalletRefetch, onOpenShop]);
+  }, [onSpend, setCoins, onWalletRefetch, onOpenShop, requireAuth]);
 
   const handleQuickCharge = useCallback(async () => {
     if (coinsRef.current < BATTERY_QUICK_CHARGE_COST && !onSpend) {
@@ -250,20 +276,12 @@ export default function ContentSection({
 
   const handleLiveTranslationInsufficientBalance = useCallback(() => {
     setLiveTranslationEnabled(false);
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `live-translation-stop-${Date.now()}`,
-        user: "",
-        text: t.needCoinsMessage,
-        isSystem: true,
-        actionLabel: t.seeOptionsLabel,
-      },
-    ]);
+    toast(t.needCoinsMessage, { icon: "💎" });
     onOpenShop();
-  }, [t.needCoinsMessage, t.seeOptionsLabel, onOpenShop]);
+  }, [t.needCoinsMessage, onOpenShop]);
 
   const handleStartOrNext = useCallback(async () => {
+    if (requireAuth()) return;
     feedbackClick();
     playWhooshSound();
     nextSoundRef.current?.play().catch(() => {});
@@ -377,9 +395,10 @@ export default function ContentSection({
       setConnected(true);
     }, 2000 + Math.random() * 2000);
     return () => clearTimeout(timeout);
-  }, [connected, nextCount, dailyQuestCompleted, dailyQuestCount, setCoins, onAddCoins, ensureFilterAccess, premiumSecondsLeft, onMissionIncrement, useRealMatching, partnerId, matchFilter]);
+  }, [connected, nextCount, dailyQuestCompleted, dailyQuestCount, setCoins, onAddCoins, ensureFilterAccess, premiumSecondsLeft, onMissionIncrement, useRealMatching, partnerId, matchFilter, requireAuth]);
 
   const handleUndoNext = useCallback(async () => {
+    if (requireAuth()) return;
     if (!previousPartnerId || coins < UNDO_NEXT_COST) {
       if (coins < UNDO_NEXT_COST) onOpenShop();
       return;
@@ -434,9 +453,11 @@ export default function ContentSection({
     } catch {
       setPreviousPartnerId(null);
     }
-  }, [previousPartnerId, coins, onSpend, onWalletRefetch, onOpenShop]);
+  }, [previousPartnerId, coins, onSpend, onWalletRefetch, onOpenShop, requireAuth]);
 
-  const handleSelectFilter = useCallback((filter: VideoFilterId) => {
+  const handleSelectFilter = useCallback(
+    (filter: VideoFilterId) => {
+    if (filter !== "none" && requireAuth()) return;
     if (filter === "beauty_blur") {
       setBeautyBlurFreeSecondsLeft(BEAUTY_BLUR_FREE_SEC);
       setBeautyBlurPaid(false);
@@ -446,9 +467,12 @@ export default function ContentSection({
       setBeautyBlurOverlayVisible(false);
     }
     setActiveFilter(filter);
-  }, []);
+  },
+    [requireAuth]
+  );
 
   const handleBeautyBlurActivate = useCallback(async () => {
+    if (requireAuth()) return;
     if (coinsRef.current < BEAUTY_BLUR_COST_PER_MIN && !onSpend) return;
     setBeautyBlurLoading(true);
     if (onSpend) {
@@ -464,7 +488,7 @@ export default function ContentSection({
       setBeautyBlurPaid(true);
       setBeautyBlurOverlayVisible(false);
     }
-  }, [onSpend, setCoins]);
+  }, [onSpend, setCoins, requireAuth]);
 
   const handleBeautyBlurRemove = useCallback(() => {
     setActiveFilter("none");
@@ -472,82 +496,27 @@ export default function ContentSection({
     setBeautyBlurOverlayVisible(false);
   }, []);
 
-  useEffect(() => {
-    const tick = () => {
-      if (isChatBlocked()) {
-        setChatBlockRemainingMs(getChatBlockRemainingMs());
-      } else {
-        setChatBlockRemainingMs(0);
-      }
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const handleSendMessage = useCallback((text: string) => {
-    if (isChatBlocked()) return;
-    const result = moderateText(text);
-    if (isSpamLike(result)) {
-      recordSpamMessage();
-      setMessages((prev) => [
-        ...prev,
-        { id: `msg-${Date.now()}`, user: "You", text: result.filtered, isSystem: false, isDonor: false },
-      ]);
-      toast.error("Message filtered. Avoid banned words, links, or phone numbers.");
-      if (isChatBlocked()) {
-        setChatBlockRemainingMs(getChatBlockRemainingMs());
-        toast.error("3 spam messages in a row. Chat blocked for 10 minutes.");
-      }
-    } else {
-      recordCleanMessage();
-      setMessages((prev) => [
-        ...prev,
-        { id: `msg-${Date.now()}`, user: "You", text: result.filtered, isSystem: false, isDonor: false },
-      ]);
-      if (userId) {
-        fetch("/api/missions/increment-messages", { method: "POST" }).catch(() => {});
-      }
-    }
-  }, [userId]);
-
   const handleLiveTranslationToggle = useCallback(() => {
     if (liveTranslationEnabled) {
       setLiveTranslationEnabled(false);
       return;
     }
+    if (requireAuth()) return;
     if (coinsRef.current < LIVE_TRANSLATION_COST_PER_MIN && !onSpend) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `need-coins-live-${Date.now()}`,
-          user: "",
-          text: t.needCoinsMessage,
-          isSystem: true,
-          actionLabel: t.seeOptionsLabel,
-        },
-      ]);
+      toast(t.needCoinsMessage, { icon: "💎" });
       onOpenShop();
       return;
     }
     setLiveTranslationEnabled(true);
     feedbackSuccess();
-  }, [liveTranslationEnabled, t.needCoinsMessage, t.seeOptionsLabel, onOpenShop, onSpend]);
+  }, [liveTranslationEnabled, t.needCoinsMessage, onOpenShop, onSpend, requireAuth]);
 
   const handleSendReaction = useCallback(
     async (reactionId: ReactionId) => {
+      if (requireAuth()) return;
       const cost = getReactionCost(reactionId);
       if (coinsRef.current < cost && !onSpend) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `need-coins-react-${Date.now()}`,
-            user: "",
-            text: t.needCoinsMessage,
-            isSystem: true,
-            actionLabel: t.seeOptionsLabel,
-          },
-        ]);
+        toast(t.needCoinsMessage, { icon: "💎" });
         onOpenShop();
         return;
       }
@@ -569,7 +538,7 @@ export default function ContentSection({
         feedbackSuccess();
       }
     },
-    [partnerId, userId, onSpend, setCoins, onWalletRefetch, t.needCoinsMessage, t.seeOptionsLabel, onOpenShop]
+    [partnerId, userId, onSpend, setCoins, onWalletRefetch, t.needCoinsMessage, onOpenShop, requireAuth]
   );
 
   const handleReactionOverlayComplete = useCallback(() => {
@@ -582,17 +551,9 @@ export default function ContentSection({
       setGhostMode(false);
       return;
     }
+    if (requireAuth()) return;
     if (coinsRef.current < GHOST_MODE_COST_PER_2MIN && !onSpend) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `need-coins-ghost-${Date.now()}`,
-          user: "",
-          text: t.needCoinsMessage,
-          isSystem: true,
-          actionLabel: t.seeOptionsLabel,
-        },
-      ]);
+      toast(t.needCoinsMessage, { icon: "💎" });
       onOpenShop();
       return;
     }
@@ -609,7 +570,7 @@ export default function ContentSection({
       setGhostModeChargedAt(Date.now());
       feedbackSuccess();
     }
-  }, [ghostMode, onSpend, setCoins, t.needCoinsMessage, t.seeOptionsLabel, onOpenShop]);
+  }, [ghostMode, onSpend, setCoins, t.needCoinsMessage, onOpenShop, requireAuth]);
 
   // Ghost Mode: charge 1 coin every 2 minutes
   useEffect(() => {
@@ -619,16 +580,7 @@ export default function ContentSection({
       if (elapsed < GHOST_MODE_INTERVAL_MS) return;
       if (coinsRef.current < GHOST_MODE_COST_PER_2MIN && !onSpend) {
         setGhostMode(false);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `ghost-expired-${Date.now()}`,
-            user: "",
-            text: "Ghost Mode ended – insufficient balance",
-            isSystem: true,
-            actionLabel: t.seeOptionsLabel,
-          },
-        ]);
+        toast("Ghost Mode ended – insufficient balance", { icon: "👻" });
         onOpenShop();
         return;
       }
@@ -646,9 +598,10 @@ export default function ContentSection({
       }
     }, 30000);
     return () => clearInterval(tid);
-  }, [ghostMode, connected, searching, ghostModeChargedAt, onSpend, setCoins, onOpenShop, onWalletRefetch, t.seeOptionsLabel]);
+  }, [ghostMode, connected, searching, ghostModeChargedAt, onSpend, setCoins, onOpenShop, onWalletRefetch]);
 
   const handleInvite = useCallback(() => {
+    if (requireAuth()) return;
     if (!socket || !partnerId || !useRealMatching || inviteLoading) return;
     if (coinsRef.current < PRIVATE_ROOM_COST_PER_MIN && !onSpend) {
       onOpenShop();
@@ -658,7 +611,7 @@ export default function ContentSection({
     pendingInviteRoomIdRef.current = roomId;
     socket.emit("private_invite", { toUserId: partnerId, roomId });
     feedbackSuccess();
-  }, [socket, partnerId, useRealMatching, inviteLoading, onSpend, onOpenShop]);
+  }, [socket, partnerId, useRealMatching, inviteLoading, onSpend, onOpenShop, requireAuth]);
 
   const handleAcceptInvite = useCallback(() => {
     if (!socket || !inviteFromUserId || !inviteRoomId) return;
@@ -693,27 +646,6 @@ export default function ContentSection({
       }
     }
   }, [connected, useRealMatching]);
-
-  const handleIcebreaker = useCallback(async () => {
-    if (coinsRef.current < ICEBREAKER_COST && !onSpend) {
-      onOpenShop();
-      return;
-    }
-    const openerRaw = "Hey! So... I was just wondering what kind of pizza would you be? 🍕";
-    const opener = moderateText(openerRaw).filtered;
-    if (onSpend) {
-      const ok = await onSpend(ICEBREAKER_COST, "icebreaker");
-      if (!ok) return;
-    } else {
-      setCoins((c) => c - ICEBREAKER_COST);
-    }
-    setMessages((prev) => [
-      ...prev,
-      { id: `icebreaker-${Date.now()}`, user: "You", text: opener, isSystem: false, isDonor: false },
-    ]);
-    feedbackSuccess();
-    await onWalletRefetch?.();
-  }, [onSpend, setCoins, onOpenShop, onWalletRefetch]);
 
   const handleReport = useCallback(async () => {
     if (!partnerId) return;
@@ -751,18 +683,10 @@ export default function ContentSection({
 
   const handleSendGift = useCallback(
     async (giftId: GiftId) => {
+      if (requireAuth()) return;
       const cost = getGiftCost(giftId);
       if (!canAffordGift(coins, giftId)) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `need-coins-${Date.now()}`,
-            user: "",
-            text: t.needCoinsMessage,
-            isSystem: true,
-            actionLabel: t.seeOptionsLabel,
-          },
-        ]);
+        toast(t.needCoinsMessage, { icon: "💎" });
         onOpenShop();
         return;
       }
@@ -781,7 +705,7 @@ export default function ContentSection({
       const giftName = getGiftName(giftId, locale);
       toast(t.giftSentToast.replace("{{giftName}}", giftName));
     },
-    [coins, t.needCoinsMessage, t.seeOptionsLabel, t.giftSentToast, setCoins, onOpenShop, onSpend, locale]
+    [coins, t.needCoinsMessage, t.giftSentToast, setCoins, onOpenShop, onSpend, locale, requireAuth]
   );
 
   const handleGiftComplete = useCallback(() => {
@@ -792,6 +716,18 @@ export default function ContentSection({
   useEffect(() => {
     if (connected) connectionStartedAtRef.current = Date.now();
   }, [connected]);
+
+  // Match celebration: neon confetti burst
+  const celebratedMatchRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!connected || !partnerId || searching) return;
+    if (celebratedMatchRef.current === partnerId) return;
+    celebratedMatchRef.current = partnerId;
+    const fire = (opts: { origin?: { x: number; y: number }; colors?: string[]; spread?: number }) =>
+      confetti({ ...opts, particleCount: 40, scalar: 0.8, ticks: 120 });
+    fire({ origin: { x: 0.25, y: 0.5 }, colors: ["#8b5cf6", "#a78bfa", "#39ff14"], spread: 55 });
+    fire({ origin: { x: 0.75, y: 0.5 }, colors: ["#8b5cf6", "#a78bfa", "#39ff14"], spread: 55 });
+  }, [connected, partnerId, searching]);
 
   // Common interests flash when matched
   useEffect(() => {
@@ -913,12 +849,12 @@ export default function ContentSection({
     }
   }, [battery, t.batteryLowToast]);
 
-  // Battery: heartbeat every 60s (2 min VIP) when video active; -5 units; Low Battery event when depleted
+  // Battery: heartbeat 60s (120s VIP); -3% per tick (~25% / ~8–9 min)
   const isZeroDrainActive = zeroDrainUntil > Date.now();
   useEffect(() => {
     if (!connected || searching) return;
     const intervalMs = isVipSubscriber ? BATTERY_DRAIN_VIP_MS : BATTERY_DRAIN_MS;
-    const drainAmount = 5;
+    const drainAmount = BATTERY_HEARTBEAT_DRAIN;
     const tid = setInterval(async () => {
       if (zeroDrainUntil > Date.now()) return;
       if (batteryRef.current <= 0) return;
@@ -1174,18 +1110,7 @@ export default function ContentSection({
     };
   }, [liveTranslationEnabled, connected, onSpend, setCoins, handleLiveTranslationInsufficientBalance]);
 
-  useEffect(() => {
-    const addFake = () => {
-      setMessages((prev) => [...prev.slice(-49), generateFakeMessage(locale)]);
-    };
-    addFake();
-    intervalRef.current = setInterval(addFake, 3000 + Math.random() * 4000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [locale]);
-
-  // Premium countdown: system messages at 60s, 30s; at 0 silent downgrade + blur
+  // Premium countdown: at 0 silent downgrade + blur (+ toast notice)
   useEffect(() => {
     if (premiumSecondsLeft === null || premiumSecondsLeft <= 0) return;
     const tid = setInterval(() => {
@@ -1193,22 +1118,8 @@ export default function ContentSection({
         if (prev === null || prev <= 0) return prev;
         const next = prev - 1;
         if (next === 0) {
-          setMessages((m) => [
-            ...m,
-            {
-              id: `sys-expired-${Date.now()}`,
-              user: "",
-              text: t.systemFiltersExpired,
-              isSystem: true,
-              actionLabel: t.systemReactivate,
-            },
-            {
-              id: `sys-degraded-${Date.now()}`,
-              user: "",
-              text: t.systemConnectionDegraded,
-              isSystem: true,
-            },
-          ]);
+          toast(t.systemFiltersExpired, { duration: 5000 });
+          toast(t.systemConnectionDegraded, { duration: 5000 });
           setConnectionDegraded(true);
           return null;
         }
@@ -1217,176 +1128,161 @@ export default function ContentSection({
       });
     }, 1000);
     return () => clearInterval(tid);
-  }, [premiumSecondsLeft, t.systemFiltersExpired, t.systemReactivate, t.systemConnectionDegraded, t.systemSecondsLeft]);
+  }, [premiumSecondsLeft, t.systemFiltersExpired, t.systemConnectionDegraded]);
+
+  const questCurrent = onMissionIncrement ? (missionCount ?? 0) : dailyQuestCount;
+  const questCompleted = onMissionIncrement ? (missionCompleted ?? false) : dailyQuestCompleted;
+
+  const giftShopSharedProps = {
+    locale,
+    activeFilter,
+    onSelectFilter: handleSelectFilter,
+    connected,
+    searching,
+    ghostMode,
+    onGhostModeToggle: handleGhostModeToggle,
+    liveTranslationEnabled,
+    onLiveTranslationToggle: handleLiveTranslationToggle,
+    coins,
+    onSendReaction: handleSendReaction,
+    onSendGift: handleSendGift,
+    onBeforeInteraction: requireAuth,
+  };
 
   return (
-    <section className="mt-0">
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div>
-          <DailyQuestPanel
+    <section className="mt-0 w-full max-w-full overflow-x-hidden xl:overflow-x-visible">
+      <div className="relative flex w-full max-w-full flex-col gap-3 xl:flex-row xl:items-start xl:gap-3 xl:overflow-visible">
+        {/* Slim left rail — icon row below video on mobile, vertical rail on xl */}
+        <div className="order-2 w-full shrink-0 xl:order-1 xl:w-auto xl:overflow-visible">
+          <StageLeftRail
             locale={locale}
-            current={onMissionIncrement ? (missionCount ?? 0) : dailyQuestCount}
-            completed={onMissionIncrement ? (missionCompleted ?? false) : dailyQuestCompleted}
-            taskType={missionTaskType}
+            questCurrent={questCurrent}
+            questCompleted={questCompleted}
+            hasRewards={!!userId}
+            questPanel={
+              <DailyQuestPanel
+                locale={locale}
+                current={questCurrent}
+                completed={questCompleted}
+                taskType={missionTaskType}
+              />
+            }
+            rewardsPanel={
+              userId ? (
+                dailyRewardLoading ? (
+                  <div className="flex h-16 items-center justify-center rounded-xl border border-white/10 bg-black/20">
+                    <span className="neon-spinner-sm" aria-hidden />
+                  </div>
+                ) : (
+                  <DailyRewardCalendar
+                    locale={locale}
+                    streak={dailyStreak ?? 0}
+                    claimedToday={dailyClaimedToday ?? false}
+                    goldBadge={dailyGoldBadge ?? false}
+                  />
+                )
+              ) : null
+            }
           />
-          {userId && (
-            <div className="mt-3">
-              {dailyRewardLoading ? (
-                <div className="flex h-16 items-center justify-center rounded-xl border border-white/10 bg-black/20">
+        </div>
+
+        {/* Theater column: video-first on mobile, ~65–70vw stage on xl */}
+        <div className="order-1 flex min-w-0 w-full flex-1 flex-col gap-3 xl:order-2 xl:min-w-0">
+          <div className="theater-stage theater-ambient-glow relative z-[1] mt-0 w-full min-w-0 rounded-2xl xl:mx-0 xl:mt-0">
+              <div className="theater-video-shell relative overflow-hidden rounded-2xl">
+              <div className="absolute left-3 top-3 z-10 flex flex-col gap-1">
+                {batteryLoading ? (
                   <span className="neon-spinner-sm" aria-hidden />
+                ) : (
+                  <BatteryIndicator percent={battery} />
+                )}
+                {battery < 25 && battery > 0 && (
+                  <span className="rounded bg-red-500/80 px-2 py-0.5 text-[10px] font-semibold text-white shadow-lg">
+                    {t.batteryLowPowerWarning}
+                  </span>
+                )}
+              </div>
+              <VideoBridge
+                locale={locale}
+                searching={searching}
+                connectionDegraded={connectionDegraded}
+                premiumSecondsLeft={premiumSecondsLeft}
+                premiumTotal={PREMIUM_DURATION_SEC}
+                activeFilter={activeFilter}
+                beautyBlurOverlayVisible={beautyBlurOverlayVisible}
+                onBeautyBlurActivate={handleBeautyBlurActivate}
+                onBeautyBlurRemove={handleBeautyBlurRemove}
+                beautyBlurLoading={beautyBlurLoading}
+                canAffordBeautyBlur={coins >= BEAUTY_BLUR_COST_PER_MIN || !!onSpend}
+                ghostMode={ghostMode}
+                liveTranslationEnabled={liveTranslationEnabled}
+                onLiveTranslationInsufficientBalance={handleLiveTranslationInsufficientBalance}
+                reaction={incomingReaction || localReaction}
+                onReactionComplete={handleReactionOverlayComplete}
+                showCrownOnPartner={!!(connected && partnerId && top1UserId === partnerId)}
+                showCrownOnSelf={!!(userId && top1UserId === userId)}
+                leaderboard={leaderboard}
+                leaderboardLocale={locale}
+                leaderboardCurrentUserId={userId}
+                onGoGhost={onOpenShop}
+                partnerVideoBlurred={connected && !searching && !partnerVideoRevealed}
+                partnerVideoCountdown={partnerVideoCountdown}
+                onInstantReveal={handleInstantReveal}
+                canAffordInstantReveal={coins >= INSTANT_REVEAL_COST}
+                onOpenShop={onOpenShop}
+                batteryDepletedBlur={battery === 0 && connected && !searching}
+                activeGift={activeGift}
+                onGiftComplete={handleGiftComplete}
+                isWhale={isWhale}
+                partnerIsPremium={partnerIsPremium}
+                partnerIsVipOrTopSpender={!!(connected && partnerId && (partnerIsPremium || top1UserId === partnerId))}
+                showBioCard={!!(connected && !searching && partnerId && showBioCard)}
+                partnerInterests={["Music", "Travel", "Photography"]}
+                partnerGiftsReceived={0}
+                partnerName="Partner"
+                partnerCountryCode={partnerCountryCode}
+                partnerLocale={locale}
+                onBioCardDismiss={() => setShowBioCard(false)}
+                showPartnerSkeleton={showPartnerSkeleton}
+                userRank={getRankFromCoinsSpent(sessionSpent)}
+                onReport={handleReport}
+                showReportButton={connected && !searching && !!partnerId}
+                theaterGiftsEnabled={connected && !searching && !!partnerId}
+                theaterGiftCoins={coins}
+                onTheaterGift={handleSendGift}
+              />
+              </div>
+              {searching && useRealMatching && (
+                <div className="absolute left-3 top-14 z-20">
+                  <MatchFilterBar
+                    filter={matchFilter}
+                    onFilterChange={(f) => {
+                      if (requireAuth()) return;
+                      setMatchFilter(f);
+                    }}
+                    coins={coins}
+                    onOpenShop={onOpenShop}
+                    disabled={false}
+                  />
                 </div>
-              ) : (
-                <DailyRewardCalendar
+              )}
+              {searching && useRealMatching && (
+                <QueuePreview
                   locale={locale}
-                  streak={dailyStreak ?? 0}
-                  claimedToday={dailyClaimedToday ?? false}
-                  goldBadge={dailyGoldBadge ?? false}
+                  visible={searching}
+                  coins={coins}
+                  onSpend={onSpend}
+                  setCoins={setCoins}
+                  onOpenShop={onOpenShop}
+                  onWalletRefetch={onWalletRefetch}
+                  onBoostedMatch={(partnerId) => {
+                    setSearching(false);
+                    setConnected(true);
+                    setPartnerId(partnerId);
+                  }}
                 />
               )}
             </div>
-          )}
-          <div className="relative mt-4">
-          <div className="absolute left-3 top-3 z-10 flex flex-col gap-1">
-            {batteryLoading ? (
-              <span className="neon-spinner-sm" aria-hidden />
-            ) : (
-              <BatteryIndicator percent={battery} />
-            )}
-            {battery < 25 && battery > 0 && (
-              <span className="rounded bg-red-500/80 px-2 py-0.5 text-[10px] font-semibold text-white shadow-lg">
-                {t.batteryLowPowerWarning}
-              </span>
-            )}
-          </div>
-          <VideoBridge
-            locale={locale}
-            searching={searching}
-            connectionDegraded={connectionDegraded}
-            premiumSecondsLeft={premiumSecondsLeft}
-            premiumTotal={PREMIUM_DURATION_SEC}
-            activeFilter={activeFilter}
-            beautyBlurOverlayVisible={beautyBlurOverlayVisible}
-            onBeautyBlurActivate={handleBeautyBlurActivate}
-            onBeautyBlurRemove={handleBeautyBlurRemove}
-            beautyBlurLoading={beautyBlurLoading}
-            canAffordBeautyBlur={coins >= BEAUTY_BLUR_COST_PER_MIN || !!onSpend}
-            ghostMode={ghostMode}
-            liveTranslationEnabled={liveTranslationEnabled}
-            onLiveTranslationInsufficientBalance={handleLiveTranslationInsufficientBalance}
-            reaction={incomingReaction || localReaction}
-            onReactionComplete={handleReactionOverlayComplete}
-            showCrownOnPartner={!!(connected && partnerId && top1UserId === partnerId)}
-            showCrownOnSelf={!!(userId && top1UserId === userId)}
-            leaderboard={leaderboard}
-            leaderboardLocale={locale}
-            leaderboardCurrentUserId={userId}
-            onGoGhost={() => router.push("/checkout")}
-            partnerVideoBlurred={connected && !searching && !partnerVideoRevealed}
-            partnerVideoCountdown={partnerVideoCountdown}
-            onInstantReveal={handleInstantReveal}
-            canAffordInstantReveal={coins >= INSTANT_REVEAL_COST}
-            onOpenShop={onOpenShop}
-            batteryDepletedBlur={battery === 0 && connected && !searching}
-            activeGift={activeGift}
-            onGiftComplete={handleGiftComplete}
-            isWhale={isWhale}
-            partnerIsPremium={partnerIsPremium}
-            partnerIsVipOrTopSpender={!!(connected && partnerId && (partnerIsPremium || top1UserId === partnerId))}
-            showBioCard={!!(connected && !searching && partnerId && showBioCard)}
-            partnerInterests={["Music", "Travel", "Photography"]}
-            partnerGiftsReceived={0}
-            partnerName="Partner"
-            onBioCardDismiss={() => setShowBioCard(false)}
-            showPartnerSkeleton={showPartnerSkeleton}
-            userRank={getRankFromCoinsSpent(sessionSpent)}
-            onReport={handleReport}
-            showReportButton={connected && !searching && !!partnerId}
-          />
-          <VideoFilterBar
-            locale={locale}
-            activeFilter={activeFilter}
-            onSelectFilter={handleSelectFilter}
-          />
-          {searching && useRealMatching && (
-            <div className="absolute left-3 top-14 z-20">
-              <MatchFilterBar
-                filter={matchFilter}
-                onFilterChange={setMatchFilter}
-                coins={coins}
-                onOpenShop={onOpenShop}
-                disabled={false}
-              />
-            </div>
-          )}
-          {searching && useRealMatching && (
-            <QueuePreview
-              locale={locale}
-              visible={searching}
-              coins={coins}
-              onSpend={onSpend}
-              setCoins={setCoins}
-              onOpenShop={onOpenShop}
-              onWalletRefetch={onWalletRefetch}
-              onBoostedMatch={(partnerId) => {
-                setSearching(false);
-                setConnected(true);
-                setPartnerId(partnerId);
-              }}
-            />
-          )}
-          {connected && (
-            <div className="mt-2 flex gap-2">
-              <button
-                type="button"
-                onClick={handleGhostModeToggle}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-center text-sm font-medium transition-all ${
-                  ghostMode
-                    ? "bg-emerald-950/50 text-emerald-400 ring-1 ring-emerald-500/50"
-                    : "border border-white/20 text-white/80 hover:bg-white/10"
-                }`}
-              >
-                {ghostMode ? (
-                  <>
-                    <span className="text-[10px]">✓</span>
-                    Ghost Mode
-                    <span className="rounded bg-emerald-500/30 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
-                      Live · 1/2min
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    Ghost Mode
-                    <span className="text-xs text-white/60">
-                      (1 coin/2 min)
-                    </span>
-                  </>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={handleLiveTranslationToggle}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-center text-sm font-medium transition-all ${
-                  liveTranslationEnabled
-                    ? "bg-[#8b5cf6]/30 text-[#a78bfa] ring-1 ring-[#8b5cf6]/50"
-                    : "border border-white/20 text-white/80 hover:bg-white/10"
-                }`}
-              >
-                {liveTranslationEnabled ? (
-                  <>
-                    <span className="text-[10px]">✓</span>
-                    {t.liveTranslationActive}
-                  </>
-                ) : (
-                  <>
-                    {t.liveTranslationLabel}
-                    <span className="text-xs text-white/60">
-                      ({t.liveTranslationActivate})
-                    </span>
-                  </>
-                )}
-              </button>
-            </div>
-          )}
           <VideoAdOverlay visible={showVideoAd} onClose={() => setShowVideoAd(false)} />
           <GenderFilterCTA
             visible={showGenderFilterCTA}
@@ -1466,27 +1362,7 @@ export default function ContentSection({
               </button>
             </div>
           </div>
-          <ReactionBar
-            locale={locale}
-            coins={coins}
-            onSendReaction={handleSendReaction}
-            disabled={!connected || searching}
-          />
-          <GiftsBar locale={locale} coins={coins} onSendGift={handleSendGift} />
-          </div>
         </div>
-        <ChatPanel
-          messages={messages}
-          locale={locale}
-          coins={coins}
-          onRecharge={onOpenShop}
-          onIcebreaker={connected && partnerId ? handleIcebreaker : undefined}
-          canAffordIcebreaker={coins >= ICEBREAKER_COST}
-          icebreakerCost={ICEBREAKER_COST}
-          onSendMessage={connected && partnerId ? handleSendMessage : undefined}
-          chatBlocked={chatBlockRemainingMs > 0}
-          chatBlockedMinutes={Math.ceil(chatBlockRemainingMs / 60000)}
-        />
         {commonInterestFlash && (
           <div className="absolute left-1/2 top-24 z-30 -translate-x-1/2 rounded-lg bg-violet-500/90 px-4 py-2 text-sm font-semibold text-white shadow-lg animate-in fade-in duration-300">
             {commonInterestFlash}

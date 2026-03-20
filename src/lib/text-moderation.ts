@@ -49,31 +49,47 @@ export function moderateText(text: string): ModerationResult {
     return { filtered: "", wasModified: false, hadBannedWords: false, hadPhone: false, hadExternalLink: false };
   }
 
-  let filtered = text;
-  let hadBannedWords = false;
-  let hadPhone = false;
-  let hadExternalLink = false;
+  try {
+    let filtered = text;
+    let hadBannedWords = false;
+    let hadPhone = false;
+    let hadExternalLink = false;
 
-  const beforeBadWords = filtered;
-  filtered = filter.clean(filtered);
-  if (filtered !== beforeBadWords) hadBannedWords = true;
-
-  if (new RegExp(PHONE_PATTERN.source).test(filtered)) {
-    hadPhone = true;
-    filtered = maskPhoneNumbers(filtered);
-  }
-
-  const urlMatches = filtered.match(URL_REGEX);
-  if (urlMatches) {
-    const hasExternal = urlMatches.some((u) => !isAllowedUrl(u));
-    if (hasExternal) {
-      hadExternalLink = true;
-      filtered = maskExternalLinks(filtered);
+    const beforeBadWords = filtered;
+    /** `bad-words` can throw on some Unicode / split edge cases (e.g. Turkish ı, mixed emoji). */
+    try {
+      const cleaned = filter.clean(filtered);
+      filtered = typeof cleaned === "string" ? cleaned : filtered;
+    } catch {
+      filtered = text;
     }
-  }
+    if (filtered !== beforeBadWords) hadBannedWords = true;
 
-  const wasModified = hadBannedWords || hadPhone || hadExternalLink;
-  return { filtered, wasModified, hadBannedWords, hadPhone, hadExternalLink };
+    if (new RegExp(PHONE_PATTERN.source).test(filtered)) {
+      hadPhone = true;
+      filtered = maskPhoneNumbers(filtered);
+    }
+
+    const urlMatches = filtered.match(URL_REGEX);
+    if (urlMatches) {
+      const hasExternal = urlMatches.some((u) => !isAllowedUrl(u));
+      if (hasExternal) {
+        hadExternalLink = true;
+        filtered = maskExternalLinks(filtered);
+      }
+    }
+
+    const wasModified = hadBannedWords || hadPhone || hadExternalLink;
+    return { filtered, wasModified, hadBannedWords, hadPhone, hadExternalLink };
+  } catch {
+    return {
+      filtered: text,
+      wasModified: false,
+      hadBannedWords: false,
+      hadPhone: false,
+      hadExternalLink: false,
+    };
+  }
 }
 
 /**

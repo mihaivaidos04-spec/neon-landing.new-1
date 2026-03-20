@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="wmLuxA" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f5f3ff" stop-opacity="0.95"/>
+      <stop offset="35%" stop-color="#c4b5fd" stop-opacity="0.75"/>
+      <stop offset="70%" stop-color="#8b5cf6" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#5b21b6" stop-opacity="0.4"/>
+    </linearGradient>
+    <linearGradient id="wmLuxB" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ddd6fe" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#6d28d9" stop-opacity="0.35"/>
+    </linearGradient>
+    <linearGradient id="wmLuxC" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#ede9fe" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#4c1d95" stop-opacity="0.3"/>
+    </linearGradient>
+  </defs>
+  <g stroke-linecap="round" stroke-linejoin="round" opacity="0.92">
+    <path
+      stroke="url(#wmLuxA)"
+      stroke-width="0.42"
+      d="M16 51 C38 32 62 28 100 50 C138 72 162 68 184 49"
+    />
+    <path
+      stroke="url(#wmLuxB)"
+      stroke-width="0.36"
+      d="M22 48 Q52 22 100 48 T178 46"
+    />
+    <path
+      stroke="url(#wmLuxC)"
+      stroke-width="0.34"
+      d="M100 8 Q118 48 100 92"
+    />
+    <path
+      stroke="url(#wmLuxA)"
+      stroke-width="0.3"
+      d="M44 24 Q68 50 44 78"
+    />
+    <path
+      stroke="url(#wmLuxB)"
+      stroke-width="0.3"
+      d="M156 24 Q132 50 156 78"
+    />
+    <path
+      stroke="url(#wmLuxC)"
+      stroke-width="0.28"
+      opacity="0.85"
+      d="M32 38 Q66 50 32 62 M168 38 Q134 50 168 62"
+    />
+    <path
+      stroke="url(#wmLuxA)"
+      stroke-width="0.22"
+      opacity="0.65"
+      d="M52 18 Q100 40 148 18 M52 82 Q100 60 148 82"
+    />
+  </g>
+</svg>

@@ -21,10 +21,18 @@
   --font-mono: var(--font-geist-mono);
 }
 
+html {
+  overflow-x: clip;
+  max-width: 100vw;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-syne), system-ui, sans-serif;
+  overflow-x: clip;
+  max-width: 100vw;
+  -webkit-tap-highlight-color: rgba(139, 92, 246, 0.15);
 }
 
 /* Divine: glass cards with warm undertones */
@@ -44,6 +52,16 @@ body {
 
 .video-glow {
   animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* Cam-to-cam: video box is the hero; subtle premium frame on large screens */
+@media (min-width: 1280px) {
+  .cam-stage-hero {
+    box-shadow:
+      0 0 0 1px rgba(167, 139, 250, 0.45),
+      0 0 60px rgba(139, 92, 246, 0.28),
+      0 16px 48px rgba(0, 0, 0, 0.55);
+  }
 }
 
 /* Checkout Best Value neon border */
@@ -124,4 +142,205 @@ body {
 
 .animate-ticker-scroll {
   animation: ticker-scroll 40s linear infinite;
+}
+
+/* Global Pulse — neon message glow */
+.global-pulse-title-glow {
+  text-shadow:
+    0 0 12px rgba(167, 139, 250, 0.85),
+    0 0 24px rgba(139, 92, 246, 0.45);
+}
+
+.global-pulse-username {
+  text-shadow:
+    0 0 8px rgba(196, 181, 253, 0.35),
+    0 0 16px rgba(139, 92, 246, 0.2);
+}
+
+.global-pulse-msg {
+  text-shadow:
+    0 0 10px rgba(250, 245, 235, 0.12),
+    0 0 20px rgba(167, 139, 250, 0.08);
+}
+
+.global-pulse-panel {
+  box-shadow:
+    0 0 0 1px rgba(139, 92, 246, 0.08),
+    0 8px 40px rgba(0, 0, 0, 0.45),
+    0 0 60px rgba(139, 92, 246, 0.06);
+}
+
+/* ─── Immersive login gateway (Love & Neon) ─── */
+@keyframes login-gateway-border-flow {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes login-gateway-aura-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 40px rgba(244, 114, 182, 0.45),
+      0 0 80px rgba(168, 85, 247, 0.3),
+      0 0 120px rgba(236, 72, 153, 0.15);
+  }
+  50% {
+    box-shadow:
+      0 0 56px rgba(244, 114, 182, 0.65),
+      0 0 100px rgba(168, 85, 247, 0.45),
+      0 0 140px rgba(236, 72, 153, 0.22);
+  }
+}
+
+@keyframes login-gateway-logo-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 18px rgba(244, 114, 182, 0.85)) drop-shadow(0 0 36px rgba(168, 85, 247, 0.55));
+  }
+  50% {
+    filter: drop-shadow(0 0 26px rgba(244, 114, 182, 1)) drop-shadow(0 0 52px rgba(192, 132, 252, 0.75));
+  }
+}
+
+.login-gateway-outer {
+  border-radius: 1.35rem;
+  padding: 2px;
+  background: linear-gradient(
+    125deg,
+    #f472b6,
+    #e879f9,
+    #a855f7,
+    #ec4899,
+    #c026d3,
+    #f472b6
+  );
+  background-size: 400% 400%;
+  animation:
+    login-gateway-border-flow 6s ease infinite,
+    login-gateway-aura-pulse 3.2s ease-in-out infinite;
+}
+
+.login-gateway-inner {
+  border-radius: calc(1.35rem - 2px);
+  background: radial-gradient(ellipse 120% 80% at 50% 0%, rgba(88, 28, 135, 0.12), transparent 55%),
+    linear-gradient(180deg, #08060c 0%, #030308 40%, #020204 100%);
+}
+
+.login-gateway-logo-wrap .neonlive-mark {
+  animation: login-gateway-logo-glow 2.6s ease-in-out infinite;
+}
+
+@keyframes login-gateway-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.login-gateway-modal-animate {
+  animation: login-gateway-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Global Pulse chat — message fade-in */
+.global-pulse-msg-enter {
+  opacity: 0;
+  animation: global-pulse-msg-in 0.32s ease-out forwards;
+}
+
+@keyframes global-pulse-msg-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Theater video stage — purple / cyan ambient pulse */
+@keyframes theater-ambient-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(192, 132, 252, 0.4),
+      0 0 52px rgba(139, 92, 246, 0.48),
+      0 0 100px rgba(59, 130, 246, 0.2),
+      0 20px 50px rgba(0, 0, 0, 0.55);
+    filter: drop-shadow(0 0 18px rgba(168, 85, 247, 0.38));
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(56, 189, 248, 0.35),
+      0 0 58px rgba(56, 189, 248, 0.42),
+      0 0 110px rgba(139, 92, 246, 0.32),
+      0 20px 50px rgba(0, 0, 0, 0.55);
+    filter: drop-shadow(0 0 22px rgba(59, 130, 246, 0.45));
+  }
+}
+
+.theater-ambient-glow {
+  animation: theater-ambient-pulse 5.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theater-ambient-glow {
+    animation: none;
+    box-shadow:
+      0 0 0 1px rgba(167, 139, 250, 0.4),
+      0 0 48px rgba(139, 92, 246, 0.35),
+      0 16px 40px rgba(0, 0, 0, 0.5);
+    filter: drop-shadow(0 0 12px rgba(139, 92, 246, 0.3));
+  }
+}
+
+/* WorldMapLive — aura neon mov în jurul hero-ului */
+@keyframes world-map-neon-aura {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(196, 181, 253, 0.45),
+      0 0 14px rgba(167, 139, 250, 0.5),
+      0 0 32px rgba(139, 92, 246, 0.42),
+      0 0 56px rgba(124, 58, 237, 0.32),
+      0 0 88px rgba(91, 33, 182, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(233, 213, 255, 0.55),
+      0 0 22px rgba(192, 132, 252, 0.6),
+      0 0 44px rgba(167, 139, 250, 0.48),
+      0 0 72px rgba(139, 92, 246, 0.38),
+      0 0 110px rgba(109, 40, 217, 0.26);
+  }
+}
+
+.world-map-live-glow {
+  border-radius: 1rem;
+  animation: world-map-neon-aura 4.2s ease-in-out infinite;
+  isolation: isolate;
+}
+
+.world-map-live-wrap {
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world-map-live-glow {
+    animation: none;
+    box-shadow:
+      0 0 0 1px rgba(196, 181, 253, 0.4),
+      0 0 18px rgba(139, 92, 246, 0.45),
+      0 0 40px rgba(124, 58, 237, 0.3);
+  }
 }

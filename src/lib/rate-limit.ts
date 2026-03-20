@@ -1,58 +1,76 @@
 /**
- * Rate limiter for API endpoints – uses Supabase RPC for atomic check.
+ * In-memory rate limiter for server actions.
+ * For production, use Redis or similar.
  */
 
-import { getSupabase } from "./supabase";
+const store = new Map<string, { count: number; resetAt: number }>();
 
-const WINDOW_MS = 60 * 1000;
-const MAX_REQUESTS = 15;
+const WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_LOGIN_PER_WINDOW = 5;
+const MAX_GIFT_PER_WINDOW = 20;
+const MAX_ACTIVITY_PER_WINDOW = 30;
 
-export async function checkRateLimit(
-  userId: string,
-  action: string
-): Promise<{ allowed: boolean; retryAfterMs?: number }> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase.rpc("rate_limit_check", {
-    p_user_id: userId,
-    p_action: action,
-    p_window_ms: WINDOW_MS,
-    p_max_requests: MAX_REQUESTS,
-  });
+export type RateLimitAction = "login" | "gift" | "activity" | "wallet_add";
 
-  if (error) {
-    console.error("[rate_limit]", error);
-    return { allowed: true };
+const MAX_WALLET_ADD_PER_WINDOW = 20;
+
+function getLimit(action: RateLimitAction): number {
+  switch (action) {
+    case "login":
+      return MAX_LOGIN_PER_WINDOW;
+    case "gift":
+      return MAX_GIFT_PER_WINDOW;
+    case "activity":
+      return MAX_ACTIVITY_PER_WINDOW;
+    case "wallet_add":
+      return MAX_WALLET_ADD_PER_WINDOW;
+    default:
+      return 10;
   }
-
-  const row = Array.isArray(data) ? data[0] : data;
-  const allowed = !!row?.allowed;
-  const retryAfterMs = row?.retry_after_ms as number | undefined;
-
-  return allowed ? { allowed: true } : { allowed: false, retryAfterMs: retryAfterMs ?? 60000 };
 }
 
-const MATCH_NEXT_WINDOW_MS = 60 * 1000;
-const MATCH_NEXT_MAX = 10;
+export function checkRateLimit(
+  userId: string,
+  action: RateLimitAction
+): { allowed: boolean; remaining: number; retryAfterMs?: number } {
+  const key = `${userId}:${action}`;
+  const now = Date.now();
+  const limit = getLimit(action);
 
-export async function checkMatchRateLimit(
-  userId: string
-): Promise<{ allowed: boolean; retryAfterMs?: number }> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase.rpc("rate_limit_check", {
-    p_user_id: userId,
-    p_action: "match_next",
-    p_window_ms: MATCH_NEXT_WINDOW_MS,
-    p_max_requests: MATCH_NEXT_MAX,
-  });
-
-  if (error) {
-    console.error("[rate_limit match_next]", error);
-    return { allowed: true };
+  let entry = store.get(key);
+  if (!entry || now > entry.resetAt) {
+    entry = { count: 0, resetAt: now + WINDOW_MS };
+    store.set(key, entry);
   }
 
-  const row = Array.isArray(data) ? data[0] : data;
-  const allowed = !!row?.allowed;
-  const retryAfterMs = row?.retry_after_ms as number | undefined;
+  entry.count++;
+  const remaining = Math.max(0, limit - entry.count);
+  const allowed = entry.count <= limit;
+  const retryAfterMs = allowed ? undefined : Math.max(0, entry.resetAt - now);
 
-  return allowed ? { allowed: true } : { allowed: false, retryAfterMs: retryAfterMs ?? 60000 };
+  return { allowed, remaining, retryAfterMs };
+}
+
+export function consumeRateLimit(userId: string, action: RateLimitAction): boolean {
+  const { allowed } = checkRateLimit(userId, action);
+  return allowed;
+}
+
+const MATCH_WINDOW_MS = 60 * 1000;
+const MAX_MATCH_PER_WINDOW = 30;
+const matchStore = new Map<string, { count: number; resetAt: number }>();
+
+export async function checkMatchRateLimit(userId: string): Promise<{ allowed: boolean; retryAfterMs?: number }> {
+  const now = Date.now();
+  let entry = matchStore.get(userId);
+  if (!entry || now > entry.resetAt) {
+    entry = { count: 0, resetAt: now + MATCH_WINDOW_MS };
+    matchStore.set(userId, entry);
+  }
+  entry.count++;
+  const allowed = entry.count <= MAX_MATCH_PER_WINDOW;
+  return {
+    allowed,
+    retryAfterMs: allowed ? undefined : Math.max(0, entry.resetAt - now),
+  };
 }

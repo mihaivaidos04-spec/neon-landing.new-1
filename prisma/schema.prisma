@@ -9,20 +9,113 @@ generator client {
 model User {
   id               String    @id @default(cuid())
   name             String?
-  email            String    @unique
+  email            String?   @unique
   emailVerified    DateTime?
   image            String?
-  country          String?   // ISO 3166-1 alpha-2 (e.g. RO, SA, US)
-  referralCount    Int       @default(0) // Number of users who signed up via this user's link
-  totalCoinsSpent   Int       @default(0) // Cached sum of all coin spends
-  hasEverPurchased  Boolean   @default(false) // True after first real-money purchase
-  tier              String    @default("ROOKIE")
-  lastLogin         DateTime  @default(now())
-  streakCount       Int       @default(0)
-  accounts          Account[]
+  coins            Int       @default(10)
+  isGhost          Boolean   @default(false)
+  country          String?
+  referralCount    Int       @default(0)
+  totalCoinsSpent  Int       @default(0)
+  hasEverPurchased Boolean   @default(false)
+  tier             String    @default("NEON_FREE")
+  lastLogin        DateTime  @default(now())
+  streakCount      Int       @default(0)
+  xp               Int       @default(0)
+  currentLevel     Int       @default(1)
+  ghostModeUntil   DateTime? // Status boost: Ghost Mode until this timestamp
+  isShadowBanned   Boolean   @default(false)
+  moderationFlags  String?   // JSON: { toxicCount, nsfwCount, lastFlaggedAt }
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  accounts         Account[]
   sessions         Session[]
+  sentTransactions Transaction[]   @relation("TransactionSender")
+  receivedTransactions Transaction[] @relation("TransactionReceiver")
+  inventory        UserInventory[]
+  notifications    Notification[]
+  activityLogs     ActivityLog[]
+  reportsGiven     Report[]  @relation("ReportReporter")
+  reportsReceived  Report[]  @relation("ReportReported")
+  stripePurchases         StripePurchase[]
+  walletCreditTransactions WalletCreditTransaction[]
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+
+  @@index([xp])
+  @@index([currentLevel])
+  @@index([isShadowBanned])
+}
+
+model Level {
+  id         String @id @default(cuid())
+  level      Int    @unique
+  xpRequired Int
+  badgeIcon  String
+}
+
+model UserInventory {
+  id        String   @id @default(cuid())
+  userId    String
+  itemId    String
+  itemType  String   // 'reaction_gift' | 'elite_gift' | 'status_boost'
+  quantity  Int      @default(1)
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
+  @@index([userId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // 'GIFT' | 'FOLLOW' | 'LEVEL_UP' | 'achievement'
+  title     String
+  message   String?
+  body      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Report {
+  id             String   @id @default(cuid())
+  reporterId     String
+  reportedUserId String
+  reason         String?
+  status         String   @default("pending") // pending | reviewed | dismissed | action_taken
+  adminNotes     String?
+  createdAt      DateTime @default(now())
+  reviewedAt     DateTime?
+
+  reporter   User @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported   User @relation("ReportReported", fields: [reportedUserId], references: [id], onDelete: Cascade)
+
+  @@index([reporterId])
+  @@index([reportedUserId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String
+  activityType String // 'login' | 'gift_sent' | 'gift_received'
+  xpEarned   Int      @default(0)
+  metadata   String?  // JSON: { coins, giftType, etc }
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model Account {
@@ -72,6 +165,105 @@ model Streak {
   loyalBadgeUnlockedAt DateTime?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Transaction {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  amount     Int
+  type       String   // 'GIFT' | 'PURCHASE' | 'STRIPE_PURCHASE'
+  giftType   String?
+  itemId     String?  // For shop purchases
+  promocodeId String? // If used a creator promocode
+  /** Stripe Checkout: 'completed' when coins credited; null for legacy gift rows */
+  status          String?
+  /** Idempotency — one ledger row per Checkout session */
+  stripeSessionId String? @unique
+  createdAt  DateTime @default(now())
+
+  sender   User @relation("TransactionSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("TransactionReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  promocode Promocode? @relation(fields: [promocodeId], references: [id], onDelete: SetNull)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+  @@index([promocodeId])
+}
+
+/**
+ * Stripe (and future) wallet credits — one row per successful checkout credit.
+ * Distinct from peer-to-peer `Transaction` (gifts).
+ */
+model WalletCreditTransaction {
+  id              String   @id @default(cuid())
+  userId          String
+  amount          Int
+  status          String
+  provider        String   @default("stripe")
+  stripeSessionId String?  @unique
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("wallet_credit_transactions")
+}
+
+/** Stripe Checkout purchases (coins / platform credits) — separate from peer-to-peer Transaction gifts */
+model StripePurchase {
+  id              String   @id @default(cuid())
+  userId          String
+  amountUsd       Float
+  currency        String   @default("USD")
+  status          String   // pending | completed | failed
+  stripeSessionId String   @unique
+  coinsAdded      Int      @default(0)
+  packId          String?  // small | medium | whale | null for legacy plan checkouts
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Promocode {
+  id         String   @id @default(cuid())
+  creatorId  String
+  code       String   @unique
+  bonusPercent Int    @default(10)
+  usedCount  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  transactions Transaction[]
+
+  @@index([creatorId])
+}
+
+model CreatorPayout {
+  id        String   @id @default(cuid())
+  userId    String
+  amountEur Decimal  @db.Decimal(10, 2)
+  status    String   // 'pending' | 'completed' | 'failed'
+  paidAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model CreatorGoal {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  title       String
+  targetCoins Int
+  currentCoins Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([userId])
 }

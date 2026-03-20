@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getBrowserLocale } from "../lib/content-i18n";
-import { buildTickerEvent } from "../lib/live-ticker-data";
+import { buildTickerEvent, type TickerItem } from "../lib/live-ticker-data";
+import LazyUserFlag from "./LazyUserFlag";
 
 const FAKE_EVENT_MIN_MS = 30_000;
 const FAKE_EVENT_MAX_MS = 60_000;
@@ -27,7 +28,7 @@ function LightningIcon({ className }: { className?: string }) {
 }
 
 export default function LiveTicker({ locale }: Props) {
-  const [items, setItems] = useState<string[]>(() => []);
+  const [items, setItems] = useState<TickerItem[]>(() => []);
   const [mounted, setMounted] = useState(false);
   const resolvedLocale = mounted ? (locale ?? getBrowserLocale()) : "ro";
 
@@ -42,15 +43,12 @@ export default function LiveTicker({ locale }: Props) {
     setItems(initial);
   }, [mounted, resolvedLocale]);
 
-  const addEvent = useCallback(
-    (message: string) => {
-      setItems((prev) => {
-        const next = [message, ...prev].slice(0, MAX_ITEMS);
-        return next;
-      });
-    },
-    []
-  );
+  const addEvent = useCallback((item: TickerItem) => {
+    setItems((prev) => {
+      const next = [item, ...prev].slice(0, MAX_ITEMS);
+      return next;
+    });
+  }, []);
 
   // Fake events every 30-60 seconds
   useEffect(() => {
@@ -90,14 +88,17 @@ export default function LiveTicker({ locale }: Props) {
       aria-live="polite"
     >
       <div className="live-ticker-track flex animate-ticker-scroll items-center gap-6 whitespace-nowrap">
-        {[...items, ...items].map((msg, i) => (
+        {[...items, ...items].map((item, i) => (
           <div
-            key={`${i}-${msg.slice(0, 20)}`}
+            key={`${i}-${item.text.slice(0, 20)}`}
             className="flex shrink-0 items-center gap-2"
           >
             <LightningIcon className="h-3.5 w-3.5 shrink-0 text-violet-400/90" />
+            {item.countryCode && (
+              <LazyUserFlag code={item.countryCode} locale={resolvedLocale} size="sm" />
+            )}
             <span className="text-[11px] font-medium tracking-wide text-white/80 sm:text-xs">
-              {msg}
+              {item.text}
             </span>
           </div>
         ))}

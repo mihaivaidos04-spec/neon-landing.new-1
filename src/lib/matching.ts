@@ -113,7 +113,7 @@ async function runMatching(
   }
 
   // 2. Find waiting users: boosted first, then !is_slow_queue (Quick Charge), then by priority_score desc, then FIFO
-  let query = supabase
+  const query = supabase
     .from("active_users")
     .select("user_id, boosted_at, is_priority, is_slow_queue, priority_score, joined_at")
     .eq("status", "waiting")

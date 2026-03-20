@@ -15,6 +15,8 @@ import CountrySelector from "./CountrySelector";
 import GiftLayer, { type ActiveGift } from "./GiftLayer";
 import BioCard from "./BioCard";
 import VideoSkeletonLoader from "./VideoSkeletonLoader";
+import TheaterGiftDrawer from "./TheaterGiftDrawer";
+import type { GiftId } from "./GiftsBar";
 import type { ReactionId } from "../lib/reactions";
 import type { RankId } from "../lib/ranks";
 
@@ -81,6 +83,9 @@ type Props = {
   partnerInterests?: string[];
   partnerGiftsReceived?: number;
   partnerName?: string;
+  /** Partner country for flag on bio card */
+  partnerCountryCode?: string | null;
+  partnerLocale?: ContentLocale;
   onBioCardDismiss?: () => void;
   /** Show skeleton during partner video load/transition */
   showPartnerSkeleton?: boolean;
@@ -90,6 +95,10 @@ type Props = {
   onReport?: () => void;
   /** Show report button (when connected with partner) */
   showReportButton?: boolean;
+  /** Theater overlay gift drawer (coin check via parent) */
+  theaterGiftsEnabled?: boolean;
+  theaterGiftCoins?: number;
+  onTheaterGift?: (giftId: GiftId) => void | Promise<void>;
 };
 
 export default function VideoBridge({
@@ -113,6 +122,8 @@ export default function VideoBridge({
   showCrownOnSelf = false,
   leaderboard = [],
   leaderboardLocale = locale,
+  leaderboardCurrentUserId,
+  onGoGhost,
   partnerVideoBlurred = false,
   partnerVideoCountdown = null,
   onInstantReveal,
@@ -128,11 +139,16 @@ export default function VideoBridge({
   partnerInterests = [],
   partnerGiftsReceived = 0,
   partnerName = "Partner",
+  partnerCountryCode = null,
+  partnerLocale = locale,
   onBioCardDismiss,
   showPartnerSkeleton = false,
   userRank = "bronze",
   onReport,
   showReportButton = false,
+  theaterGiftsEnabled = false,
+  theaterGiftCoins = 0,
+  onTheaterGift,
 }: Props) {
   const t = getContentT(locale);
   const showVipBorder = partnerIsPremium || partnerIsVipOrTopSpender;
@@ -144,13 +160,21 @@ export default function VideoBridge({
   const percent = showBar ? (premiumSecondsLeft / premiumTotal) * 100 : 100;
 
   return (
-    <div className={`video-player-wrap video-glow relative w-full overflow-hidden rounded-xl bg-black ${rankGlowClass}`}>
+    <div className={`video-player-wrap video-glow relative w-full overflow-hidden rounded-2xl bg-black ${rankGlowClass}`}>
       <div className="relative aspect-video w-full">
+        {theaterGiftsEnabled && onTheaterGift && (
+          <TheaterGiftDrawer
+            locale={locale}
+            coins={theaterGiftCoins}
+            enabled={theaterGiftsEnabled}
+            onSelectGift={onTheaterGift}
+          />
+        )}
         <div className="flex flex-col gap-2">
           <LiveLeaderboard leaderboard={leaderboard} locale={leaderboardLocale} currentUserId={leaderboardCurrentUserId} onGoGhost={onGoGhost} />
           <div className="flex items-center gap-1.5">
-            <InviteFriendsButton locale={leaderboardLocale} userId={leaderboardCurrentUserId} compact />
-            <CountrySelector userId={leaderboardCurrentUserId} compact />
+            <InviteFriendsButton locale={leaderboardLocale} userId={leaderboardCurrentUserId ?? null} compact />
+            <CountrySelector userId={leaderboardCurrentUserId ?? null} compact />
           </div>
         </div>
         {/* Partner video (main) - blur when connection degraded or initial 5s; VIP gradient border */}
@@ -215,6 +239,8 @@ export default function VideoBridge({
           {showBioCard && (
             <BioCard
               partnerName={partnerName}
+              partnerCountryCode={partnerCountryCode}
+              locale={partnerLocale}
               interests={partnerInterests}
               totalGiftsReceived={partnerGiftsReceived}
               visible={showBioCard}

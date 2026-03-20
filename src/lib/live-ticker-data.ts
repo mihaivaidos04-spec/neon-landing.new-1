@@ -6,6 +6,13 @@
 
 import type { ContentLocale } from "./content-i18n";
 import { getRandomDonorName, getRandomPurchaserName } from "./random-names";
+import { pickRandomDemoCountry } from "./demo-country-pool";
+
+export type TickerItem = {
+  text: string;
+  /** Country for donor-style events (gift-related); generic events may omit */
+  countryCode: string | null;
+};
 
 export type TickerEventType =
   | "premium_gift"
@@ -134,12 +141,16 @@ const DONOR_EVENTS: TickerEventType[] = [
 export function buildTickerEvent(
   locale: ContentLocale,
   type?: TickerEventType
-): string {
+): TickerItem {
   const templates = TICKER_TEMPLATES[locale];
   const eventType = type ?? pick(EVENT_TYPES);
   const template = templates[eventType];
   const user = DONOR_EVENTS.includes(eventType)
     ? getRandomDonorName(locale)
     : getRandomPurchaserName(locale);
-  return template(user);
+  const isDonorStyle = DONOR_EVENTS.includes(eventType);
+  return {
+    text: template(user),
+    countryCode: isDonorStyle ? pickRandomDemoCountry() : null,
+  };
 }

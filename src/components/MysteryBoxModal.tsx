@@ -33,6 +33,54 @@ function rollClient(): MysteryBoxResult {
   return "nothing";
 }
 
+/** Neon holo crate — rotating conic rim + scan + grid */
+function FuturisticMysteryBox({
+  emoji,
+  intense = false,
+}: {
+  emoji: string;
+  intense?: boolean;
+}) {
+  return (
+    <div className="relative h-36 w-36 sm:h-40 sm:w-40">
+      <motion.div
+        className="absolute -inset-[3px] rounded-2xl blur-[0.5px]"
+        style={{
+          background:
+            "conic-gradient(from 90deg at 50% 50%, #06b6d4, #8b5cf6, #ec4899, #22d3ee, #a855f7, #06b6d4)",
+        }}
+        animate={{ rotate: 360 }}
+        transition={{ duration: intense ? 2.2 : 5.5, repeat: Infinity, ease: "linear" }}
+      />
+      <div className="absolute inset-[2px] overflow-hidden rounded-[0.85rem] bg-gradient-to-br from-[#0a0614] via-[#050508] to-[#0c1020] shadow-[inset_0_0_50px_rgba(139,92,246,0.12)]">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.14]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(34,211,238,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.35) 1px, transparent 1px)",
+            backgroundSize: "12px 12px",
+          }}
+        />
+        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[0.85rem]">
+          <div
+            className="mystery-holo-sweep absolute left-0 right-0 top-0 h-[45%] bg-gradient-to-b from-cyan-400/35 via-fuchsia-400/15 to-transparent blur-md"
+            aria-hidden
+          />
+        </div>
+        <div className="pointer-events-none absolute inset-0 rounded-[0.85rem] border border-cyan-400/20 shadow-[inset_0_0_24px_rgba(6,182,212,0.08)]" />
+        <div className="relative flex h-full w-full items-center justify-center">
+          <span
+            className={`mystery-box-emoji select-none text-5xl sm:text-6xl ${intense ? "scale-110" : ""}`}
+            aria-hidden
+          >
+            {emoji}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function fireConfetti() {
   confetti({
     particleCount: 80,
@@ -173,28 +221,23 @@ export default function MysteryBoxModal({
         onClick={(e) => e.target === e.currentTarget && phase === "idle" && handleClose()}
       >
         <motion.div
-          className="modal-neon relative w-full max-w-xl overflow-hidden rounded-2xl border border-amber-500/30 p-6 shadow-2xl"
+          className="modal-neon relative w-full max-w-xl overflow-hidden rounded-2xl border border-cyan-500/25 bg-[#040408]/95 p-6 shadow-[0_0_60px_rgba(6,182,212,0.12),0_0_100px_rgba(139,92,246,0.08)] ring-1 ring-fuchsia-500/20 backdrop-blur-md"
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <h3 className="mb-4 text-center text-xl font-bold text-amber-400">
+          <h3 className="mb-1 text-center text-xl font-bold tracking-wide text-transparent bg-gradient-to-r from-cyan-300 via-fuchsia-300 to-violet-300 bg-clip-text">
             Mystery Box
           </h3>
+          <p className="mb-4 text-center text-[10px] font-medium uppercase tracking-[0.35em] text-cyan-400/50">
+            Neural drop • live odds
+          </p>
 
           {phase === "idle" && (
             <div className="flex flex-col items-center gap-6">
-              <div className="relative h-32 w-32">
-                <div
-                  className="absolute inset-0 rounded-xl border-2 border-amber-600/60 bg-gradient-to-br from-amber-900/80 to-amber-950 shadow-lg"
-                  style={{ boxShadow: "inset 0 0 30px rgba(251,191,36,0.2)" }}
-                />
-                <div className="absolute inset-0 flex items-center justify-center text-5xl">
-                  📦
-                </div>
-              </div>
-              <p className="text-center text-sm text-white/70">
+              <FuturisticMysteryBox emoji="📦" />
+              <p className="text-center text-sm text-white/65">
                 {MYSTERY_BOX_COST} coins • 60% small, 5% big, 35% other rewards
               </p>
               <div className="flex gap-3">
@@ -209,7 +252,7 @@ export default function MysteryBoxModal({
                   type="button"
                   onClick={() => handleOpen()}
                   disabled={!canAfford}
-                  className="rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-bold text-black transition-colors hover:bg-amber-400 disabled:opacity-50"
+                  className="rounded-xl bg-gradient-to-r from-cyan-500 via-fuchsia-500 to-violet-600 px-6 py-2.5 text-sm font-bold text-white shadow-[0_0_24px_rgba(236,72,153,0.35)] transition-all hover:brightness-110 disabled:opacity-50"
                 >
                   Open ({MYSTERY_BOX_COST})
                 </button>
@@ -252,17 +295,14 @@ export default function MysteryBoxModal({
 
           {phase === "opening" && (
             <div className="flex flex-col items-center gap-6 py-4">
-              <div className="relative h-32 w-32">
-                <div
-                  className="absolute inset-0 rounded-xl border-2 border-amber-600/60 bg-gradient-to-br from-amber-900/80 to-amber-950"
-                  style={{ boxShadow: "inset 0 0 30px rgba(251,191,36,0.3)" }}
-                />
-                <div className="absolute inset-0 flex items-center justify-center text-5xl">
-                  ✨
-                </div>
-              </div>
-              <p className="animate-pulse text-sm text-amber-400/90">
-                Opening...
+              <motion.div
+                animate={{ scale: [1, 1.08, 1], opacity: [1, 0.92, 1] }}
+                transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <FuturisticMysteryBox emoji="✨" intense />
+              </motion.div>
+              <p className="animate-pulse text-sm font-medium text-cyan-300/90">
+                Materializing reward stream…
               </p>
             </div>
           )}

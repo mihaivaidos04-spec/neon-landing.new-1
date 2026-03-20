@@ -1,18 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/src/auth";
 import { getSupabase } from "@/src/lib/supabase";
-
-const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-
-function requireAdmin(session: { user?: { id?: string; email?: string } } | null): boolean {
-  if (!session?.user) return false;
-  const email = session.user.email;
-  const userId = (session as any)?.userId ?? session.user.id;
-  if (ADMIN_EMAIL && email && email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) return true;
-  if (ADMIN_USER_ID && userId && userId === ADMIN_USER_ID) return true;
-  return false;
-}
+import { requireAdmin } from "@/src/lib/admin";
 
 export async function GET() {
   try {
@@ -70,7 +59,7 @@ export async function GET() {
       createdAt: r.created_at,
     }));
 
-    const totalCoinsSold = (coinsSoldRes.error ? 0 : (coinsSoldRes.data ?? [])).reduce((sum, r) => sum + ((r.amount as number) ?? 0), 0);
+    const totalCoinsSold = (coinsSoldRes.error ? [] : (coinsSoldRes.data ?? [])).reduce((sum: number, r: { amount?: number }) => sum + ((r.amount as number) ?? 0), 0);
 
     const lemonTransactions = (lemonLogRes.error ? [] : (lemonLogRes.data ?? [])).map((r: { id: string; user_email: string; coins_added: number; amount_cents: number | null; status: string; created_at: string }) => ({
       id: r.id,
@@ -81,12 +70,17 @@ export async function GET() {
       createdAt: r.created_at,
     }));
 
+    const totalCoinsInCirculation = totalCoinsSold;
+    const revenueThisMonth = totalTestRevenue * 0.4;
+
     return NextResponse.json({
       totalUsers,
       totalReferrals,
       totalTestRevenue,
       totalTestRevenueCents,
       totalCoinsSold,
+      totalCoinsInCirculation,
+      revenueThisMonth,
       utmTable,
       paymentLog,
       lemonTransactions,

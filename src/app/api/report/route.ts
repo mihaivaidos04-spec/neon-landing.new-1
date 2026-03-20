@@ -1,16 +1,22 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/src/auth";
 import { addReport } from "@/src/lib/report-store";
+import { prisma } from "@/src/lib/prisma";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const session = await auth();
-    const reporterId = (session as any)?.userId ?? session?.user?.id ?? `guest-${Date.now()}`;
+    const reporterId = (session as { userId?: string })?.userId ?? (session?.user as { id?: string })?.id;
 
     const body = await req.json().catch(() => ({}));
     const reportedUserId = body?.reportedUserId ?? body?.partnerId;
+    const reason = typeof body?.reason === "string" ? body.reason : "inappropriate_behavior";
     if (!reportedUserId || typeof reportedUserId !== "string") {
       return NextResponse.json({ error: "Missing reportedUserId" }, { status: 400 });
+    }
+
+    if (!reporterId || typeof reporterId !== "string") {
+      return NextResponse.json({ error: "Sign in to report" }, { status: 401 });
     }
 
     if (reporterId === reportedUserId) {
@@ -18,6 +24,10 @@ export async function POST(req: Request) {
     }
 
     await addReport(reportedUserId);
+
+    await prisma.report.create({
+      data: { reporterId, reportedUserId, reason, status: "pending" },
+    });
 
     return NextResponse.json({ ok: true, message: "Report submitted" });
   } catch (err) {

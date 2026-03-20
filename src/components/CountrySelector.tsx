@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { countryCodeToFlagEmoji } from "../lib/country-flags";
 
 const COMMON_COUNTRIES: { code: string; name: string }[] = [
@@ -48,6 +49,7 @@ type Props = {
 };
 
 export default function CountrySelector({ userId, compact = false }: Props) {
+  const { update: updateSession } = useSession();
   const [countryCode, setCountryCode] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -72,6 +74,7 @@ export default function CountrySelector({ userId, compact = false }: Props) {
       if (res.ok) {
         setCountryCode(data.countryCode);
         setOpen(false);
+        void updateSession?.();
       }
     } finally {
       setLoading(false);

@@ -23,10 +23,12 @@ export async function POST(req: NextRequest) {
 
   let variantId: string | number;
   let userId: string | undefined;
+  let promocodeId: string | undefined;
   try {
     const body = await req.json().catch(() => ({}));
     variantId = body.variantId ?? body.variant_id;
     userId = typeof body.userId === "string" ? body.userId : undefined;
+    promocodeId = typeof body.promocodeId === "string" ? body.promocodeId : undefined;
     if (variantId == null || variantId === "") {
       return NextResponse.json(
         { error: "variantId is required" },
@@ -47,7 +49,10 @@ export async function POST(req: NextRequest) {
   const redirectUrl = `${baseUrl.replace(/\/$/, "")}/checkout/success`;
 
   const checkoutData: Record<string, unknown> = {};
-  if (userId) checkoutData.custom = { user_id: userId };
+  const custom: Record<string, string> = {};
+  if (userId) custom.user_id = userId;
+  if (promocodeId) custom.promocode_id = promocodeId;
+  if (Object.keys(custom).length > 0) checkoutData.custom = custom;
 
   const { data, error } = await createCheckout(
     storeId,

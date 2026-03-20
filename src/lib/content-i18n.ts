@@ -78,6 +78,8 @@ export type ContentMessagesType = {
   loginWallTitle: string;
   loginWithApple: string;
   loginWithGoogle: string;
+  loginWithFacebook: string;
+  loginWithDiscord: string;
   loginWithSnapchat: string;
   otherMethods: string;
   loginWithEmail: string;
@@ -89,6 +91,8 @@ export type ContentMessagesType = {
   emailLinkSent: string;
   sendMagicLink: string;
   firstLoginBonus: string;
+  /** Second line under login gateway (e.g. “Start connecting globally.”) */
+  loginGatewayTagline: string;
   linkAccountToSaveProgress: string;
   connectAccount: string;
   // FAQ
@@ -247,6 +251,8 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWallTitle: "Conectează-te la NEON",
     loginWithApple: "Continuă cu Apple",
     loginWithGoogle: "Continuă cu Google",
+    loginWithFacebook: "Continuă cu Facebook",
+    loginWithDiscord: "Continuă cu Discord",
     loginWithSnapchat: "Continuă cu Snapchat",
     otherMethods: "Alte metode",
     loginWithEmail: "Email (link magic)",
@@ -258,6 +264,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     emailLinkSent: "✓ Link trimis – verifică email-ul",
     sendMagicLink: "Trimite link de conectare",
     firstLoginBonus: "+10 Bănuți la prima conectare",
+    loginGatewayTagline: "Începe să te conectezi cu întreaga lume.",
     linkAccountToSaveProgress: "Leagă-ți contul ca să nu pierzi bănuții și progresul.",
     connectAccount: "Conectare",
     faqTitle: "Întrebări frecvente",
@@ -397,6 +404,8 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWallTitle: "Sign in to NEON",
     loginWithApple: "Continue with Apple",
     loginWithGoogle: "Continue with Google",
+    loginWithFacebook: "Continue with Facebook",
+    loginWithDiscord: "Continue with Discord",
     loginWithSnapchat: "Continue with Snapchat",
     otherMethods: "Other methods",
     loginWithEmail: "Email (magic link)",
@@ -407,7 +416,8 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     emailNoPasswordNeeded: "No password needed, just your email",
     emailLinkSent: "✓ Link sent – check your email",
     sendMagicLink: "Send login link",
-    firstLoginBonus: "+10 Coins on first sign-in",
+    firstLoginBonus: "+10 Coins on your first sign-in!",
+    loginGatewayTagline: "Start connecting globally.",
     linkAccountToSaveProgress: "Link your account so you don't lose coins and progress.",
     connectAccount: "Sign in",
     faqTitle: "FAQ",
@@ -547,6 +557,8 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWallTitle: "Bei NEON anmelden",
     loginWithApple: "Mit Apple fortfahren",
     loginWithGoogle: "Mit Google fortfahren",
+    loginWithFacebook: "Mit Facebook fortfahren",
+    loginWithDiscord: "Mit Discord fortfahren",
     loginWithSnapchat: "Mit Snapchat fortfahren",
     otherMethods: "Andere Methoden",
     loginWithEmail: "E-Mail (Magic Link)",
@@ -558,6 +570,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     emailLinkSent: "✓ Link gesendet – E-Mail prüfen",
     sendMagicLink: "Anmeldelink senden",
     firstLoginBonus: "+10 Coins bei erster Anmeldung",
+    loginGatewayTagline: "Verbinde dich mit der ganzen Welt.",
     linkAccountToSaveProgress: "Konto verknüpfen, um Coins und Fortschritt zu behalten.",
     connectAccount: "Anmelden",
     faqTitle: "Häufige Fragen",
@@ -697,6 +710,8 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWallTitle: "Accedi a NEON",
     loginWithApple: "Continua con Apple",
     loginWithGoogle: "Continua con Google",
+    loginWithFacebook: "Continua con Facebook",
+    loginWithDiscord: "Continua con Discord",
     loginWithSnapchat: "Continua con Snapchat",
     otherMethods: "Altri metodi",
     loginWithEmail: "Email (link magico)",
@@ -708,6 +723,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     emailLinkSent: "✓ Link inviato – controlla l'email",
     sendMagicLink: "Invia link di accesso",
     firstLoginBonus: "+10 Monete al primo accesso",
+    loginGatewayTagline: "Inizia a connetterti con il mondo intero.",
     linkAccountToSaveProgress: "Collega l'account per non perdere monete e progressi.",
     connectAccount: "Accedi",
     faqTitle: "Domande frequenti",
@@ -847,6 +863,8 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWallTitle: "Iniciar sesión en NEON",
     loginWithApple: "Continuar con Apple",
     loginWithGoogle: "Continuar con Google",
+    loginWithFacebook: "Continuar con Facebook",
+    loginWithDiscord: "Continuar con Discord",
     loginWithSnapchat: "Continuar con Snapchat",
     otherMethods: "Otros métodos",
     loginWithEmail: "Email (enlace mágico)",
@@ -858,6 +876,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     emailLinkSent: "✓ Enlace enviado – revisa tu email",
     sendMagicLink: "Enviar enlace",
     firstLoginBonus: "+10 monedas en el primer acceso",
+    loginGatewayTagline: "Empieza a conectar con el mundo entero.",
     linkAccountToSaveProgress: "Vincula tu cuenta para no perder monedas ni progreso.",
     connectAccount: "Iniciar sesión",
     faqTitle: "Preguntas frecuentes",
@@ -997,6 +1016,8 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWallTitle: "Connectez-vous à NEON",
     loginWithApple: "Continuer avec Apple",
     loginWithGoogle: "Continuer avec Google",
+    loginWithFacebook: "Continuer avec Facebook",
+    loginWithDiscord: "Continuer avec Discord",
     loginWithSnapchat: "Continuer avec Snapchat",
     otherMethods: "Autres méthodes",
     loginWithEmail: "E-mail (lien magique)",
@@ -1008,6 +1029,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     emailLinkSent: "✓ Lien envoyé – vérifie ton email",
     sendMagicLink: "Envoyer le lien",
     firstLoginBonus: "+10 pièces à la première connexion",
+    loginGatewayTagline: "Commence à te connecter avec le monde entier.",
     linkAccountToSaveProgress: "Liez votre compte pour ne pas perdre vos pièces et votre progression.",
     connectAccount: "Connexion",
     faqTitle: "FAQ",
@@ -1147,6 +1169,8 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWallTitle: "Entrar no NEON",
     loginWithApple: "Continuar com Apple",
     loginWithGoogle: "Continuar com Google",
+    loginWithFacebook: "Continuar com Facebook",
+    loginWithDiscord: "Continuar com Discord",
     loginWithSnapchat: "Continuar com Snapchat",
     otherMethods: "Outros métodos",
     loginWithEmail: "Email (link mágico)",
@@ -1158,6 +1182,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     emailLinkSent: "✓ Link enviado – verifique o email",
     sendMagicLink: "Enviar link",
     firstLoginBonus: "+10 moedas no primeiro acesso",
+    loginGatewayTagline: "Começa a conectar-te com o mundo inteiro.",
     linkAccountToSaveProgress: "Vincule a conta para não perder moedas e progresso.",
     connectAccount: "Entrar",
     faqTitle: "Perguntas frequentes",
@@ -1297,6 +1322,8 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWallTitle: "Inloggen op NEON",
     loginWithApple: "Doorgaan met Apple",
     loginWithGoogle: "Doorgaan met Google",
+    loginWithFacebook: "Doorgaan met Facebook",
+    loginWithDiscord: "Doorgaan met Discord",
     loginWithSnapchat: "Doorgaan met Snapchat",
     otherMethods: "Andere methoden",
     loginWithEmail: "E-mail (magic link)",
@@ -1308,6 +1335,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     emailLinkSent: "✓ Link verzonden – check je e-mail",
     sendMagicLink: "Stuur inloglink",
     firstLoginBonus: "+10 munten bij eerste inlog",
+    loginGatewayTagline: "Begin wereldwijd te verbinden.",
     linkAccountToSaveProgress: "Koppel je account om munten en voortgang te behouden.",
     connectAccount: "Inloggen",
     faqTitle: "Veelgestelde vragen",
@@ -1447,6 +1475,8 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWallTitle: "Zaloguj się do NEON",
     loginWithApple: "Kontynuuj z Apple",
     loginWithGoogle: "Kontynuuj z Google",
+    loginWithFacebook: "Kontynuuj z Facebook",
+    loginWithDiscord: "Kontynuuj z Discord",
     loginWithSnapchat: "Kontynuuj ze Snapchat",
     otherMethods: "Inne metody",
     loginWithEmail: "E-mail (link magiczny)",
@@ -1458,6 +1488,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     emailLinkSent: "✓ Link wysłany – sprawdź email",
     sendMagicLink: "Wyślij link",
     firstLoginBonus: "+10 monet przy pierwszym logowaniu",
+    loginGatewayTagline: "Zacznij łączyć się ze światem.",
     linkAccountToSaveProgress: "Połącz konto, aby nie stracić monet i postępów.",
     connectAccount: "Zaloguj się",
     faqTitle: "Często zadawane pytania",
@@ -1597,6 +1628,8 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginWallTitle: "NEON'a giriş yap",
     loginWithApple: "Apple ile devam",
     loginWithGoogle: "Google ile devam",
+    loginWithFacebook: "Facebook ile devam",
+    loginWithDiscord: "Discord ile devam",
     loginWithSnapchat: "Snapchat ile devam",
     otherMethods: "Diğer yöntemler",
     loginWithEmail: "E-posta (sihirli link)",
@@ -1608,6 +1641,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     emailLinkSent: "✓ Link gönderildi – e-postanızı kontrol edin",
     sendMagicLink: "Giriş linki gönder",
     firstLoginBonus: "İlk girişte +10 jeton",
+    loginGatewayTagline: "Dünyayla bağlantı kurmaya başla.",
     linkAccountToSaveProgress: "Jeton ve ilerlemenizi kaybetmemek için hesabı bağlayın.",
     connectAccount: "Giriş yap",
     faqTitle: "Sıkça sorulan sorular",

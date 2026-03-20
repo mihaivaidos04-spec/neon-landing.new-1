@@ -5,6 +5,8 @@ import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
 import type { ChatMessage } from "../lib/chat-messages-data";
 import { moderateText } from "../lib/text-moderation";
+import { truncateChatDisplayUsername } from "../lib/chat-display-username-limit";
+import LazyUserFlag from "./LazyUserFlag";
 
 export type { ChatMessage } from "../lib/chat-messages-data";
 export { generateFakeMessage } from "../lib/chat-messages-data";
@@ -20,6 +22,8 @@ type Props = {
   onSendMessage?: (text: string) => void;
   chatBlocked?: boolean;
   chatBlockedMinutes?: number;
+  /** Current user country (shown next to "You" in chat) */
+  viewerCountryCode?: string | null;
 };
 
 export default function ChatPanel({
@@ -33,6 +37,7 @@ export default function ChatPanel({
   onSendMessage,
   chatBlocked = false,
   chatBlockedMinutes = 0,
+  viewerCountryCode = null,
 }: Props) {
   const [input, setInput] = useState("");
   const t = getContentT(locale);
@@ -68,14 +73,22 @@ export default function ChatPanel({
       );
     }
     if (m.isDonor) return null;
-    const safeUser = moderateText(m.user ?? "").filtered.replace(/_/g, " ");
+    const safeUser = truncateChatDisplayUsername(
+      moderateText(m.user ?? "").filtered.replace(/_/g, " ")
+    );
     const safeText = moderateText(m.text).filtered;
+    const flagCode =
+      m.countryCode ??
+      (safeUser.toLowerCase() === "you" ? viewerCountryCode : null);
     return (
       <div
         key={m.id}
         className="rounded-lg px-2 py-1.5 text-sm text-white/90"
       >
-        <span className="font-semibold">{safeUser}</span>
+        <span className="inline-flex items-center gap-1.5 font-semibold">
+          <LazyUserFlag code={flagCode} locale={locale} size="sm" />
+          <span>{safeUser}</span>
+        </span>
         <span>: </span>
         <span>{safeText}</span>
       </div>
@@ -144,13 +157,13 @@ export default function ChatPanel({
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder="Type a message..."
                 maxLength={200}
-                className="flex-1 rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-[#8b5cf6]/60 focus:outline-none"
+                className="min-h-11 flex-1 rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-[#8b5cf6]/60 focus:outline-none"
               />
               <button
                 type="button"
                 onClick={handleSend}
                 disabled={!input.trim()}
-                className="rounded-lg bg-[#8b5cf6] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                className="min-h-11 shrink-0 rounded-lg bg-[#8b5cf6] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
               >
                 Send
               </button>

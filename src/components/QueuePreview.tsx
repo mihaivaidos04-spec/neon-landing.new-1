@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
+import UserListSkeleton from "./UserListSkeleton";
 import { QUEUE_UNLOCK_COST, PRIORITY_BOOST_COST } from "../lib/coins";
 import { feedbackSuccess } from "../lib/feedback";
 
@@ -118,14 +120,7 @@ export default function QueuePreview({
         </button>
       </div>
       {loading ? (
-        <div className="flex gap-3">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-16 w-16 animate-pulse rounded-full bg-white/10"
-            />
-          ))}
-        </div>
+        <UserListSkeleton count={3} />
       ) : users.length === 0 ? (
         <p className="text-xs text-white/50">{t.queuePreviewEmpty}</p>
       ) : (
@@ -139,14 +134,18 @@ export default function QueuePreview({
                 className="flex flex-col items-center gap-2"
               >
                 <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-white/20 bg-zinc-800">
-                  <img
+                  <Image
                     src={getAvatarUrl(userId)}
                     alt=""
-                    className="h-full w-full object-cover"
+                    fill
+                    sizes="64px"
+                    className="object-cover"
                     style={{
                       filter: isUnlocked ? "none" : "blur(24px)",
                       transition: "filter 0.3s ease",
                     }}
+                    placeholder="blur"
+                    blurDataURL="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzFmMjAzMyIvPjwvc3ZnPg=="
                   />
                 </div>
                 {!isUnlocked && (

@@ -1,43 +1,16 @@
 import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import Apple from "next-auth/providers/apple";
 import Google from "next-auth/providers/google";
+import Facebook from "next-auth/providers/facebook";
 import Discord from "next-auth/providers/discord";
-import Reddit from "next-auth/providers/reddit";
 import EmailProvider from "next-auth/providers/email";
-import type { OAuthConfig } from "next-auth/providers";
-import { prisma } from "./lib/prisma";
+import { prisma } from "@/src/lib/prisma";
+import { getWalletBalance } from "@/src/lib/wallet";
+import { getSupabase } from "@/src/lib/supabase";
+import { addLoginXp } from "@/src/lib/login-xp";
 
-/** Snapchat OAuth2 (Snap Kit) – custom provider */
-function Snapchat(options: { clientId: string; clientSecret: string }): OAuthConfig<any> {
-  return {
-    id: "snapchat",
-    name: "Snapchat",
-    type: "oauth",
-    authorization: {
-      url: "https://accounts.snap.com/oauth2/v2/authorize",
-      params: { scope: "https://auth.snap.com/display_name https://auth.snap.com/bitmoji/avatar" },
-    },
-    token: "https://accounts.snap.com/oauth2/v2/token",
-    userinfo: "https://api.snap.com/v2/me",
-    profile(profile: any) {
-      return {
-        id: profile?.sub ?? profile?.id,
-        name: profile?.display_name ?? profile?.name ?? null,
-        image: profile?.bitmoji?.avatar_image_url ?? profile?.picture ?? null,
-        email: profile?.email ?? null,
-      };
-    },
-    style: { bg: "#FFFC00", text: "#000" },
-    ...options,
-  };
-}
-
-/** Email Magic Link – no password */
-async function sendVerificationRequest(params: {
-  identifier: string;
-  url: string;
-}) {
+/** Email Magic Link – no password (Resend sau EMAIL_SERVER) */
+async function sendVerificationRequest(params: { identifier: string; url: string }) {
   const { identifier, url } = params;
   if (process.env.AUTH_RESEND_KEY) {
     try {
@@ -57,83 +30,103 @@ async function sendVerificationRequest(params: {
   }
 }
 
-/** Include only providers with valid credentials to avoid "Missing client_id" errors */
-function getProviders() {
-  const providers: any[] = [];
-
-  if (process.env.AUTH_APPLE_ID && process.env.AUTH_APPLE_SECRET) {
-    providers.push(
-      Apple({
-        clientId: process.env.AUTH_APPLE_ID,
-        clientSecret: process.env.AUTH_APPLE_SECRET,
-        allowDangerousEmailAccountLinking: true,
-      })
-    );
-  }
-  if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
-    providers.push(
-      Google({
-        clientId: process.env.AUTH_GOOGLE_ID,
-        clientSecret: process.env.AUTH_GOOGLE_SECRET,
-        allowDangerousEmailAccountLinking: true,
-      })
-    );
-  }
-  if (process.env.AUTH_SNAPCHAT_ID && process.env.AUTH_SNAPCHAT_SECRET) {
-    providers.push(
-      Snapchat({
-        clientId: process.env.AUTH_SNAPCHAT_ID,
-        clientSecret: process.env.AUTH_SNAPCHAT_SECRET,
-      })
-    );
-  }
-  if (process.env.AUTH_DISCORD_ID && process.env.AUTH_DISCORD_SECRET) {
-    providers.push(
-      Discord({
-        clientId: process.env.AUTH_DISCORD_ID,
-        clientSecret: process.env.AUTH_DISCORD_SECRET,
-        allowDangerousEmailAccountLinking: true,
-      })
-    );
-  }
-  if (process.env.AUTH_REDDIT_ID && process.env.AUTH_REDDIT_SECRET) {
-    providers.push(
-      Reddit({
-        clientId: process.env.AUTH_REDDIT_ID,
-        clientSecret: process.env.AUTH_REDDIT_SECRET,
-        allowDangerousEmailAccountLinking: true,
-      })
-    );
-  }
-  providers.push(
-    EmailProvider({
-      server: {},
-      from: process.env.EMAIL_FROM ?? "noreply@neon.app",
-      sendVerificationRequest: async (p) => sendVerificationRequest({ identifier: p.identifier, url: p.url }),
-    })
-  );
-
-  return providers;
-}
+const GOOGLE_ID = process.env.GOOGLE_CLIENT_ID ?? process.env.AUTH_GOOGLE_ID;
+const GOOGLE_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? process.env.AUTH_GOOGLE_SECRET;
+const FACEBOOK_ID = process.env.FACEBOOK_CLIENT_ID ?? process.env.AUTH_FACEBOOK_ID;
+const FACEBOOK_SECRET = process.env.FACEBOOK_CLIENT_SECRET ?? process.env.AUTH_FACEBOOK_SECRET;
+const DISCORD_ID = process.env.DISCORD_CLIENT_ID ?? process.env.AUTH_DISCORD_ID;
+const DISCORD_SECRET = process.env.DISCORD_CLIENT_SECRET ?? process.env.AUTH_DISCORD_SECRET;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   secret: process.env.AUTH_SECRET || (process.env.NODE_ENV === "development" ? "dev-secret-min-32-chars-for-local" : undefined),
-  providers: getProviders(),
+  providers: [
+    ...(GOOGLE_ID && GOOGLE_SECRET
+      ? [
+          Google({
+            clientId: GOOGLE_ID,
+            clientSecret: GOOGLE_SECRET,
+            allowDangerousEmailAccountLinking: true,
+          }),
+        ]
+      : []),
+    ...(FACEBOOK_ID && FACEBOOK_SECRET
+      ? [
+          Facebook({
+            clientId: FACEBOOK_ID,
+            clientSecret: FACEBOOK_SECRET,
+            allowDangerousEmailAccountLinking: true,
+          }),
+        ]
+      : []),
+    ...(DISCORD_ID && DISCORD_SECRET
+      ? [
+          Discord({
+            clientId: DISCORD_ID,
+            clientSecret: DISCORD_SECRET,
+            allowDangerousEmailAccountLinking: true,
+          }),
+        ]
+      : []),
+    EmailProvider({
+      server: (process.env.EMAIL_SERVER as unknown as Record<string, unknown>) ?? {},
+      from: process.env.EMAIL_FROM ?? "noreply@neon.app",
+      sendVerificationRequest: async (p) => sendVerificationRequest({ identifier: p.identifier, url: p.url }),
+    }),
+  ],
   pages: {
-    signIn: "/",
+    signIn: "/login",
     error: "/",
   },
   callbacks: {
-    async signIn({ user, account }) {
+    async signIn({ user }) {
+      if (user?.id && typeof user.id === "string") {
+        addLoginXp(user.id).catch(() => {});
+      }
       return true;
     },
     async session({ session, token }) {
-      if (session?.user && token?.sub) {
-        (session.user as any).id = token.sub;
-        (session as any).userId = token.sub;
+      const userId = (token?.sub ?? token?.id) as string | undefined;
+      if (session?.user && userId && typeof userId === "string") {
+        (session.user as unknown as Record<string, unknown>).id = userId;
+        (session as unknown as Record<string, unknown>).userId = userId;
+        // Fetch user data from DB for frontend
+        try {
+          const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+              tier: true,
+              xp: true,
+              currentLevel: true,
+              ghostModeUntil: true,
+              isGhost: true,
+              country: true,
+            },
+          });
+          if (user) {
+            (session as unknown as Record<string, unknown>).tier = user.tier;
+            (session as unknown as Record<string, unknown>).xp = user.xp;
+            (session as unknown as Record<string, unknown>).currentLevel = user.currentLevel;
+            (session as unknown as Record<string, unknown>).countryCode =
+              user.country ?? null;
+            const ghostActive = user.ghostModeUntil ? user.ghostModeUntil > new Date() : user.isGhost;
+            (session as unknown as Record<string, unknown>).isGhost = ghostActive;
+          }
+          const coins = await getWalletBalance(userId);
+          (session as unknown as Record<string, unknown>).coins = coins ?? 0;
+          const supabase = getSupabase();
+          if ((session as unknown as Record<string, unknown>).isGhost === undefined) {
+            const { data: profile } = await supabase
+              .from("user_profiles")
+              .select("is_ghost_mode_enabled")
+              .eq("user_id", userId)
+              .single();
+            (session as unknown as Record<string, unknown>).isGhost = !!profile?.is_ghost_mode_enabled;
+          }
+        } catch (e) {
+          console.error("[auth session]", e);
+        }
       }
-      if (token?.id) (session as any).userId = token.id;
       return session;
     },
     async jwt({ token, user }) {

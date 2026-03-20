@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT, getBrowserLocale } from "../lib/content-i18n";
 import { setVerificationAgreed } from "../lib/verification-storage";
+import NeonLiveLogo from "./NeonLiveLogo";
 
 const GOOGLE_REDIRECT = "https://www.google.com";
 
@@ -44,12 +45,8 @@ export default function VerificationOverlay({ locale, onVerified }: Props) {
       aria-labelledby="verification-title"
     >
       <div className="max-w-md text-center">
-        <h1
-          id="verification-title"
-          className="text-4xl font-bold tracking-tight text-white sm:text-5xl"
-          style={{ textShadow: "0 0 40px rgba(139, 92, 246, 0.6)" }}
-        >
-          NEON
+        <h1 id="verification-title" className="flex justify-center">
+          <NeonLiveLogo variant="verification" className="justify-center" as="span" />
         </h1>
         <p className="mt-4 text-lg text-white/90">{t.verificationWelcome}</p>
 

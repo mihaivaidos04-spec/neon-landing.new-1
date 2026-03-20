@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   }
 
   let payload: {
-    meta?: { event_name?: string; custom_data?: { user_id?: string } };
+    meta?: { event_name?: string; custom_data?: { user_id?: string; promocode_id?: string } };
     data?: {
       id?: string;
       attributes?: {
@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
   const orderId = payload.data?.id;
   const userEmail = attrs.user_email;
   const customUserId = payload.meta?.custom_data?.user_id;
+  const promocodeId = payload.meta?.custom_data?.promocode_id;
   const firstItem = attrs.first_order_item;
   const variantId = firstItem?.variant_id ?? firstItem?.product_id;
 
@@ -103,22 +104,48 @@ export async function POST(req: NextRequest) {
 
   const coins = getCoinsForVariant(variantId ?? 0);
 
+  let wasFirstPurchase = false;
   if (userId) {
-    // Mark user as having ever purchased (for First Purchase Bonus timer)
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { hasEverPurchased: true },
+    });
+    wasFirstPurchase = !user?.hasEverPurchased;
     await prisma.user.update({
       where: { id: userId },
       data: { hasEverPurchased: true },
     });
   }
 
-  if (userId && coins > 0) {
-    const result = await addCoins(userId, coins, {
+  let bonusCoins = 0;
+  if (userId && promocodeId && wasFirstPurchase && coins > 0) {
+    const promocode = await prisma.promocode.findUnique({
+      where: { id: promocodeId },
+    });
+    if (promocode) {
+      bonusCoins = Math.floor(coins * (promocode.bonusPercent / 100));
+      await prisma.promocode.update({
+        where: { id: promocodeId },
+        data: { usedCount: { increment: 1 } },
+      });
+    }
+  }
+
+  const totalCoins = coins + bonusCoins;
+
+  if (userId && totalCoins > 0) {
+    const result = await addCoins(userId, totalCoins, {
       externalId: `lemon-${orderId}`,
       reason: "lemon_payment",
     });
     if (!result.success) {
       console.error("[webhooks/lemon] addCoins failed:", result.error);
     }
+    // Sync coins to Prisma User
+    await prisma.user.update({
+      where: { id: userId },
+      data: { coins: { increment: totalCoins } },
+    });
 
     // Ghost Mode: if variant is "ghost", enable it
     const ghostVariantId = process.env.NEXT_PUBLIC_LEMON_VARIANT_GHOST;
@@ -133,6 +160,10 @@ export async function POST(req: NextRequest) {
           },
           { onConflict: "user_id" }
         );
+      await prisma.user.update({
+        where: { id: userId },
+        data: { isGhost: true },
+      });
     }
   }
 
@@ -145,7 +176,7 @@ export async function POST(req: NextRequest) {
     variant_id: variantId != null ? String(variantId) : null,
     product_id: firstItem?.product_id != null ? String(firstItem.product_id) : null,
     amount_cents: attrs.total ?? null,
-    coins_added: userId && coins > 0 ? coins : 0,
+    coins_added: userId && totalCoins > 0 ? totalCoins : 0,
     status: attrs.status ?? "paid",
     raw_meta: payload.meta ?? null,
   });

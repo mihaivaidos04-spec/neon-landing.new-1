@@ -2,7 +2,7 @@
 
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
-import { countryCodeToFlagEmoji } from "../lib/country-flags";
+import LazyUserFlag from "./LazyUserFlag";
 import type { LeaderboardEntry } from "../hooks/useLeaderboard";
 
 type Props = {
@@ -40,9 +40,7 @@ export default function LiveLeaderboard({ leaderboard, locale = "ro", currentUse
             >
               <span className="w-4">{medals[entry.rank - 1] ?? `#${entry.rank}`}</span>
               {entry.countryCode && (
-                <span className="shrink-0 text-base leading-none" title={entry.countryCode} aria-hidden>
-                  {countryCodeToFlagEmoji(entry.countryCode)}
-                </span>
+                <LazyUserFlag code={entry.countryCode} locale={locale} size="sm" className="shrink-0" />
               )}
               <span className="min-w-0 truncate font-mono">
                 {formatUserId(entry.userId, isBlurred)}

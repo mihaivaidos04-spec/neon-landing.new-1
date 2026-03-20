@@ -1,5 +1,16 @@
 import type { ContentLocale } from "./content-i18n";
-import { generateRandomUsername } from "./chat-usernames";
+import { pickLocalizedUsername } from "./chat-usernames-by-country";
+import { DEMO_COUNTRY_POOL, ORDERED_DEMO_COUNTRIES } from "./demo-country-pool";
+
+/** Used when imports are not ready yet (client chunk / HMR) — must never be empty. */
+const FALLBACK_ISO2_ORDERED: string[] = [
+  "AE", "AL", "AM", "AR", "AT", "AU", "AZ", "BA", "BD", "BE", "BG", "BH", "BN", "BR", "BW", "BY", "CA", "CH", "CL",
+  "CN", "CO", "CR", "CY", "CZ", "DE", "DJ", "DK", "DZ", "EC", "EE", "EG", "ES", "ET", "FI", "FJ", "FR", "GB", "GE",
+  "GH", "GR", "HK", "HR", "HU", "ID", "IE", "IL", "IN", "IQ", "IS", "IT", "JO", "JP", "KE", "KH", "KR", "KW", "KZ",
+  "LA", "LB", "LK", "LT", "LU", "LV", "LY", "MA", "MK", "ML", "MM", "MN", "MT", "MU", "MX", "MY", "NA", "NE", "NG",
+  "NL", "NO", "NP", "NZ", "OM", "PE", "PH", "PK", "PL", "PS", "PT", "PY", "QA", "RO", "RS", "RU", "SA", "SE", "SG",
+  "SI", "SK", "SO", "SY", "TD", "TH", "TN", "TR", "TW", "TZ", "UA", "UG", "US", "UY", "UZ", "VN", "YE", "ZA", "ZW",
+];
 
 export type ChatMessageEntry = { text: string };
 
@@ -218,14 +229,165 @@ export const CHAT_MESSAGES_BY_LOCALE: Record<ContentLocale, ChatMessageEntry[]> 
   ],
 };
 
-function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
+/** Extra lines so the 1000-step cycle rarely feels repetitive. */
+const CROSS_LOCALE_CHAT_LINES: string[] = [
+  "gm ☀️",
+  "gn 🌙",
+  "vc on?",
+  "mic ok?",
+  "cam laggy rn",
+  "smooth ngl",
+  "this filter hits different",
+  "neon glow is sick",
+  "any1 still up?",
+  "brb 1m",
+  "back",
+  "that match was funny",
+  "gift sent ty",
+  "ty for the rose",
+  "lol same",
+  "where u calling from roughly?",
+  "timezone check 😅",
+  "music in bg?",
+  "headphones only",
+  "respect the vibe",
+  "no weird stuff pls",
+  "just chilling",
+  "first time here",
+  "regular here lol",
+  "queue slow today",
+  "fast matches tonight",
+  "private?",
+  "stay public for now",
+  "icebreaker worth it",
+  "saved my convo",
+  "battery low rip",
+  "need coins ngl",
+  "filter worth",
+  "ghost mode lowkey",
+  "beauty blur funny",
+  "undo saved me",
+  "wrong skip 💀",
+  "all good",
+  "speak english ok?",
+  "i use translate",
+  "haha ok ok",
+  "respect++",
+  "wholesome chat",
+  "wild but fun",
+  "next when?",
+  "one more",
+  "last one promise",
+  "ok cya",
+  "hf everyone",
+  "wave 👋",
+  "o7",
+  "GG",
+  "nice pfp energy",
+  "vibe check passed",
+  "coffee first ☕",
+  "night owl crew",
+  "morning crew",
+  "weekend mode",
+  "after work mood",
+  "study break",
+  "work break lol",
+  "dont ask for ig",
+  "keep it here",
+  "mods doing bits",
+  "chat clean today",
+  "global pulse is fun",
+  "random is the point",
+  "unexpected friend",
+  "short stay hi",
+  "long session ngl",
+  "lag spike",
+  "clear now",
+  "audio echo?",
+  "fixed",
+  "👍",
+  "🔥🔥",
+  "⚡⚡",
+  "lol ok",
+  "real talk tho",
+  "wholesome",
+  "toxic free zone",
+  "appreciate u",
+  "ty neon",
+];
+
+function resolveLocaleKey(locale: string): ContentLocale {
+  if (locale in CHAT_MESSAGES_BY_LOCALE) return locale as ContentLocale;
+  return "en";
+}
+
+function getOrderedCountries(): string[] {
+  try {
+    if (ORDERED_DEMO_COUNTRIES != null && Array.isArray(ORDERED_DEMO_COUNTRIES) && ORDERED_DEMO_COUNTRIES.length > 0) {
+      return ORDERED_DEMO_COUNTRIES;
+    }
+    if (DEMO_COUNTRY_POOL != null && Array.isArray(DEMO_COUNTRY_POOL) && DEMO_COUNTRY_POOL.length > 0) {
+      return [...DEMO_COUNTRY_POOL].sort();
+    }
+  } catch {
+    /* ignore */
+  }
+  return FALLBACK_ISO2_ORDERED;
+}
+
+function getAllMessageTextsForLocale(locale: string): string[] {
+  const key = resolveLocaleKey(locale);
+  const base = CHAT_MESSAGES_BY_LOCALE[key] ?? CHAT_MESSAGES_BY_LOCALE.en;
+  const rows = Array.isArray(base) ? base : CHAT_MESSAGES_BY_LOCALE.en;
+  const fromLocale = rows.map((m) => m.text).filter(Boolean);
+  const cross = Array.isArray(CROSS_LOCALE_CHAT_LINES) ? CROSS_LOCALE_CHAT_LINES : [];
+  const merged = [...fromLocale, ...cross];
+  return merged.length > 0 ? merged : ["hey"];
+}
+
+/** Deterministic fake chat: full pattern repeats every N messages. */
+export const FAKE_CHAT_CYCLE_LENGTH = 1000;
+
+export function getFakeMessageForCycleIndex(
+  cycleIndex: number,
+  locale: ContentLocale | string,
+  uniqueId: string | number
+): ChatMessage {
+  try {
+    const i =
+      ((cycleIndex % FAKE_CHAT_CYCLE_LENGTH) + FAKE_CHAT_CYCLE_LENGTH) % FAKE_CHAT_CYCLE_LENGTH;
+    const countries = getOrderedCountries();
+    if (!Array.isArray(countries) || countries.length === 0) {
+      throw new Error("no countries");
+    }
+    const countryCode = String(countries[i % countries.length] ?? "US").slice(0, 2).toUpperCase() || "US";
+    const user = pickLocalizedUsername(countryCode, i);
+    const texts = getAllMessageTextsForLocale(String(locale ?? "en"));
+    const len = Array.isArray(texts) && texts.length > 0 ? texts.length : 1;
+    const textIndex = (i * 31 + (i >> 1) + (i % 7) * 13) % len;
+    const text = (Array.isArray(texts) ? texts[textIndex] : null) ?? "hey";
+    return {
+      id: `sim-${uniqueId}`,
+      user,
+      text,
+      countryCode,
+    };
+  } catch {
+    return {
+      id: `sim-${uniqueId}`,
+      user: "guest",
+      text: "hey",
+      countryCode: "US",
+    };
+  }
 }
 
 export type ChatMessage = {
   id: string;
   user: string;
   text: string;
+  /** ISO country for flag next to username */
+  countryCode?: string | null;
   isDonor?: boolean;
   /** System message (no user name, neutral style) */
   isSystem?: boolean;
@@ -234,10 +396,9 @@ export type ChatMessage = {
 };
 
 export function generateFakeMessage(locale: ContentLocale): ChatMessage {
-  const messages = CHAT_MESSAGES_BY_LOCALE[locale];
-  return {
-    id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    user: generateRandomUsername(locale),
-    text: pick(messages).text,
-  };
+  return getFakeMessageForCycleIndex(
+    Math.floor(Math.random() * FAKE_CHAT_CYCLE_LENGTH),
+    locale,
+    `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+  );
 }

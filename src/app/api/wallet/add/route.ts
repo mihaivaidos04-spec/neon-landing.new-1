@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const rateLimit = await checkRateLimit(userId, "wallet_add");
+    const rateLimit = checkRateLimit(userId, "wallet_add");
     if (!rateLimit.allowed) {
       const headers = new Headers();
       if (rateLimit.retryAfterMs) {

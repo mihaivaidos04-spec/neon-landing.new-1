@@ -52,11 +52,40 @@ const SUFFIXES: string[] = [
   "Filtresiz", "Solo_Hafta_Sonu", "Vibe_Check_TR", "Bir_Tane_Daha", "Stealth_Mod",
   "Ariyor_24", "Gizli_Ajan", "Kayip_Neon", "Cumartesi_Solo", "Kamera_Acik",
   "Random_99", "Live_42", "X_88", "Pro_77", "New_23", "Cool_66", "Chill_55",
+  "Neon_After_Midnight_Sessions", "Streaming_From_The_Cathedral", "Encrypted_Heart_Signal",
+  "Parallel_Universe_Matchmaking", "Quantum_Curiosity_Buffer", "Holographic_Smile_Cache",
+  "Interstellar_Conversation_Architect", "Phosphorescent_Midnight_Express_Lane",
+  "Cryptographic_Lullaby_Broadcast_System",   "Multiversal_Tea_Time_Scheduler",
+  "Phantasmagorical_Conversation_Orchestration",
+];
+
+/** Extra long first segments for variety (still underscore-safe). */
+const LONG_FIRST_NAMES: string[] = [
+  "Christopher", "Alexandrina", "Maximilian", "Valentinian", "Anastasiya", "Zachariah",
+  "Montgomery", "Guadalupe", "Bartholomew", "Seraphina", "Wilhelmina", "Konstantinos",
+  "Constantinopolitan", "Theophilus", "Evangelina", "Bartholomäus",
 ];
 
 export function generateRandomUsername(_locale: ContentLocale): string {
-  const first = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
+  const useLong = Math.random() < 0.35;
+  const first = useLong
+    ? LONG_FIRST_NAMES[Math.floor(Math.random() * LONG_FIRST_NAMES.length)]!
+    : FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)]!;
   const suffix = SUFFIXES[Math.floor(Math.random() * SUFFIXES.length)];
   const num = Math.floor(Math.random() * 90) + 10;
   return `${first}_${suffix}_${num}`;
 }
+
+const _allFirst = [...FIRST_NAMES, ...LONG_FIRST_NAMES];
+
+/** Longest `generateRandomUsername` string we can produce (Unicode code points). */
+export const MAX_RANDOM_USERNAME_CODEPOINTS: number = (() => {
+  let m = 0;
+  for (const f of _allFirst) {
+    for (const s of SUFFIXES) {
+      const u = `${f}_${s}_99`;
+      m = Math.max(m, [...u].length);
+    }
+  }
+  return m;
+})();

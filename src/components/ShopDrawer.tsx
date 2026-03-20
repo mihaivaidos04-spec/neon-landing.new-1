@@ -92,7 +92,7 @@ export default function ShopDrawer({ open, onClose, locale, onSelectPackage }: P
                     : { background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }
                 }
               >
-                {pkg.featured ? "Apple Pay · Google Pay" : "Pay with card"}
+                {pkg.featured ? "Secure checkout" : "Continue to checkout"}
               </button>
             </div>
           ))}
@@ -102,16 +102,20 @@ export default function ShopDrawer({ open, onClose, locale, onSelectPackage }: P
             href="/checkout"
             className="block w-full rounded-full bg-emerald-500/20 py-2.5 text-center text-sm font-semibold text-emerald-300 transition-colors hover:bg-emerald-500/30"
           >
-            Pachete complete · Checkout →
+            Platform credits · Secure checkout →
           </a>
           <p className="text-center text-xs text-white/50">
             {t.legalByPurchase}{" "}
-            <Link href="/terms-and-conditions" className="text-[#8b5cf6] underline hover:opacity-90">
+            <Link href="/terms" className="text-[#8b5cf6] underline hover:opacity-90">
               {t.termsAndConditions}
-            </Link>{" "}
-            &{" "}
-            <Link href="/privacy-policy" className="text-[#8b5cf6] underline hover:opacity-90">
+            </Link>
+            ,{" "}
+            <Link href="/privacy" className="text-[#8b5cf6] underline hover:opacity-90">
               {t.gdprPolicy}
+            </Link>
+            ,{" "}
+            <Link href="/refunds" className="text-[#8b5cf6] underline hover:opacity-90">
+              Refund policy
             </Link>
           </p>
         </div>

@@ -1,10 +1,12 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { Syne, Geist_Mono, Cormorant_Garamond } from "next/font/google";
+import { Syne, Geist_Mono, Cormorant_Garamond, Great_Vibes } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import AuthProvider from "@/src/components/AuthProvider";
 import Footer from "@/src/components/Footer";
+import CookieConsentBanner from "@/src/components/CookieConsentBanner";
 import UtmCapture from "@/src/components/UtmCapture";
+import GiftNotificationListener from "@/src/components/GiftNotificationListener";
 import { SocketProviderWithAuth } from "@/src/contexts/SocketContext";
 import "./globals.css";
 
@@ -28,24 +30,43 @@ const cormorant = Cormorant_Garamond({
   display: "swap",
 });
 
+/** Script wordmark for “NeonLive” only — love / connection accent */
+const neonLiveMark = Great_Vibes({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-neonlive-mark",
+  display: "swap",
+});
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://neonlive.chat";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "Neon | Mystery Video Chat",
+  title: {
+    default: "NeonLive - Anonymous Streaming & Gifting",
+    template: "%s | NeonLive",
+  },
   description:
-    "The first video chat where every match is a mystery. Win rewards while you talk.",
+    "NeonLive - Premium anonymous video chat. Connect with new people worldwide. Send gifts, earn rewards, and enjoy real connections under neon lights.",
+  keywords: ["video chat", "anonymous chat", "live streaming", "gifting", "random chat", "neon"],
   openGraph: {
-    title: "Neon | Mystery Video Chat",
-    description: "The first video chat where every match is a mystery. Win rewards while you talk.",
+    title: "NeonLive - Anonymous Streaming & Gifting",
+    description: "Premium anonymous video chat. Connect worldwide. Send gifts, earn rewards, real connections.",
     url: "/",
-    siteName: "Neon",
+    siteName: "NeonLive",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Neon - Mystery Video Chat. Join Now.",
+        alt: "NeonLive - Anonymous Streaming & Gifting. Join Now.",
       },
     ],
     locale: "en_US",
@@ -53,9 +74,13 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Neon | Mystery Video Chat",
-    description: "The first video chat where every match is a mystery. Win rewards while you talk.",
+    title: "NeonLive - Anonymous Streaming & Gifting",
+    description: "Premium anonymous video chat. Connect worldwide. Send gifts, earn rewards.",
     images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 
@@ -67,13 +92,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ro">
+    <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://app.lemonsqueezy.com" />
         <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
       </head>
       <body
-        className={`${syne.variable} ${geistMono.variable} ${cormorant.variable} bg-[#050508] text-[#faf5eb] antialiased`}
+        className={`${syne.variable} ${geistMono.variable} ${cormorant.variable} ${neonLiveMark.variable} bg-[#050508] text-[#faf5eb] antialiased`}
       >
         {/* Violet + neon green ambient glow */}
         <div
@@ -91,11 +115,6 @@ export default function RootLayout({
             backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")",
           }}
         />
-        {/* Lemon Squeezy – lazyOnload: încarcă după ce pagina e interactivă, nu blochează FCP */}
-        <Script
-          src="https://app.lemonsqueezy.com/js/lemon.js"
-          strategy="lazyOnload"
-        />
         {adsenseClient && (
           <Script
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`}
@@ -106,7 +125,10 @@ export default function RootLayout({
         <div className="relative z-10">
           <UtmCapture />
           <AuthProvider>
-            <SocketProviderWithAuth>{children}</SocketProviderWithAuth>
+            <SocketProviderWithAuth>
+              <GiftNotificationListener />
+              {children}
+            </SocketProviderWithAuth>
           </AuthProvider>
           <Toaster
             position="top-right"
@@ -121,6 +143,7 @@ export default function RootLayout({
             }}
           />
           <Footer locale="en" />
+          <CookieConsentBanner />
         </div>
       </body>
     </html>

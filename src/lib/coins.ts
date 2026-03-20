@@ -3,6 +3,10 @@
  */
 
 import type { GiftId } from "../components/GiftsBar";
+import { BILLING_PACKS } from "./billing-packs";
+
+/** Micro pack rate for ~USD hints in UI (100 coins ≈ $0.69). */
+const GIFT_USD_REFERENCE_PACK = BILLING_PACKS.find((p) => p.id === "micro") ?? BILLING_PACKS[0];
 
 /** Cost in coins per gift */
 export const GIFT_COST: Record<GiftId, number> = {
@@ -86,6 +90,19 @@ export function getGiftCost(giftId: GiftId): number {
 
 export function canAffordGift(balance: number, giftId: GiftId): boolean {
   return balance >= getGiftCost(giftId);
+}
+
+/** Approximate fiat label from micro-pack pricing (theater / shop hints). */
+export function getGiftApproxUsdLabel(giftId: GiftId): string {
+  const cost = getGiftCost(giftId);
+  const usd =
+    (cost / GIFT_USD_REFERENCE_PACK.coins) * GIFT_USD_REFERENCE_PACK.priceUsd;
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(usd);
 }
 
 export function getReactionCost(reactionId: string): number {

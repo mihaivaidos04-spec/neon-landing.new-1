@@ -4,6 +4,7 @@ import type { BundleId } from "../lib/checkout-bundles";
 import { getBundleById, formatPrice } from "../lib/checkout-bundles";
 import ExitIntentOffer, { hasSeenExitIntent } from "./ExitIntentOffer";
 import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Props = {
   visible: boolean;
@@ -20,6 +21,7 @@ export default function PaymentModal({
   bundleId,
   onSuccess,
 }: Props) {
+  const router = useRouter();
   const [exitIntentVisible, setExitIntentVisible] = useState(false);
 
   const handleCloseAttempt = useCallback(() => {
@@ -74,11 +76,21 @@ export default function PaymentModal({
 
           <div className="flex min-h-[160px] flex-col items-center justify-center gap-4 rounded-xl border border-white/10 bg-white/5 p-6 text-center">
             <p className="text-base font-medium text-white/90">
-              Plată în curând
+              Secure checkout
             </p>
             <p className="text-sm text-white/60">
-              Integrarea Lemon Squeezy este în curs. Plățile vor fi disponibile în curând.
+              Complete your purchase with Stripe. You’ll choose a credit package on the next screen.
             </p>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                router.push("/checkout");
+              }}
+              className="mt-2 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-violet-100"
+            >
+              Continue to checkout
+            </button>
           </div>
         </div>
       </div>

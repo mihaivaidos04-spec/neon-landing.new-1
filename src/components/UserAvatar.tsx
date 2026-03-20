@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 export type AvatarTier = "whale" | "premium" | "new" | "default";
 
 type Props = {
@@ -61,7 +63,15 @@ export default function UserAvatar({
         }
       >
         {src ? (
-          <img src={src} alt={alt} className="h-full w-full object-cover" />
+          <Image
+            src={src}
+            alt={alt}
+            fill
+            sizes="(max-width: 768px) 32px, 56px"
+            className="object-cover"
+            placeholder="blur"
+            blurDataURL="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzFmMjAzMyIvPjwvc3ZnPg=="
+          />
         ) : (
           <div
             className="flex h-full w-full items-center justify-center bg-violet-900/50 text-white/70"

@@ -1,7 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["nodemailer"],
+  serverExternalPackages: ["nodemailer", "stripe"],
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "api.dicebear.com", pathname: "/**" },
+      { protocol: "https", hostname: "lh3.googleusercontent.com", pathname: "/**" },
+      { protocol: "https", hostname: "platform-lookaside.fbsbx.com", pathname: "/**" },
+    ],
+  },
   allowedDevOrigins: [
     "http://localhost:3000",
     "http://127.0.0.1:3000",

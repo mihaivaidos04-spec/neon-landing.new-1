@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { signIn, getProviders } from "next-auth/react";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
-
-const VIOLET_GLOW = "rgba(139, 92, 246, 0.25)";
+import NeonLiveLogo from "./NeonLiveLogo";
 
 /** Official Google "G" logo – multicolor per brand guidelines */
 function GoogleIcon({ className }: { className?: string }) {
@@ -19,26 +18,23 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
-/** Official Apple logo – silhouette */
-function AppleIcon({ className }: { className?: string }) {
+/** Official Facebook logo */
+function FacebookIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
     </svg>
   );
 }
 
-/** Official Snapchat ghost logo */
-function SnapchatIcon({ className }: { className?: string }) {
+/** Discord brand mark (simplified) */
+function DiscordIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M12.206.793c.99 0 4.347.276 5.93 3.821.529 1.193.403 3.219.299 4.847l-.003.06c-.012.18-.022.345-.03.51.075.045.203.09.401.09.3-.016.659-.12 1.033-.301.165-.088.344-.104.464-.104.182 0 .359.029.509.09.45.149.734.479.734.838.015.449-.39.839-1.213 1.168-.089.029-.209.075-.344.119-.45.135-1.139.36-1.333.81-.09.224-.061.524.12.868l.015.015c.06.136 1.526 3.475 4.791 4.014.255.044.435.27.42.509 0 .075-.015.149-.045.225-.24.569-1.273.988-3.146 1.271-.059.091-.12.375-.164.57-.029.179-.074.36-.134.553-.076.271-.27.405-.555.405h-.03c-.135 0-.313-.031-.538-.074-.36-.075-.765-.135-1.273-.135-.3 0-.599.015-.913.074-.6.104-1.123.464-1.723.884-.853.599-1.826 1.288-3.294 1.288-.06 0-.119-.015-.18-.015h-.149c-1.468 0-2.427-.69-3.279-1.288-.599-.42-1.107-.779-1.707-.884-.314-.045-.629-.074-.928-.074-.54 0-.958.089-1.272.149-.211.043-.391.074-.54.074-.374 0-.523-.224-.583-.42-.061-.192-.09-.375-.135-.552-.046-.181-.105-.494-.166-.57-1.918-.222-2.95-.642-3.189-1.226-.031-.063-.052-.15-.052-.224-.015-.243.165-.465.42-.509 3.264-.54 4.73-3.879 4.791-4.02l.016-.029c.18-.345.224-.645.119-.869-.195-.434-.884-.658-1.332-.809-.121-.029-.24-.074-.346-.119-1.107-.435-1.257-.93-1.197-1.273.09-.479.674-.793 1.168-.793.146 0 .27.029.383.074.42.194.789.3 1.104.3.234 0 .384-.06.465-.105l-.046-.569c-.098-1.626-.225-3.651.307-4.837C7.392 1.077 10.739.807 11.727.807l.419-.015h.06z" />
+      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
     </svg>
   );
 }
-
-const AUTH_BUTTON_BASE =
-  "flex w-full items-center justify-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.04] py-3.5 text-base font-medium text-[#faf5eb] backdrop-blur-sm transition-all duration-200 disabled:opacity-60 hover:bg-white/[0.08] hover:border-violet-500/20";
 
 type Props = {
   open: boolean;
@@ -46,6 +42,9 @@ type Props = {
   locale: ContentLocale;
 };
 
+/**
+ * Single immersive “gateway” for all sign-in — heavy blur, neon love border, Great Vibes wordmark.
+ */
 export default function LoginWall({ open, onClose, locale }: Props) {
   const t = getContentT(locale);
   const [providers, setProviders] = useState<Record<string, { id: string; name: string }> | null>(null);
@@ -56,6 +55,22 @@ export default function LoginWall({ open, onClose, locale }: Props) {
 
   useEffect(() => {
     if (open) getProviders().then(setProviders);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      setShowOther(false);
+      setEmailSent(false);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, [open]);
 
   if (!open) return null;
@@ -79,121 +94,133 @@ export default function LoginWall({ open, onClose, locale }: Props) {
 
   return (
     <>
+      {/* Full-viewport veil — world falls away */}
       <div
-        className="fixed inset-0 z-[300] bg-black/60 backdrop-blur-md"
+        className="fixed inset-0 z-[500] bg-black/55 backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:backdrop-blur-2xl"
+        style={{ WebkitBackdropFilter: "blur(22px)" }}
         aria-hidden
         onClick={onClose}
       />
+
       <div
-        className="modal-neon fixed left-1/2 top-1/2 z-[310] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/[0.08] px-6 py-8 shadow-2xl"
-        style={{ boxShadow: `0 0 80px ${VIOLET_GLOW}, 0 25px 50px -12px rgba(0,0,0,0.5)` }}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="login-wall-title"
+        className="fixed inset-0 z-[510] flex items-center justify-center p-2 sm:p-4 md:p-6 pointer-events-none"
+        role="presentation"
       >
-        <div className="mb-6 flex items-center justify-between">
-          <h2 id="login-wall-title" className="text-xl font-semibold text-[#faf5eb]" style={{ fontFamily: "var(--font-syne), system-ui" }}>
-            {t.loginWallTitle}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-
-        <p className="mb-6 text-center text-sm text-violet-300/90">
-          {t.firstLoginBonus}
-        </p>
-
-        {/* Google = Primary (Asia: 90%+ Android) */}
-        {providers?.google && (
-          <button
-            type="button"
-            onClick={() => handleOAuth("google")}
-            disabled={!!loading}
-            className="mb-4 flex w-full items-center justify-center gap-3 rounded-xl border-2 border-white/30 bg-white py-3.5 text-base font-semibold text-gray-900 shadow-[0_0_24px_rgba(255,255,255,0.3)] transition-all hover:bg-gray-100 hover:shadow-[0_0_32px_rgba(57,255,20,0.2)] disabled:opacity-60"
-          >
-            <GoogleIcon className="h-5 w-5 shrink-0" />
-            <span>{t.loginWithGoogle}</span>
-          </button>
-        )}
-
-        {/* Magic Link – prominent for Asia (no password, mobile-friendly) */}
-        <div className="mb-4">
-          <form onSubmit={handleMagicLink} className="flex flex-col gap-2">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={t.emailPlaceholder}
-              className="rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:border-violet-500/50 focus:outline-none"
-            />
-            <p className="text-center text-xs text-white/50">{t.emailNoPasswordNeeded}</p>
-            <button
-              type="submit"
-              disabled={!!loading || !email.trim()}
-              className="rounded-xl py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-50"
-              style={{ background: "linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)" }}
-            >
-              {emailSent ? t.emailLinkSent : t.emailProceed}
-            </button>
-          </form>
-        </div>
-
-        {/* Divider */}
-        <div className="mb-4 flex items-center gap-3">
-          <div className="h-px flex-1 bg-white/10" />
-          <span className="text-xs text-white/40">{t.otherMethods}</span>
-          <div className="h-px flex-1 bg-white/10" />
-        </div>
-
-        {/* Other OAuth */}
-        <div className="space-y-3">
-          {providers?.apple && (
-            <button
-              type="button"
-              onClick={() => handleOAuth("apple")}
-              disabled={!!loading}
-              className={`${AUTH_BUTTON_BASE} hover:border-white/30 hover:bg-white/10`}
-            >
-              <AppleIcon className="h-5 w-5 shrink-0 text-white" />
-              <span>{t.loginWithApple}</span>
-            </button>
-          )}
-          {providers?.snapchat && (
-            <button
-              type="button"
-              onClick={() => handleOAuth("snapchat")}
-              disabled={!!loading}
-              className={`${AUTH_BUTTON_BASE} text-[#FFFC00] hover:border-[#FFFC00]/50 hover:bg-[#FFFC00]/10`}
-            >
-              <SnapchatIcon className="h-5 w-5 shrink-0" />
-              <span>{t.loginWithSnapchat}</span>
-            </button>
-          )}
-          {showOther && providers?.reddit && (
-            <button
-              type="button"
-              onClick={() => handleOAuth("reddit")}
-              disabled={!!loading}
-              className="flex w-full items-center justify-center gap-2 rounded-full border border-orange-500/40 bg-orange-500/10 py-2.5 text-sm font-semibold text-orange-300 transition-opacity hover:opacity-90 disabled:opacity-60"
-            >
-              {t.loginWithReddit}
-            </button>
-          )}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setShowOther((o) => !o)}
-          className="mt-4 w-full rounded-full border border-white/10 py-2 text-xs text-white/50 transition-colors hover:text-white/70"
+        <div
+          className="login-gateway-outer login-gateway-modal-animate pointer-events-auto w-full max-w-[min(36rem,calc(100vw-0.75rem))] max-h-[min(94dvh,920px)] overflow-y-auto overscroll-contain shadow-[0_25px_80px_-12px_rgba(0,0,0,0.85)]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="login-gateway-logo"
+          onClick={(e) => e.stopPropagation()}
         >
-          {showOther ? "▲" : "▼"} {t.otherMethods}
-        </button>
+          <div className="login-gateway-inner relative px-5 pb-8 pt-10 sm:px-8 sm:pb-10 sm:pt-12 md:px-10 md:pb-12 md:pt-14">
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xl leading-none text-white/50 transition-all hover:border-fuchsia-500/30 hover:bg-white/10 hover:text-white sm:right-4 sm:top-4"
+              aria-label="Close"
+            >
+              ×
+            </button>
+
+            <span className="sr-only">{t.loginWallTitle}</span>
+
+            <div className="login-gateway-logo-wrap flex flex-col items-center justify-center px-2">
+              <NeonLiveLogo variant="gateway" as="h2" id="login-gateway-logo" className="justify-center" />
+            </div>
+
+            <div className="mx-auto mt-6 max-w-md space-y-1.5 text-center sm:mt-8">
+              <p className="text-base font-bold leading-snug text-fuchsia-200/95 sm:text-lg md:text-xl">
+                {t.firstLoginBonus}
+              </p>
+              <p className="text-sm font-medium leading-relaxed text-white/75 sm:text-base md:text-[1.05rem]">
+                {t.loginGatewayTagline}
+              </p>
+            </div>
+
+            <div className="mx-auto mt-8 flex w-full max-w-md flex-col gap-3.5 sm:mt-10 sm:gap-4">
+              {providers?.google && (
+                <button
+                  type="button"
+                  onClick={() => handleOAuth("google")}
+                  disabled={!!loading}
+                  className="flex min-h-[58px] w-full items-center justify-center gap-3 rounded-2xl border-2 border-white/30 bg-white py-4 text-base font-bold text-gray-900 shadow-[0_0_32px_rgba(255,255,255,0.2)] transition-all hover:scale-[1.01] hover:bg-gray-50 hover:shadow-[0_0_44px_rgba(66,133,244,0.35)] disabled:cursor-not-allowed disabled:opacity-55 active:scale-[0.99] sm:min-h-16 sm:text-lg md:text-xl"
+                >
+                  <GoogleIcon className="h-8 w-8 shrink-0 sm:h-9 sm:w-9" />
+                  <span>{t.loginWithGoogle}</span>
+                </button>
+              )}
+
+              {providers?.facebook && (
+                <button
+                  type="button"
+                  onClick={() => handleOAuth("facebook")}
+                  disabled={!!loading}
+                  className="flex min-h-[58px] w-full items-center justify-center gap-3 rounded-2xl bg-[#1877F2] py-4 text-base font-bold text-white shadow-[0_0_32px_rgba(24,119,242,0.5)] transition-all hover:scale-[1.01] hover:bg-[#166fe5] hover:shadow-[0_0_48px_rgba(24,119,242,0.6)] disabled:cursor-not-allowed disabled:opacity-55 active:scale-[0.99] sm:min-h-16 sm:text-lg md:text-xl"
+                >
+                  <FacebookIcon className="h-8 w-8 shrink-0 text-white sm:h-9 sm:w-9" />
+                  <span>{t.loginWithFacebook}</span>
+                </button>
+              )}
+
+              {providers?.discord && (
+                <button
+                  type="button"
+                  onClick={() => handleOAuth("discord")}
+                  disabled={!!loading}
+                  className="flex min-h-[58px] w-full items-center justify-center gap-3 rounded-2xl bg-[#5865F2] py-4 text-base font-bold text-white shadow-[0_0_32px_rgba(88,101,242,0.55)] transition-all hover:scale-[1.01] hover:bg-[#4752C4] hover:shadow-[0_0_48px_rgba(88,101,242,0.65)] disabled:cursor-not-allowed disabled:opacity-55 active:scale-[0.99] sm:min-h-16 sm:text-lg md:text-xl"
+                >
+                  <DiscordIcon className="h-8 w-8 shrink-0 text-white sm:h-9 sm:w-9" />
+                  <span>{t.loginWithDiscord}</span>
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowOther((o) => !o)}
+              className="mx-auto mt-6 flex min-h-[48px] w-full max-w-md items-center justify-center gap-2 rounded-2xl border border-fuchsia-500/25 bg-gradient-to-r from-fuchsia-950/40 via-violet-950/30 to-fuchsia-950/40 px-4 text-sm font-semibold text-fuchsia-100/90 transition-all hover:border-fuchsia-400/40 hover:from-fuchsia-900/50 hover:to-violet-900/40 sm:mt-8 sm:min-h-[52px] sm:text-base"
+              aria-expanded={showOther}
+            >
+              <span className="text-fuchsia-300">{showOther ? "▲" : "▼"}</span>
+              {t.otherMethods}
+            </button>
+
+            {showOther && (
+              <div className="mx-auto mt-5 w-full max-w-md space-y-4 border-t border-fuchsia-500/20 pt-6">
+                <form onSubmit={handleMagicLink} className="flex flex-col gap-3">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={t.emailPlaceholder}
+                    className="min-h-[52px] rounded-2xl border border-white/15 bg-black/60 px-4 py-3 text-base text-white placeholder:text-white/35 focus:border-fuchsia-500/50 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/25"
+                  />
+                  <p className="text-center text-xs text-white/45 sm:text-sm">{t.emailNoPasswordNeeded}</p>
+                  <button
+                    type="submit"
+                    disabled={!!loading || !email.trim()}
+                    className="min-h-[52px] rounded-2xl py-3.5 text-base font-bold text-white transition-opacity disabled:opacity-45"
+                    style={{ background: "linear-gradient(135deg, #db2777 0%, #a855f7 50%, #c026d3 100%)" }}
+                  >
+                    {emailSent ? t.emailLinkSent : t.emailProceed}
+                  </button>
+                </form>
+
+                {providers?.reddit && (
+                  <button
+                    type="button"
+                    onClick={() => handleOAuth("reddit")}
+                    disabled={!!loading}
+                    className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl border border-orange-500/45 bg-orange-500/15 py-3.5 text-base font-semibold text-orange-100 transition-opacity hover:bg-orange-500/25 disabled:opacity-50"
+                  >
+                    {t.loginWithReddit}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </>
   );

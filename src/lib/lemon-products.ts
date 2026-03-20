@@ -48,6 +48,17 @@ export const LEMON_PRODUCTS = [
 
 export type LemonProductId = (typeof LEMON_PRODUCTS)[number]["id"];
 
+import { formatPriceWithLocal as fmtLocal, formatLocalApprox } from "./currency";
+import type { CurrencyCode } from "./currency";
+
 export function formatPrice(value: number) {
   return `$${value.toFixed(2)}`;
+}
+
+export function formatPriceWithLocal(value: number, currency: CurrencyCode = "IDR") {
+  return fmtLocal(value, currency);
+}
+
+export function formatLocalPriceApprox(value: number, currency: CurrencyCode = "IDR") {
+  return formatLocalApprox(value, currency);
 }

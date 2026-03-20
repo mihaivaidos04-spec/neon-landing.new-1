@@ -2,6 +2,11 @@ import env from "@next/env";
 import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
+import { allowGlobalPulseServerMessage } from "./global-pulse-server-filter.mjs";
+import { MAX_GLOBAL_PULSE_USERNAME_LEN } from "./global-pulse-constants.mjs";
+
+/** In-memory Global Pulse history (last messages); resets on server restart */
+const globalPulseHistory = [];
 
 env.loadEnvConfig(process.cwd(), process.env.NODE_ENV !== "production");
 
@@ -49,7 +54,37 @@ app.prepare().then(() => {
         userSockets.set(userId, socket.id);
         socket.userId = userId;
         socket.join(`user:${userId}`);
+        socket.join("global_pulse");
       }
+    });
+
+    socket.on("global_pulse_request_history", () => {
+      socket.emit("global_pulse_history", globalPulseHistory.slice(-80));
+    });
+
+    socket.on("global_pulse_send", (payload) => {
+      const uid = socket.userId;
+      if (!uid || !payload || typeof payload !== "object") return;
+      const raw = typeof payload.message === "string" ? payload.message.trim() : "";
+      if (!allowGlobalPulseServerMessage(raw)) return;
+      const userName =
+        typeof payload.userName === "string"
+          ? [...payload.userName.trim()].slice(0, MAX_GLOBAL_PULSE_USERNAME_LEN).join("")
+          : "User";
+      const cc = payload.countryCode;
+      const countryCode =
+        typeof cc === "string" && cc.length === 2 ? cc.toUpperCase() : null;
+      const entry = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+        userId: uid,
+        userName: userName || "User",
+        countryCode,
+        message: raw.slice(0, 280),
+        ts: Date.now(),
+      };
+      globalPulseHistory.push(entry);
+      if (globalPulseHistory.length > 120) globalPulseHistory.shift();
+      io.to("global_pulse").emit("global_pulse_message", entry);
     });
 
     socket.on("private_invite", ({ toUserId, roomId }) => {

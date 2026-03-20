@@ -3,9 +3,13 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { sanitizeForDisplay } from "../lib/text-moderation";
+import type { ContentLocale } from "../lib/content-i18n";
+import UserNameWithFlag from "./UserNameWithFlag";
 
 type Props = {
   partnerName?: string;
+  partnerCountryCode?: string | null;
+  locale?: ContentLocale;
   interests?: string[];
   totalGiftsReceived?: number;
   visible: boolean;
@@ -16,6 +20,8 @@ const DEFAULT_INTERESTS = ["Music", "Travel", "Photography", "Coffee", "Movies"]
 
 export default function BioCard({
   partnerName = "Partner",
+  partnerCountryCode = null,
+  locale = "en",
   interests = DEFAULT_INTERESTS,
   totalGiftsReceived = 0,
   visible,
@@ -48,7 +54,12 @@ export default function BioCard({
       >
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="text-xs font-semibold text-white/90">{sanitizeForDisplay(partnerName)}</p>
+            <UserNameWithFlag
+              name={sanitizeForDisplay(partnerName)}
+              countryCode={partnerCountryCode}
+              locale={locale}
+              nameClassName="text-xs font-semibold text-white/90"
+            />
             <p className="mt-1 text-[10px] text-white/60">Interests</p>
             <p className="text-[11px] text-white/80">
               {interests.slice(0, 3).map((i) => sanitizeForDisplay(i)).join(" · ")}

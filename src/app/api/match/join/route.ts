@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/src/auth";
+import { prisma } from "@/src/lib/prisma";
 import { joinMatchPool } from "@/src/lib/matching";
 import { getWalletBalance } from "@/src/lib/wallet";
 import { getBatteryLevel } from "@/src/lib/battery";
@@ -32,11 +33,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const [shadowBanned, dbSuspended] = await Promise.all([
+    const [shadowBanned, dbSuspended, user] = await Promise.all([
       Promise.resolve(isUserShadowBanned(userId)),
       isUserMatchingSuspended(userId),
+      prisma.user.findUnique({ where: { id: userId }, select: { isShadowBanned: true } }),
     ]);
-    if (shadowBanned || dbSuspended) {
+    if (shadowBanned || dbSuspended || user?.isShadowBanned) {
       return NextResponse.json(
         { error: "Your account is temporarily restricted due to reports. Please try again in 24 hours." },
         { status: 403 }

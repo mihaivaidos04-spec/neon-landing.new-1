@@ -2,11 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/src/auth";
 import { getSupabase } from "@/src/lib/supabase";
 import { prisma } from "@/src/lib/prisma";
-
-const VALID_COUNTRY_CODES = new Set([
-  "RO", "US", "GB", "DE", "FR", "IT", "ES", "NL", "PL", "PT", "TR",
-  "SA", "AE", "QA", "KW", "BH", "OM", "EG", "JO", "IQ", "IR", "PK", "IN", "ID", "MY", "SG", "TH", "VN", "PH", "JP", "KR", "CN", "AU", "BR", "MX", "AR", "CA", "RU", "UA",
-]);
+import { isPlausibleCountryCode } from "@/src/lib/valid-country-code";
+import { setCountryCodeCookieOnResponse } from "@/src/lib/country-cookie";
 
 export async function GET() {
   try {
@@ -38,7 +35,7 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const countryCode = (body?.countryCode as string)?.toUpperCase()?.slice(0, 2) || null;
 
-    if (countryCode && !VALID_COUNTRY_CODES.has(countryCode)) {
+    if (countryCode && !isPlausibleCountryCode(countryCode)) {
       return NextResponse.json({ error: "Invalid country code" }, { status: 400 });
     }
 
@@ -64,7 +61,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Failed to update" }, { status: 500 });
     }
 
-    return NextResponse.json({ countryCode: countryCode || null });
+    const res = NextResponse.json({ countryCode: countryCode || null });
+    if (countryCode && isPlausibleCountryCode(countryCode)) {
+      setCountryCodeCookieOnResponse(res, countryCode);
+    }
+    return res;
   } catch (err) {
     console.error("[api/me/region POST]", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
