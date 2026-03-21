@@ -14,10 +14,12 @@ import { getSupabase } from "./supabase";
 import { hasActivePass } from "./user-profiles";
 import { getWalletBalance } from "./wallet";
 import { getBatteryLevel } from "./battery";
+import { prisma } from "./prisma";
 
 const PRIORITY_COIN_THRESHOLD = 500;
 const FAST_MATCH_MS = 2000;
 const BOOST_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+const POPULAR_LAST_SEEN_MS = 20 * 60 * 1000;
 
 function isBoosted(boostedAt: string | null | undefined): boolean {
   if (!boostedAt) return false;
@@ -53,6 +55,27 @@ export async function computePriorityScore(userId: string): Promise<PriorityInfo
   return { priority, isSlowQueue };
 }
 
+/** Higher = more “active / popular” for VIP match preference */
+async function fetchPartnerPopularityScores(
+  userIds: string[]
+): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  if (userIds.length === 0) return map;
+  const now = Date.now();
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, currentLevel: true, lastSeenAt: true, xp: true },
+  });
+  for (const u of users) {
+    const seenMs = u.lastSeenAt ? now - u.lastSeenAt.getTime() : Number.POSITIVE_INFINITY;
+    const activeBoost = seenMs <= POPULAR_LAST_SEEN_MS ? 80 : 0;
+    const levelScore = (u.currentLevel ?? 1) * 12;
+    const xpScore = Math.min(40, Math.floor((u.xp ?? 0) / 500));
+    map.set(u.id, activeBoost + levelScore + xpScore);
+  }
+  return map;
+}
+
 export type MatchResult =
   | { status: "waiting" }
   | { status: "matched"; partnerId: string }
@@ -66,10 +89,12 @@ export type MatchResult =
  */
 export async function joinMatchPool(userId: string, filter?: string | null): Promise<MatchResult> {
   const supabase = getSupabase();
-  const [isPriority, { priority, isSlowQueue }] = await Promise.all([
+  const [isPriority, { priority, isSlowQueue }, vipRow] = await Promise.all([
     computeIsPriority(userId),
     computePriorityScore(userId),
+    prisma.user.findUnique({ where: { id: userId }, select: { isVip: true } }),
   ]);
+  const joiningIsNeonVip = vipRow?.isVip === true;
 
   // Remove any existing row (re-join)
   await supabase.from("active_users").delete().eq("user_id", userId);
@@ -90,7 +115,7 @@ export async function joinMatchPool(userId: string, filter?: string | null): Pro
   }
 
   // Run matching: try to pair this user (prioritize high priority_score partners)
-  return runMatching(userId, isPriority, isSlowQueue, filter ?? undefined);
+  return runMatching(userId, isPriority, isSlowQueue, joiningIsNeonVip, filter ?? undefined);
 }
 
 /**
@@ -102,6 +127,7 @@ async function runMatching(
   joiningUserId: string,
   joiningIsPriority: boolean,
   joiningIsSlowQueue: boolean,
+  joiningIsNeonVip: boolean,
   filter?: string
 ): Promise<MatchResult> {
   const supabase = getSupabase();
@@ -121,6 +147,9 @@ async function runMatching(
 
   const { data: waiting } = await query;
 
+  const ids = (waiting ?? []).map((r) => r.user_id as string);
+  const popMap = joiningIsNeonVip ? await fetchPartnerPopularityScores(ids) : new Map<string, number>();
+
   const sorted = (waiting ?? []).sort((a, b) => {
     const aBoosted = isBoosted(a.boosted_at as string | null);
     const bBoosted = isBoosted(b.boosted_at as string | null);
@@ -130,6 +159,12 @@ async function runMatching(
     const aSlow = a.is_slow_queue ?? false;
     const bSlow = b.is_slow_queue ?? false;
     if (aSlow !== bSlow) return aSlow ? 1 : -1;
+    // Neon VIP ($18.99): prefer active / high-level partners first
+    if (joiningIsNeonVip) {
+      const pa = popMap.get(a.user_id as string) ?? 0;
+      const pb = popMap.get(b.user_id as string) ?? 0;
+      if (pa !== pb) return pb - pa;
+    }
     // Prefer high priority_score (matching with similar/high priority users)
     const aScore = (a.priority_score as number) ?? 0;
     const bScore = (b.priority_score as number) ?? 0;
@@ -165,7 +200,8 @@ export async function reRunMatchingForUser(userId: string): Promise<MatchResult>
   const isEffectivelyPriority =
     data.is_priority || isBoosted(data.boosted_at as string | null);
   const isSlowQueue = data.is_slow_queue ?? false;
-  return runMatching(userId, isEffectivelyPriority, isSlowQueue);
+  const vipRow = await prisma.user.findUnique({ where: { id: userId }, select: { isVip: true } });
+  return runMatching(userId, isEffectivelyPriority, isSlowQueue, vipRow?.isVip === true, undefined);
 }
 
 /**
@@ -306,6 +342,14 @@ export async function getQueuePreview(
     .eq("status", "waiting")
     .neq("user_id", currentUserId);
 
+  const vipRow = await prisma.user.findUnique({
+    where: { id: currentUserId },
+    select: { isVip: true },
+  });
+  const joiningIsNeonVip = vipRow?.isVip === true;
+  const ids = (data ?? []).map((r) => r.user_id as string);
+  const popMap = joiningIsNeonVip ? await fetchPartnerPopularityScores(ids) : new Map<string, number>();
+
   const sorted = (data ?? []).sort((a, b) => {
     const aBoosted = isBoosted(a.boosted_at as string | null);
     const bBoosted = isBoosted(b.boosted_at as string | null);
@@ -314,6 +358,11 @@ export async function getQueuePreview(
     const aSlow = a.is_slow_queue ?? false;
     const bSlow = b.is_slow_queue ?? false;
     if (aSlow !== bSlow) return aSlow ? 1 : -1;
+    if (joiningIsNeonVip) {
+      const pa = popMap.get(a.user_id as string) ?? 0;
+      const pb = popMap.get(b.user_id as string) ?? 0;
+      if (pa !== pb) return pb - pa;
+    }
     const aScore = (a.priority_score as number) ?? 0;
     const bScore = (b.priority_score as number) ?? 0;
     if (aScore !== bScore) return bScore - aScore;

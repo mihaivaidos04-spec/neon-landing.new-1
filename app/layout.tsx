@@ -8,6 +8,8 @@ import Footer from "@/src/components/Footer";
 import CookieConsentBanner from "@/src/components/CookieConsentBanner";
 import UtmCapture from "@/src/components/UtmCapture";
 import GiftNotificationListener from "@/src/components/GiftNotificationListener";
+import LegendPurchaseListener from "@/src/components/LegendPurchaseListener";
+import MiniMessengerDock from "@/src/components/MiniMessengerDock";
 import { SocketProviderWithAuth } from "@/src/contexts/SocketContext";
 import "./globals.css";
 
@@ -128,6 +130,8 @@ export default function RootLayout({
           <AuthProvider>
             <SocketProviderWithAuth>
               <GiftNotificationListener />
+              <LegendPurchaseListener />
+              <MiniMessengerDock />
               {children}
             </SocketProviderWithAuth>
           </AuthProvider>

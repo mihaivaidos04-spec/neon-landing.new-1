@@ -1,12 +1,12 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { getContentT } from "@/src/lib/content-i18n";
 import { getBrowserLocale } from "@/src/lib/content-i18n";
 import { useSocketContext } from "@/src/contexts/SocketContext";
-import VideoManager, { type VideoManagerHandle } from "@/src/components/VideoManager";
+import PrivateRoomVideoWebRTC from "@/src/components/PrivateRoomVideoWebRTC";
 
 export default function PrivateRoomPage() {
   const params = useParams();
@@ -21,10 +21,9 @@ export default function PrivateRoomPage() {
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [closed, setClosed] = useState(false);
-  const { socket } = useSocketContext();
+  const { socket, connected } = useSocketContext();
   const locale = getBrowserLocale();
   const t = getContentT(locale);
-  const videoRef = useRef<VideoManagerHandle>(null);
 
   useEffect(() => {
     if (!roomId) return;
@@ -64,12 +63,6 @@ export default function PrivateRoomPage() {
     };
   }, [socket, roomId]);
 
-  useEffect(() => {
-    if (room && !closed && roomId && videoRef.current) {
-      videoRef.current.joinChannel(roomId);
-    }
-  }, [room, closed, roomId]);
-
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -93,8 +86,10 @@ export default function PrivateRoomPage() {
     );
   }
 
-  const userId = (session as any)?.userId ?? session?.user?.id;
+  const userId = (session as { userId?: string })?.userId ?? session?.user?.id;
   const isHost = room.host_user_id === userId;
+  const peerUserId =
+    userId === room.host_user_id ? room.guest_user_id : room.host_user_id;
 
   return (
     <div className="min-h-screen bg-black p-4">
@@ -108,15 +103,25 @@ export default function PrivateRoomPage() {
             : "Ești invitat în această cameră privată."}
         </p>
         <div className="mt-6 aspect-video w-full overflow-hidden rounded-xl">
-          <VideoManager
-            ref={videoRef}
-            onNext={() => router.push("/")}
-          />
+          {userId && peerUserId ? (
+            <PrivateRoomVideoWebRTC
+              roomId={roomId}
+              myUserId={userId}
+              peerUserId={peerUserId}
+              socket={socket}
+              socketConnected={connected}
+              onLeave={() => router.push("/")}
+            />
+          ) : (
+            <div className="flex h-full min-h-[200px] items-center justify-center bg-zinc-900 text-white/60">
+              {t.searching}
+            </div>
+          )}
         </div>
         <button
           type="button"
           onClick={() => router.push("/")}
-          className="mt-4 rounded-full border border-white/20 px-6 py-2 text-white/80 hover:bg-white/10"
+          className="mt-4 rounded-full border border-fuchsia-500/30 px-6 py-2 text-fuchsia-100/90 hover:bg-fuchsia-950/30"
         >
           Părăsește camera
         </button>

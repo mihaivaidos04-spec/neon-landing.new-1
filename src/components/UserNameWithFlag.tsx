@@ -11,6 +11,8 @@ type Props = {
   className?: string;
   /** Text span classes */
   nameClassName?: string;
+  /** Whale / VIP: gold or electric-blue neon text-shadow */
+  neonVipGlow?: "gold" | "blue" | false;
 };
 
 /**
@@ -23,7 +25,14 @@ export default function UserNameWithFlag({
   flagSize = "sm",
   className = "",
   nameClassName = "",
+  neonVipGlow = false,
 }: Props) {
+  const vipClass =
+    neonVipGlow === "gold"
+      ? "neon-vip-name-gold"
+      : neonVipGlow === "blue"
+        ? "neon-vip-name-blue"
+        : "";
   return (
     <span
       className={`inline-flex min-w-0 max-w-full items-center gap-1 sm:gap-1.5 ${className}`}
@@ -34,7 +43,7 @@ export default function UserNameWithFlag({
         size={flagSize}
         className="translate-y-px sm:translate-y-0"
       />
-      <span className={`min-w-0 truncate leading-tight ${nameClassName}`}>{name}</span>
+      <span className={`min-w-0 truncate leading-tight ${vipClass} ${nameClassName}`}>{name}</span>
     </span>
   );
 }

@@ -8,6 +8,8 @@ type Props = {
   percent: number;
   /** Optional size class */
   className?: string;
+  /** Smaller bar for compact header / mobile toolbar */
+  compact?: boolean;
 };
 
 /** 4 segmente: 25%, 50%, 75%, 100%. La pragurile 75, 50, 25 se stinge vizual câte un segment. */
@@ -81,7 +83,7 @@ function BatterySegment({
   );
 }
 
-export default function BatteryIndicator({ percent, className = "" }: Props) {
+export default function BatteryIndicator({ percent, className = "", compact = false }: Props) {
   const clamped = Math.max(0, Math.min(100, percent));
   const { color, litCount } = useMemo(
     () => getColorAndLitCount(clamped),
@@ -89,22 +91,26 @@ export default function BatteryIndicator({ percent, className = "" }: Props) {
   );
   const isBlinking = clamped > 0 && clamped <= 25;
 
+  const bodyClass = compact ? "h-4 w-[4.25rem] rounded-[5px]" : "h-5 w-20 rounded-md";
+  const padClass = compact ? "gap-px p-px" : "gap-[2px] p-[3px]";
+  const tipClass = compact ? "h-1.5 w-0.5" : "h-2 w-1";
+
   return (
     <div
-      className={`flex items-center gap-0.5 ${className}`}
+      className={`flex shrink-0 items-center gap-0.5 ${className}`}
       role="img"
       aria-label={`Battery ${clamped}%`}
     >
       {/* Battery body - dark glass */}
       <div
-        className="flex h-5 w-20 overflow-hidden rounded-md border border-white/20"
+        className={`flex overflow-hidden border border-white/20 ${bodyClass}`}
         style={{
           background: "rgba(15, 23, 42, 0.6)",
           backdropFilter: "blur(8px)",
           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
         }}
       >
-        <div className="flex h-full flex-1 gap-[2px] p-[3px]">
+        <div className={`flex h-full flex-1 ${padClass}`}>
           {[0, 1, 2, 3].map((i) => (
             <BatterySegment
               key={i}
@@ -118,7 +124,7 @@ export default function BatteryIndicator({ percent, className = "" }: Props) {
       </div>
       {/* Battery tip */}
       <div
-        className="h-2 w-1 rounded-r border-y border-r border-white/20"
+        className={`rounded-r border-y border-r border-white/20 ${tipClass}`}
         style={{
           background: "rgba(15, 23, 42, 0.6)",
           backdropFilter: "blur(8px)",

@@ -109,7 +109,7 @@ export default function AgoraVideo({ channelName, onError }: Props) {
       {/* Remote video (main) */}
       <div
         ref={remoteVideoRef}
-        className="absolute inset-0 h-full w-full bg-zinc-900"
+        className="theater-agora-remote absolute inset-0 z-0 h-full min-h-0 w-full bg-zinc-900"
       >
         {!joined && (
           <div className="flex h-full items-center justify-center text-white/50">
@@ -125,7 +125,7 @@ export default function AgoraVideo({ channelName, onError }: Props) {
       {/* Local video (corner) */}
       <div
         ref={localVideoRef}
-        className="absolute bottom-3 right-3 h-24 w-32 overflow-hidden rounded-lg border-2 border-[#8b5cf6]/60 bg-black sm:h-28 sm:w-36"
+        className="theater-agora-local absolute bottom-3 right-3 z-[1] h-24 w-32 overflow-hidden rounded-lg border-2 border-[#8b5cf6]/60 bg-black sm:h-28 sm:w-36"
       />
     </div>
   );

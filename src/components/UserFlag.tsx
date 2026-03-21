@@ -7,7 +7,7 @@ import { isPlausibleCountryCode } from "../lib/valid-country-code";
 
 type FlagSvgProps = SVGAttributes<SVGSVGElement> & { title?: string };
 
-export type UserFlagSize = "sm" | "md";
+export type UserFlagSize = "sm" | "md" | "lg";
 
 type Props = {
   code: string | null | undefined;
@@ -21,6 +21,7 @@ type Props = {
 const DIMS: Record<UserFlagSize, { w: number; h: number }> = {
   sm: { w: 18, h: 12 },
   md: { w: 21, h: 14 },
+  lg: { w: 48, h: 32 },
 };
 
 function GlobalGlobe({

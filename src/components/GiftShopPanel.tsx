@@ -8,7 +8,8 @@ import type { VideoFilterId } from "../lib/video-filters";
 import { REACTIONS } from "../lib/reactions";
 import type { ReactionId } from "../lib/reactions";
 import { getReactionCost, getGiftCost } from "../lib/coins";
-import { GIFTS, type GiftId } from "./GiftsBar";
+import { GIFTS } from "./GiftsBar";
+import type { TheaterGiftId } from "../lib/theater-gifts";
 
 const GIFT_DRAWER_TITLE: Partial<Record<ContentLocale, string>> = {
   en: "Gifts & video effects",
@@ -35,7 +36,7 @@ type BaseProps = {
   onLiveTranslationToggle: () => void;
   coins: number;
   onSendReaction: (reactionId: ReactionId) => void;
-  onSendGift: (giftId: GiftId) => void;
+  onSendGift: (giftId: TheaterGiftId) => void;
   /** Wrap interactions (e.g. guest → login) */
   onBeforeInteraction?: () => boolean;
 };

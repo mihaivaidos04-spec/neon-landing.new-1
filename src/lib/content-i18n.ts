@@ -20,6 +20,8 @@ export type ContentMessagesType = {
   subPlayerText: string;
   startBtn: string;
   nextBtn: string;
+  /** Mobile: swipe-left hint on video stage */
+  videoSwipeStartHint: string;
   stopBtn: string;
   undoBackBtn: string;
   instantRevealBtn: string;
@@ -111,6 +113,8 @@ export type ContentMessagesType = {
   // Daily quest
   dailyQuestTitle: string;
   dailyQuestGoal: string;
+  /** Sidebar: future arcade / games */
+  gamesComingSoon: string;
   // Daily reward (first login = 5% battery, 7-day streak = Gold Badge)
   dailyRewardTitle: string;
   dailyRewardBattery: string;
@@ -197,6 +201,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     subPlayerText: "Vorbește gratuit cu oameni noi. Trimite un cadou mic (de la 1 Bănuț) pentru a-ți arăta aprecierea.",
     startBtn: "START",
     nextBtn: "NEXT",
+    videoSwipeStartHint: "Trage spre stânga — START / NEXT",
     stopBtn: "STOP",
     undoBackBtn: "Înapoi (3)",
     instantRevealBtn: "Revelare instant (1)",
@@ -280,6 +285,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     level50Unlock: "Invisible Mode",
     dailyQuestTitle: "Misiunea zilei",
     dailyQuestGoal: "Vorbește cu 5 persoane noi pentru +3 Bănuți",
+    gamesComingSoon: "În curând",
     dailyRewardTitle: "Recompensa zilnică",
     dailyRewardBattery: "+5% baterie",
     dailyRewardGoldBadge: "7 zile = Gold Badge",
@@ -350,6 +356,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     subPlayerText: "Talk for free with new people. Send a small gift (from 1 coin) to show your appreciation.",
     startBtn: "START",
     nextBtn: "NEXT",
+    videoSwipeStartHint: "Swipe left — START / NEXT",
     stopBtn: "STOP",
     undoBackBtn: "Back (3)",
     instantRevealBtn: "Instant Reveal (1)",
@@ -433,6 +440,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     level50Unlock: "Invisible Mode",
     dailyQuestTitle: "Daily quest",
     dailyQuestGoal: "Talk to 5 new people for +3 Coins",
+    gamesComingSoon: "Coming soon",
     dailyRewardTitle: "Daily reward",
     dailyRewardBattery: "+5% battery",
     dailyRewardGoldBadge: "7 days = Gold Badge",
@@ -503,6 +511,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     subPlayerText: "Spreche kostenlos mit neuen Leuten. Sende ein kleines Geschenk (ab 0.10$) um deine Wertschätzung zu zeigen.",
     startBtn: "START",
     nextBtn: "NÄCHSTER",
+    videoSwipeStartHint: "Nach links wischen — START / WEITER",
     stopBtn: "STOP",
     undoBackBtn: "Zurück (3)",
     instantRevealBtn: "Sofort anzeigen (1)",
@@ -586,6 +595,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     level50Unlock: "Invisible Mode",
     dailyQuestTitle: "Tagesquest",
     dailyQuestGoal: "Sprich mit 5 neuen Personen für +3 Coins",
+    gamesComingSoon: "Demnächst",
     dailyRewardTitle: "Tägliche Belohnung",
     dailyRewardBattery: "+5% Batterie",
     dailyRewardGoldBadge: "7 Tage = Gold Badge",
@@ -656,6 +666,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     subPlayerText: "Parla gratis con nuove persone. Invia un piccolo regalo (da 0.10$) per mostrare il tuo apprezzamento.",
     startBtn: "AVVIA",
     nextBtn: "PROSSIMO",
+    videoSwipeStartHint: "Scorri a sinistra — START / AVANTI",
     stopBtn: "STOP",
     undoBackBtn: "Indietro (3)",
     instantRevealBtn: "Mostra subito (1)",
@@ -739,6 +750,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     level50Unlock: "Invisible Mode",
     dailyQuestTitle: "Missione del giorno",
     dailyQuestGoal: "Parla con 5 nuove persone per +3 Monete",
+    gamesComingSoon: "Prossimamente",
     dailyRewardTitle: "Ricompensa giornaliera",
     dailyRewardBattery: "+5% batteria",
     dailyRewardGoldBadge: "7 giorni = Gold Badge",
@@ -809,6 +821,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     subPlayerText: "Habla gratis con gente nueva. Envía un regalo pequeño (desde 0.10$) para mostrar tu aprecio.",
     startBtn: "INICIAR",
     nextBtn: "SIGUIENTE",
+    videoSwipeStartHint: "Desliza a la izquierda — INICIO / SIGUIENTE",
     stopBtn: "PARAR",
     undoBackBtn: "Atrás (3)",
     instantRevealBtn: "Revelar ahora (1)",
@@ -892,6 +905,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     level50Unlock: "Invisible Mode",
     dailyQuestTitle: "Misión del día",
     dailyQuestGoal: "Habla con 5 personas nuevas por +3 monedas",
+    gamesComingSoon: "Próximamente",
     dailyRewardTitle: "Recompensa diaria",
     dailyRewardBattery: "+5% batería",
     dailyRewardGoldBadge: "7 días = Gold Badge",
@@ -962,6 +976,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     subPlayerText: "Parle gratuitement avec de nouvelles personnes. Envoie un petit cadeau (à partir de 0.10$) pour montrer ton appréciation.",
     startBtn: "DÉMARRER",
     nextBtn: "SUIVANT",
+    videoSwipeStartHint: "Glissez à gauche — DÉMARRER / SUIVANT",
     stopBtn: "STOP",
     undoBackBtn: "Retour (3)",
     instantRevealBtn: "Révéler instantanément (1)",
@@ -1045,6 +1060,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     level50Unlock: "Invisible Mode",
     dailyQuestTitle: "Quête du jour",
     dailyQuestGoal: "Parlez à 5 nouvelles personnes pour +3 pièces",
+    gamesComingSoon: "Bientôt",
     dailyRewardTitle: "Récompense quotidienne",
     dailyRewardBattery: "+5% batterie",
     dailyRewardGoldBadge: "7 jours = Gold Badge",
@@ -1115,6 +1131,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     subPlayerText: "Fala grátis com pessoas novas. Envia um presente pequeno (a partir de 0.10$) para mostrar apreço.",
     startBtn: "INICIAR",
     nextBtn: "PRÓXIMO",
+    videoSwipeStartHint: "Deslize à esquerda — INICIAR / PRÓXIMO",
     stopBtn: "PARAR",
     undoBackBtn: "Voltar (3)",
     instantRevealBtn: "Revelar agora (1)",
@@ -1198,6 +1215,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     level50Unlock: "Invisible Mode",
     dailyQuestTitle: "Missão do dia",
     dailyQuestGoal: "Fala com 5 pessoas novas por +3 moedas",
+    gamesComingSoon: "Em breve",
     dailyRewardTitle: "Recompensa diária",
     dailyRewardBattery: "+5% bateria",
     dailyRewardGoldBadge: "7 dias = Gold Badge",
@@ -1268,6 +1286,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     subPlayerText: "Praat gratis met nieuwe mensen. Stuur een klein cadeau (vanaf 0.10$) om je waardering te tonen.",
     startBtn: "START",
     nextBtn: "VOLGENDE",
+    videoSwipeStartHint: "Veeg naar links — START / VOLGENDE",
     stopBtn: "STOP",
     undoBackBtn: "Terug (3)",
     instantRevealBtn: "Direct tonen (1)",
@@ -1351,6 +1370,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     level50Unlock: "Invisible Mode",
     dailyQuestTitle: "Dagelijkse missie",
     dailyQuestGoal: "Praat met 5 nieuwe mensen voor +3 munten",
+    gamesComingSoon: "Binnenkort",
     dailyRewardTitle: "Dagelijkse beloning",
     dailyRewardBattery: "+5% batterij",
     dailyRewardGoldBadge: "7 dagen = Gold Badge",
@@ -1421,6 +1441,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     subPlayerText: "Rozmawiaj za darmo z nowymi osobami. Wyślij mały prezent (od 0.10$) aby pokazać uznanie.",
     startBtn: "START",
     nextBtn: "NASTĘPNY",
+    videoSwipeStartHint: "Przesuń w lewo — START / DALEJ",
     stopBtn: "STOP",
     undoBackBtn: "Wstecz (3)",
     instantRevealBtn: "Pokaż od razu (1)",
@@ -1504,6 +1525,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     level50Unlock: "Invisible Mode",
     dailyQuestTitle: "Misja dzienna",
     dailyQuestGoal: "Porozmawiaj z 5 nowymi osobami za +3 monety",
+    gamesComingSoon: "Wkrótce",
     dailyRewardTitle: "Nagroda dzienna",
     dailyRewardBattery: "+5% baterii",
     dailyRewardGoldBadge: "7 dni = Złota Odznaka",
@@ -1574,6 +1596,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     subPlayerText: "Yeni insanlarla ücretsiz konuş. Takdirini göstermek için küçük bir hediye gönder (0.10$'dan itibaren).",
     startBtn: "BAŞLAT",
     nextBtn: "SONRAKİ",
+    videoSwipeStartHint: "Sola kaydır — BAŞLAT / SONRAKİ",
     stopBtn: "DURDUR",
     undoBackBtn: "Geri (3)",
     instantRevealBtn: "Anında göster (1)",
@@ -1657,6 +1680,7 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     level50Unlock: "Invisible Mode",
     dailyQuestTitle: "Günlük görev",
     dailyQuestGoal: "5 yeni kişiyle konuş, +3 jeton kazan",
+    gamesComingSoon: "Çok yakında",
     dailyRewardTitle: "Günlük ödül",
     dailyRewardBattery: "+5% pil",
     dailyRewardGoldBadge: "7 gün = Gold Badge",

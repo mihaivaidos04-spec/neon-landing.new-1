@@ -167,7 +167,7 @@ const VideoManager = forwardRef<VideoManagerHandle, Props>(
       {/* Remote video – full screen, object-cover for mobile */}
       <div
         ref={remoteVideoRef}
-        className="absolute inset-0 h-full w-full overflow-hidden bg-black [&>video]:h-full [&>video]:w-full [&>video]:object-cover"
+        className="theater-agora-remote absolute inset-0 h-full w-full min-h-0 overflow-hidden bg-black"
       >
         {!joined && (
           <div className="flex h-full w-full items-center justify-center bg-zinc-900 text-white/50">
@@ -184,7 +184,7 @@ const VideoManager = forwardRef<VideoManagerHandle, Props>(
       {/* Local video – small corner, object-cover for mobile */}
       <div
         ref={localVideoRef}
-        className="absolute bottom-20 right-3 h-24 w-32 overflow-hidden rounded-lg border-2 border-[#8b5cf6]/60 bg-black [&>video]:h-full [&>video]:w-full [&>video]:object-cover sm:bottom-24 sm:h-28 sm:w-36"
+        className="theater-agora-local absolute bottom-20 right-3 h-24 w-32 overflow-hidden rounded-lg border-2 border-[#8b5cf6]/60 bg-black sm:bottom-24 sm:h-28 sm:w-36"
       />
 
       {/* Controls */}

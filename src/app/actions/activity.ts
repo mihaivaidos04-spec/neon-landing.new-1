@@ -4,6 +4,7 @@ import { auth } from "@/src/auth";
 import { prisma } from "@/src/lib/prisma";
 import { checkRateLimit } from "@/src/lib/rate-limit";
 import { XP_LOGIN, getXpForGiftSent, XP_GIFT_RECEIVED_BONUS } from "@/src/lib/levels";
+import { neonLevelFromXp } from "@/src/lib/neon-xp-level";
 
 export type ActivityType = "login" | "gift_sent" | "gift_received";
 
@@ -70,17 +71,7 @@ export async function handleUserActivity(
         },
       });
 
-      const levels = await tx.level.findMany({
-        orderBy: { level: "asc" },
-      });
-
-      let newLevel = user.currentLevel;
-      for (const lvl of levels) {
-        if (newXp >= lvl.xpRequired) {
-          newLevel = lvl.level;
-        }
-      }
-
+      const newLevel = neonLevelFromXp(newXp);
       const leveledUp = newLevel > user.currentLevel;
 
       await tx.user.update({
@@ -89,13 +80,12 @@ export async function handleUserActivity(
       });
 
       if (leveledUp) {
-        const levelData = levels.find((l) => l.level === newLevel);
         await tx.notification.create({
           data: {
             userId,
             type: "level_up",
             title: `Level ${newLevel} reached!`,
-            body: levelData ? `You earned the ${levelData.badgeIcon} badge!` : undefined,
+            body: "Your Neon level just climbed — keep the vibe going.",
           },
         });
       }

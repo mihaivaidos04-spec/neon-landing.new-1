@@ -3,29 +3,11 @@
 import { useState } from "react";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
-
-const INVITE_MESSAGE = "Hey, check out NeonLive, I just got 10 free coins!";
-
-function buildShareUrl(userId: string): string {
-  if (typeof window === "undefined") return "";
-  const origin = window.location.origin;
-  return `${origin}?ref=${encodeURIComponent(userId)}`;
-}
-
-function buildShareText(userId: string): string {
-  const url = buildShareUrl(userId);
-  return `${INVITE_MESSAGE} ${url}`;
-}
-
-function openWhatsApp(text: string) {
-  const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-  window.open(url, "_blank", "noopener,noreferrer");
-}
-
-function openTelegram(text: string) {
-  const url = `https://t.me/share/url?text=${encodeURIComponent(text)}`;
-  window.open(url, "_blank", "noopener,noreferrer");
-}
+import {
+  buildInviteShareText,
+  openTelegramInvite,
+  openWhatsAppInvite,
+} from "../lib/invite-share";
 
 type Props = {
   locale?: ContentLocale;
@@ -40,15 +22,15 @@ export default function InviteFriendsButton({ locale = "en", userId, compact = f
 
   if (!userId) return null;
 
-  const shareText = buildShareText(userId);
+  const shareText = buildInviteShareText(userId);
 
   const handleWhatsApp = () => {
-    openWhatsApp(shareText);
+    openWhatsAppInvite(shareText);
     setOpen(false);
   };
 
   const handleTelegram = () => {
-    openTelegram(shareText);
+    openTelegramInvite(shareText);
     setOpen(false);
   };
 

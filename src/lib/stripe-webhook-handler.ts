@@ -4,6 +4,8 @@ import { prisma } from "@/src/lib/prisma";
 import { addCoins } from "@/src/lib/wallet";
 import { getSupabase } from "@/src/lib/supabase";
 import { getBillingPackById } from "@/src/lib/billing-packs";
+import { neonLevelFromXp, xpFromCoinsCredited } from "@/src/lib/neon-xp-level";
+import { broadcastLegendPurchase } from "@/src/lib/broadcast-legend-purchase";
 
 function isUniqueConstraintError(e: unknown): boolean {
   return e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
@@ -119,12 +121,24 @@ async function fulfillBillingPack(
   }
 
   await prisma.$transaction(async (tx) => {
+    const before = await tx.user.findUnique({
+      where: { id: userId },
+      select: { xp: true },
+    });
+    const xpAdd = xpFromCoinsCredited(coinsToBuy);
+    const newXp = (before?.xp ?? 0) + xpAdd;
+    const newLevel = neonLevelFromXp(newXp);
+
     await tx.user.update({
       where: { id: userId },
       data: {
         coins: { increment: coinsToBuy },
         hasEverPurchased: true,
+        totalSpent: { increment: pack.priceUsd },
+        xp: newXp,
+        currentLevel: newLevel,
         ...(customerId ? { stripeCustomerId: customerId } : {}),
+        ...(pack.id === "whale" && pack.priceUsd >= 18.99 ? { isVip: true } : {}),
       },
     });
 
@@ -149,6 +163,20 @@ async function fulfillBillingPack(
   });
 
   await optionalPaymentLog(session, userId, sessionId, coinsToBuy, pack.id);
+
+  // Global Pulse: $18.99 Whale Pack → NEON LEGEND (see LegendPurchaseListener + Socket.io)
+  if (pack.id === "whale" && pack.priceUsd === 18.99) {
+    const u = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true },
+    });
+    const userName = u?.name?.trim() || u?.email?.split("@")[0] || "Someone";
+    broadcastLegendPurchase({
+      userId,
+      userName,
+      coinsAdded: coinsToBuy,
+    });
+  }
 }
 
 async function fulfillPlanCheckout(
@@ -215,9 +243,22 @@ async function fulfillPlanCheckout(
     }
 
     await prisma.$transaction(async (tx) => {
+      const before = await tx.user.findUnique({
+        where: { id: userId },
+        select: { xp: true },
+      });
+      const xpAdd = xpFromCoinsCredited(totalCredits);
+      const newXp = (before?.xp ?? 0) + xpAdd;
+      const newLevel = neonLevelFromXp(newXp);
+
       await tx.user.update({
         where: { id: userId },
-        data: { coins: { increment: totalCredits } },
+        data: {
+          coins: { increment: totalCredits },
+          totalSpent: { increment: amountUsd },
+          xp: newXp,
+          currentLevel: newLevel,
+        },
       });
 
       await tx.walletCreditTransaction.create({

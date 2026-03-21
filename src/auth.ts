@@ -20,6 +20,7 @@ import { prisma } from "@/src/lib/prisma";
 import { getWalletBalance } from "@/src/lib/wallet";
 import { getSupabase } from "@/src/lib/supabase";
 import { addLoginXp } from "@/src/lib/login-xp";
+import { neonVipGlowVariant } from "@/src/lib/neon-vip-style";
 
 /** Email Magic Link – no password (Resend sau EMAIL_SERVER) */
 async function sendVerificationRequest(params: { identifier: string; url: string }) {
@@ -130,15 +131,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               isGhost: true,
               country: true,
               coins: true,
+              totalSpent: true,
+              isVip: true,
             },
           });
           if (user) {
             session.tier = user.tier;
             session.xp = user.xp;
             session.currentLevel = user.currentLevel;
+            session.totalSpent = user.totalSpent ?? 0;
             session.countryCode = user.country ?? null;
             const ghostActive = user.ghostModeUntil ? user.ghostModeUntil > new Date() : user.isGhost;
             session.isGhost = ghostActive;
+            session.isNeonVip = user.isVip === true;
+            session.neonVipGlow = user.isVip ? neonVipGlowVariant(userId) : undefined;
           }
           const walletCoins = await getWalletBalance(userId);
           const coins = walletCoins ?? user?.coins ?? 0;

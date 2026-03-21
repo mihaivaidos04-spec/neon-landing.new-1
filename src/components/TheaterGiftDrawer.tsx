@@ -3,13 +3,29 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
-import { GIFTS, getGiftName, type GiftId } from "./GiftsBar";
-import { canAffordGift, getGiftApproxUsdLabel, getGiftCost } from "../lib/coins";
+import { GIFTS, getGiftName } from "./GiftsBar";
+import {
+  type TheaterGiftId,
+  canAffordTheaterGift,
+  getTheaterGiftApproxUsdLabel,
+  getTheaterGiftCost,
+} from "../lib/theater-gifts";
+
+const EXTRA_THEATER_GIFTS: { id: Extract<TheaterGiftId, "fire" | "rocket">; emoji: string }[] = [
+  { id: "fire", emoji: "🔥" },
+  { id: "rocket", emoji: "🚀" },
+];
+
+function theaterGiftLabel(id: TheaterGiftId, locale: ContentLocale): string {
+  if (id === "fire") return "Fire";
+  if (id === "rocket") return "Rocket";
+  return getGiftName(id, locale);
+}
 
 type Props = {
   locale: ContentLocale;
   coins: number;
-  onSelectGift: (giftId: GiftId) => void;
+  onSelectGift: (giftId: TheaterGiftId) => void;
   /** When false, drawer is not shown (e.g. not in a live match). */
   enabled: boolean;
 };
@@ -40,7 +56,7 @@ export default function TheaterGiftDrawer({ locale, coins, onSelectGift, enabled
   }, [open]);
 
   const handlePick = useCallback(
-    (id: GiftId) => {
+    (id: TheaterGiftId) => {
       onSelectGift(id);
       setOpen(false);
     },
@@ -64,16 +80,17 @@ export default function TheaterGiftDrawer({ locale, coins, onSelectGift, enabled
             Send a gift
           </p>
           <div className="grid grid-cols-2 gap-2">
-            {GIFTS.map((g) => {
-              const cost = getGiftCost(g.id);
-              const usd = getGiftApproxUsdLabel(g.id);
-              const affordable = canAffordGift(coins, g.id);
-              const label = getGiftName(g.id, locale);
+            {[...GIFTS, ...EXTRA_THEATER_GIFTS].map((g) => {
+              const id = g.id as TheaterGiftId;
+              const cost = getTheaterGiftCost(id);
+              const usd = getTheaterGiftApproxUsdLabel(id);
+              const affordable = canAffordTheaterGift(coins, id);
+              const label = theaterGiftLabel(id, locale);
               return (
                 <button
                   key={g.id}
                   type="button"
-                  onClick={() => handlePick(g.id)}
+                  onClick={() => handlePick(id)}
                   className={`flex flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2.5 text-center transition active:scale-[0.97] ${
                     affordable
                       ? "border-fuchsia-500/35 bg-gradient-to-b from-fuchsia-950/50 to-black/50 hover:border-fuchsia-400/55 hover:from-fuchsia-900/40"

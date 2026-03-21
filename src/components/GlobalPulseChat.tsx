@@ -16,6 +16,7 @@ import LazyUserFlag from "./LazyUserFlag";
 import { prepareGlobalPulseOutgoingMessage } from "../lib/global-pulse-moderation";
 import { sanitizeForDisplay } from "../lib/text-moderation";
 import { truncateChatDisplayUsername } from "../lib/chat-display-username-limit";
+import { neonVipGlowVariant } from "../lib/neon-vip-style";
 
 export type GlobalPulseMessage = {
   id: string;
@@ -24,6 +25,7 @@ export type GlobalPulseMessage = {
   countryCode: string | null;
   message: string;
   ts: number;
+  neonVip?: boolean;
 };
 
 const SCROLL_BOTTOM_THRESHOLD_PX = 72;
@@ -50,6 +52,7 @@ const GlobalPulseMessageRow = memo(function GlobalPulseMessageRow({
   const isSelf = m.userId === userId;
   const safeUser = truncateChatDisplayUsername(sanitizeForDisplay(m.userName || "User"));
   const safeMsg = sanitizeForDisplay(m.message);
+  const vipGlow = m.neonVip ? neonVipGlowVariant(m.userId) : false;
 
   return (
     <div
@@ -68,7 +71,17 @@ const GlobalPulseMessageRow = memo(function GlobalPulseMessageRow({
             className="mt-[3px] shrink-0 xl:mt-0.5"
           />
           <p className="min-w-0 flex-1 break-words">
-            <span className="font-semibold text-fuchsia-200/95">{safeUser}</span>
+            <span
+              className={`font-semibold text-fuchsia-200/95 ${
+                vipGlow === "gold"
+                  ? "neon-vip-name-gold"
+                  : vipGlow === "blue"
+                    ? "neon-vip-name-blue"
+                    : ""
+              }`}
+            >
+              {safeUser}
+            </span>
             <span className="text-white/45">: </span>
             <span className="text-[#faf5eb]/92">{safeMsg}</span>
           </p>
@@ -145,13 +158,24 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
       });
     };
 
+    const onMessagesRemoved = (payload: unknown) => {
+      if (!payload || typeof payload !== "object") return;
+      const ids = (payload as { ids?: unknown }).ids;
+      if (!Array.isArray(ids) || ids.length === 0) return;
+      const idSet = new Set(ids.filter((x): x is string => typeof x === "string"));
+      if (idSet.size === 0) return;
+      setMessages((prev) => prev.filter((m) => !idSet.has(m.id)));
+    };
+
     socket.on("global_pulse_history", onHistory);
     socket.on("global_pulse_message", onMessage);
+    socket.on("global_pulse_messages_removed", onMessagesRemoved);
     socket.emit("global_pulse_request_history");
 
     return () => {
       socket.off("global_pulse_history", onHistory);
       socket.off("global_pulse_message", onMessage);
+      socket.off("global_pulse_messages_removed", onMessagesRemoved);
     };
   }, [socket, userId]);
 

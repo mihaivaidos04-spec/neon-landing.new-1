@@ -18,12 +18,29 @@ model User {
   country          String?
   referralCount    Int       @default(0)
   totalCoinsSpent  Int       @default(0)
+  /// Lifetime USD spent on Stripe billing packs / checkouts (for VIP glow, analytics)
+  totalSpent       Float     @default(0)
   hasEverPurchased Boolean   @default(false)
   tier             String    @default("NEON_FREE")
   lastLogin        DateTime  @default(now())
-  streakCount      Int       @default(0)
+  /// Consecutive UTC calendar days with a qualifying login
+  currentStreak    Int       @default(0)
+  /// Set to coin amount (e.g. 10) when streak bonus granted; cleared on next GET /api/profile/me
+  streakBonusPopup Int       @default(0)
+  /// Whale pack ($18.99) & high-tier visual perks
+  isVip            Boolean   @default(false)
+  /// Optional custom animated banner URL (GIF/Lottie hosted URL)
+  animatedBanner   String?
+  /// Profile avatar GIF URL (Neon VIP / whale pack only)
+  profileGifUrl    String?
+  /// Level 5+ cosmetic: matrix | waves | stars | null (default gradient)
+  profileBannerEffect String?
   xp               Int       @default(0)
   currentLevel     Int       @default(1)
+  /// Best score across future in-app arcade / mini-games
+  highScore        Int       @default(0)
+  /// Currency for future arcade modes (earn / spend in-game)
+  arcadeTokens     Int       @default(0)
   ghostModeUntil   DateTime? // Status boost: Ghost Mode until this timestamp
   isShadowBanned   Boolean   @default(false)
   moderationFlags  String?   // JSON: { toxicCount, nsfwCount, lastFlaggedAt }
@@ -40,8 +57,27 @@ model User {
   reportsReceived  Report[]  @relation("ReportReported")
   stripePurchases         StripePurchase[]
   walletCreditTransactions WalletCreditTransaction[]
+  /// Optional cover image URL (LinkedIn-style); empty = default gradient
+  profileBannerUrl String?
+  /// Short public bio, max 150 chars (enforced in API)
+  bio              String?
+  /// Profile display: male | female | other (optional)
+  profileGender    String?
+  /// JSON string: ISO language codes user speaks, e.g. ["en","ro"]
+  profileLanguages String?
+  socialInstagram  String?
+  socialTiktok     String?
+  socialDiscord    String?
+  /// Updated on Socket register/disconnect for “last seen”
+  lastSeenAt       DateTime  @default(now())
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+
+  profileGalleryImages   ProfileGalleryImage[]
+  friendshipsRequested   Friendship[]          @relation("FriendshipRequester")
+  friendshipsReceived    Friendship[]          @relation("FriendshipAddressee")
+  privateMessagesSent    PrivateMessage[]      @relation("DmSender")
+  privateMessagesReceived PrivateMessage[]     @relation("DmReceiver")
 
   @@index([xp])
   @@index([currentLevel])
@@ -269,4 +305,70 @@ model CreatorGoal {
   updatedAt   DateTime @updatedAt
 
   @@index([userId])
+}
+
+/// Global Pulse world chat — short-lived rows (TTL enforced in app + optional SQL helper).
+model ChatMessage {
+  id          String   @id @default(cuid())
+  userId      String
+  userName    String
+  countryCode String?  @db.VarChar(2)
+  message     String   @db.VarChar(280)
+  /// Snapshot: sender had Neon VIP (whale) at post time — for gold/blue name glow in history
+  neonVip     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+/// Character / persona gallery — exactly 3 slots (0–2) per user.
+model ProfileGalleryImage {
+  id        String   @id @default(cuid())
+  userId    String
+  slot      Int
+  imageUrl  String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, slot])
+  @@index([userId])
+  @@map("profile_gallery_images")
+}
+
+/// Friend requests & accepted friendships (requester → addressee).
+model Friendship {
+  id          String   @id @default(cuid())
+  requesterId String
+  addresseeId String
+  status      String   @default("pending") // pending | accepted | declined
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  requester User @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@index([requesterId])
+  @@index([addresseeId])
+  @@index([status])
+  @@map("friendships")
+}
+
+/// Direct messages between friends (not Global Pulse).
+model PrivateMessage {
+  id          String    @id @default(cuid())
+  senderId    String
+  receiverId  String
+  body        String    @db.VarChar(2000)
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  sender   User @relation("DmSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("DmReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, receiverId, createdAt])
+  @@index([receiverId, createdAt])
+  @@map("private_messages")
 }

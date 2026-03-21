@@ -37,11 +37,12 @@ export function SocketProvider({
 
     const s = createSocket();
     socketRef.current = s;
+    // Expose socket before `connect` so Pulse / match hooks can attach listeners immediately
+    setSocket(s);
 
     s.on("connect", () => {
       setConnected(true);
       s.emit("register", userId);
-      setSocket(s);
     });
 
     s.on("disconnect", () => {

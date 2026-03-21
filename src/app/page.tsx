@@ -37,10 +37,10 @@ const FirstPurchaseBonusTimer = dynamic(
   () => import("../components/FirstPurchaseBonusTimer"),
   { ssr: false }
 );
-const Hero = dynamic(() => import("../components/HeroGlobal"), { ssr: true });
 const LiveUsersInfinite = dynamic(() => import("../components/LiveUsersInfinite"), { ssr: false });
 const MicroAd = dynamic(() => import("../components/MicroAd"), { ssr: false });
 const LiveIndicator = dynamic(() => import("../components/LiveIndicator"), { ssr: false });
+const HeaderInviteShare = dynamic(() => import("../components/HeaderInviteShare"), { ssr: false });
 const FaqSection = dynamic(() => import("../components/FaqSection"), { ssr: true });
 const ComingSoonLevel50 = dynamic(() => import("../components/ComingSoonLevel50"), { ssr: true });
 const SocialProofPopup = dynamic(
@@ -51,6 +51,7 @@ const WelcomeToast = dynamic(
   () => import("../components/WelcomeToast"),
   { ssr: false }
 );
+const BatteryIndicator = dynamic(() => import("../components/BatteryIndicator"), { ssr: false });
 const ContentSection = dynamic(
   () => import("../components/ContentSection"),
   {
@@ -339,6 +340,14 @@ export default function NeonLanding() {
 
   const displayCoins = status === "authenticated" ? (wallet.balance ?? 0) : coins;
   const walletLoading = status === "authenticated" && wallet.isLoading;
+
+  const [batteryHeader, setBatteryHeader] = useState<{ percent: number; loading: boolean }>({
+    percent: 100,
+    loading: true,
+  });
+  const handleBatteryDisplayChange = useCallback((s: { percent: number; loading: boolean }) => {
+    setBatteryHeader(s);
+  }, []);
   const locale = mounted ? getBrowserLocale() : "en";
   const t = getContentT(locale);
   const viewerCountryCode = useEffectiveViewerCountryCode(status, session?.countryCode);
@@ -366,6 +375,9 @@ export default function NeonLanding() {
                   as="span"
                 />
               </h1>
+              {status === "authenticated" && (
+                <HeaderInviteShare locale={locale} userId={appUserId(session as AppSession)} />
+              )}
               <LiveIndicator />
             </div>
 
@@ -403,25 +415,44 @@ export default function NeonLanding() {
                   onOpenShop={handleOpenShop}
                 />
               )}
-              <div className="flex flex-col items-end gap-1">
-                <button
-                  type="button"
-                  onClick={handleCoinsPress}
-                  className="flex min-h-[48px] min-w-[100px] items-center justify-center gap-2 rounded-full px-4 py-3 text-base font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.98] sm:min-h-[52px] sm:min-w-[120px] sm:px-5"
-                  style={{
-                    background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
-                    boxShadow: "0 0 24px rgba(139, 92, 246, 0.35)",
-                  }}
-                >
-                  {walletLoading ? (
-                    <WalletSkeleton />
+              <div className="flex items-end gap-3 sm:gap-4">
+                <div className="flex min-w-0 flex-col items-end gap-0.5 rounded-xl border border-emerald-500/25 bg-black/35 px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                  {batteryHeader.loading ? (
+                    <span
+                      className="h-5 w-20 shrink-0 animate-pulse rounded-md bg-white/15"
+                      aria-hidden
+                    />
                   ) : (
-                    <span>{displayCoins}</span>
+                    <BatteryIndicator percent={batteryHeader.percent} />
                   )}
-                  <span className="text-white/90">{t.coinsLabel}</span>
-                </button>
-                <div className="w-24 sm:w-28">
-                  <RankProgressionBar coinsSpent={sessionSpent} />
+                  {!batteryHeader.loading &&
+                    batteryHeader.percent > 0 &&
+                    batteryHeader.percent < 25 && (
+                      <span className="hidden max-w-[6.5rem] text-right text-[9px] font-medium leading-tight text-amber-400/95 sm:block">
+                        {t.batteryLowPowerWarning}
+                      </span>
+                    )}
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <button
+                    type="button"
+                    onClick={handleCoinsPress}
+                    className="flex min-h-[48px] min-w-[100px] items-center justify-center gap-2 rounded-full px-4 py-3 text-base font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.98] sm:min-h-[52px] sm:min-w-[120px] sm:px-5"
+                    style={{
+                      background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+                      boxShadow: "0 0 24px rgba(139, 92, 246, 0.35)",
+                    }}
+                  >
+                    {walletLoading ? (
+                      <WalletSkeleton />
+                    ) : (
+                      <span>{displayCoins}</span>
+                    )}
+                    <span className="text-white/90">{t.coinsLabel}</span>
+                  </button>
+                  <div className="w-24 sm:w-28">
+                    <RankProgressionBar coinsSpent={sessionSpent} />
+                  </div>
                 </div>
               </div>
               {status === "authenticated" && session?.user ? (
@@ -476,6 +507,13 @@ export default function NeonLanding() {
             <div className="flex shrink-0 items-center gap-2 lg:hidden">
               {status === "authenticated" && session?.user ? (
                 <>
+                  <div className="flex flex-col items-center justify-center rounded-xl border border-emerald-500/25 bg-black/40 px-1.5 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                    {batteryHeader.loading ? (
+                      <span className="h-4 w-[4.25rem] animate-pulse rounded bg-white/15" aria-hidden />
+                    ) : (
+                      <BatteryIndicator percent={batteryHeader.percent} compact />
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={handleOpenShop}
@@ -501,14 +539,23 @@ export default function NeonLanding() {
                   </button>
                 </>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => setLoginWallOpen(true)}
-                  className="min-h-12 rounded-full px-5 py-3 text-sm font-bold text-white ring-2 ring-violet-300/90 ring-offset-2 ring-offset-black shadow-[0_0_24px_rgba(167,139,250,0.5)] transition active:scale-[0.98]"
-                  style={{ background: "linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)" }}
-                >
-                  {t.connectAccount}
-                </button>
+                <div className="flex min-w-0 items-center gap-2">
+                  <div className="flex shrink-0 flex-col items-center justify-center rounded-xl border border-emerald-500/25 bg-black/40 px-1.5 py-1">
+                    {batteryHeader.loading ? (
+                      <span className="h-4 w-16 animate-pulse rounded bg-white/15" aria-hidden />
+                    ) : (
+                      <BatteryIndicator percent={batteryHeader.percent} compact />
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setLoginWallOpen(true)}
+                    className="min-h-11 min-w-0 shrink rounded-full px-4 py-2.5 text-xs font-bold text-white ring-2 ring-violet-300/90 ring-offset-2 ring-offset-black shadow-[0_0_24px_rgba(167,139,250,0.5)] transition active:scale-[0.98] sm:min-h-12 sm:px-5 sm:py-3 sm:text-sm"
+                    style={{ background: "linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)" }}
+                  >
+                    {t.connectAccount}
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -539,15 +586,8 @@ export default function NeonLanding() {
       <main className="relative z-10 mx-auto w-full max-w-[100vw] overflow-x-clip px-2 pt-4 pb-28 sm:px-4 sm:pt-6 sm:pb-14 md:pb-20 lg:pb-14 xl:px-5">
         {verified && (
           <>
-            <Hero
-              onStartConnecting={() => setLoginWallOpen(true)}
-              isAuthenticated={status === "authenticated"}
-              onGoToStage={() =>
-                document.getElementById("neon-stage")?.scrollIntoView({ behavior: "smooth", block: "start" })
-              }
-            />
             {/* Theater row: wide video stage + narrow Global Pulse (mobile: stacked, scrollable) */}
-            <div className="mt-8 flex w-full flex-col gap-4 xl:flex-row xl:items-start xl:justify-start xl:gap-3 2xl:gap-4">
+            <div className="mt-2 flex w-full flex-col gap-4 sm:mt-4 xl:flex-row xl:items-start xl:justify-start xl:gap-3 2xl:gap-4">
               <div
                 id="neon-stage"
                 className="min-w-0 w-full flex-1 scroll-mt-4"
@@ -580,11 +620,12 @@ export default function NeonLanding() {
                       ? (session?.user?.name ?? session?.user?.email ?? "You")
                       : "Guest"
                   }
+                  onBatteryDisplayChange={handleBatteryDisplayChange}
                 />
               </div>
               <div
                 id="global-pulse"
-                className="global-pulse-column w-full min-w-0 shrink-0 scroll-mt-4 xl:sticky xl:top-[4.5rem] xl:w-52 xl:max-w-[13.5rem] xl:self-start"
+                className="global-pulse-column relative z-[12] w-full min-w-0 shrink-0 scroll-mt-4 xl:sticky xl:top-[4.5rem] xl:w-52 xl:max-w-[13.5rem] xl:self-start"
               >
                 {status === "authenticated" ? (
                   <GlobalPulseChat locale={locale} />

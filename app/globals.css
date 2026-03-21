@@ -93,6 +93,59 @@ body {
   animation: gradient-shift 4s ease infinite;
 }
 
+/* Sidebar: arcade “coming soon” joystick glow */
+@keyframes arcade-joystick-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 10px rgba(34, 211, 238, 0.55),
+      0 0 22px rgba(168, 85, 247, 0.35),
+      inset 0 0 12px rgba(34, 211, 238, 0.08);
+  }
+  50% {
+    box-shadow:
+      0 0 18px rgba(236, 72, 153, 0.5),
+      0 0 32px rgba(34, 211, 238, 0.45),
+      inset 0 0 16px rgba(244, 114, 182, 0.12);
+  }
+}
+
+.arcade-joystick-glow {
+  animation: arcade-joystick-pulse 2.4s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+
+/* Global NEON LEGEND ($18.99) Socket.io banner */
+@keyframes neon-legend-banner-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.neon-legend-banner-enter {
+  animation: neon-legend-banner-slide 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes neon-legend-text-shimmer {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.75));
+  }
+  50% {
+    filter: drop-shadow(0 0 18px rgba(34, 211, 238, 0.9))
+      drop-shadow(0 0 12px rgba(244, 114, 182, 0.65));
+  }
+}
+
+.neon-legend-banner-text {
+  animation: neon-legend-text-shimmer 2.2s ease-in-out infinite;
+}
+
 /* Checkout success confetti */
 .confetti-piece {
   position: absolute;
@@ -343,6 +396,175 @@ body {
       0 0 18px rgba(139, 92, 246, 0.45),
       0 0 40px rgba(124, 58, 237, 0.3);
   }
+
+  .mystic-mesh,
+  .mystic-orb-a,
+  .mystic-orb-b,
+  .mystic-orb-c,
+  .mystic-veil,
+  .mystic-star {
+    animation: none !important;
+  }
+}
+
+/* WorldMapLive — fundal abstract mov: mister / romantism (fără planetă) */
+.mystic-canvas {
+  position: relative;
+  background: radial-gradient(ellipse 95% 70% at 50% 38%, #3b1f6b 0%, #1a0a2e 42%, #06020f 100%);
+}
+
+.mystic-mesh {
+  position: absolute;
+  inset: -45%;
+  opacity: 0.65;
+  background: conic-gradient(
+    from 200deg at 50% 50%,
+    rgba(139, 92, 246, 0.4) 0deg,
+    rgba(236, 72, 153, 0.18) 90deg,
+    rgba(91, 33, 182, 0.35) 180deg,
+    rgba(192, 132, 252, 0.22) 270deg,
+    rgba(139, 92, 246, 0.4) 360deg
+  );
+  filter: blur(56px);
+  animation: mystic-mesh-spin 32s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes mystic-mesh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mystic-orb-a,
+.mystic-orb-b,
+.mystic-orb-c {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(36px);
+}
+
+.mystic-orb-a {
+  width: 48%;
+  height: 58%;
+  left: -8%;
+  top: 8%;
+  background: radial-gradient(circle, rgba(196, 181, 253, 0.5) 0%, rgba(139, 92, 246, 0.15) 55%, transparent 72%);
+  animation: mystic-float-a 14s ease-in-out infinite;
+}
+
+.mystic-orb-b {
+  width: 42%;
+  height: 50%;
+  right: -6%;
+  top: 22%;
+  background: radial-gradient(circle, rgba(244, 114, 182, 0.35) 0%, rgba(168, 85, 247, 0.2) 50%, transparent 70%);
+  animation: mystic-float-b 18s ease-in-out infinite;
+}
+
+.mystic-orb-c {
+  width: 55%;
+  height: 40%;
+  left: 22%;
+  bottom: -12%;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.45) 0%, rgba(30, 10, 50, 0.3) 45%, transparent 68%);
+  animation: mystic-float-c 16s ease-in-out infinite;
+}
+
+@keyframes mystic-float-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate(6%, 4%) scale(1.06);
+    opacity: 1;
+  }
+}
+
+@keyframes mystic-float-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1.02);
+    opacity: 0.75;
+  }
+  50% {
+    transform: translate(-5%, 6%) scale(1);
+    opacity: 0.95;
+  }
+}
+
+@keyframes mystic-float-c {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(3%, -5%) scale(1.08);
+    opacity: 0.9;
+  }
+}
+
+.mystic-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    118deg,
+    transparent 0%,
+    transparent 38%,
+    rgba(255, 240, 255, 0.07) 49%,
+    rgba(216, 180, 254, 0.06) 52%,
+    transparent 63%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  animation: mystic-shimmer 9s ease-in-out infinite;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+@keyframes mystic-shimmer {
+  0%,
+  100% {
+    background-position: 120% 0;
+    opacity: 0.5;
+  }
+  50% {
+    background-position: -20% 0;
+    opacity: 0.85;
+  }
+}
+
+.mystic-star {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(237, 233, 254, 0.95);
+  box-shadow:
+    0 0 6px rgba(196, 181, 253, 0.95),
+    0 0 14px rgba(168, 85, 247, 0.5);
+  pointer-events: none;
+  animation: mystic-twinkle 3.2s ease-in-out infinite;
+}
+
+@keyframes mystic-twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.mystic-vignette {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 80px rgba(5, 0, 15, 0.75);
+  pointer-events: none;
 }
 
 /* Landing hero — neon pink title + pulsing purple CTA ring */
@@ -403,6 +625,181 @@ body {
   }
 }
 
+/* Profile — pulsating neon avatar ring (level-based colors via inline CSS vars) */
+@keyframes profile-avatar-neon-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--profile-glow-mid, #ec4899) 85%, transparent),
+      0 0 22px color-mix(in srgb, var(--profile-glow-mid, #ec4899) 55%, transparent),
+      0 0 48px color-mix(in srgb, var(--profile-glow-edge, #a855f7) 35%, transparent);
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, var(--profile-glow-mid, #ec4899) 95%, transparent),
+      0 0 32px color-mix(in srgb, var(--profile-glow-mid, #ec4899) 70%, transparent),
+      0 0 64px color-mix(in srgb, var(--profile-glow-edge, #a855f7) 45%, transparent);
+    filter: brightness(1.08);
+  }
+}
+
+.profile-avatar-neon-wrap {
+  border-radius: 9999px;
+  padding: 3px;
+  background: linear-gradient(
+    135deg,
+    var(--profile-glow-from, #ec4899),
+    var(--profile-glow-to, #f472b6)
+  );
+  animation: profile-avatar-neon-pulse 2.8s ease-in-out infinite;
+}
+
+/* Whale / high spenders: gold neon pulse (totalSpent > $50) */
+@keyframes profile-avatar-gold-neon-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px rgba(251, 191, 36, 0.95),
+      0 0 26px rgba(245, 158, 11, 0.65),
+      0 0 52px rgba(217, 119, 6, 0.4);
+    filter: brightness(1.02);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px rgba(253, 224, 71, 0.98),
+      0 0 38px rgba(251, 191, 36, 0.85),
+      0 0 72px rgba(245, 158, 11, 0.55);
+    filter: brightness(1.12);
+  }
+}
+
+.profile-avatar-gold-neon-wrap {
+  border-radius: 9999px;
+  padding: 3px;
+  background: linear-gradient(
+    135deg,
+    #fde047,
+    #fbbf24 40%,
+    #d97706 85%,
+    #f59e0b
+  );
+  animation: profile-avatar-gold-neon-pulse 2.4s ease-in-out infinite;
+}
+
+/* Levels 1–4: same gradient ring, no pulse (Level 5+ uses .profile-avatar-neon-wrap) */
+.profile-avatar-static-ring {
+  border-radius: 9999px;
+  padding: 3px;
+  background: linear-gradient(
+    135deg,
+    var(--profile-glow-from, #ec4899),
+    var(--profile-glow-to, #f472b6)
+  );
+  box-shadow: 0 0 16px color-mix(in srgb, var(--profile-glow-mid, #ec4899) 40%, transparent);
+}
+
+.profile-banner-mesh-fallback {
+  background:
+    radial-gradient(ellipse 90% 70% at 20% 30%, rgba(139, 92, 246, 0.35) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 80% 20%, rgba(236, 72, 153, 0.22) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 80% at 50% 100%, rgba(91, 33, 182, 0.4) 0%, transparent 45%),
+    linear-gradient(180deg, #0c0618 0%, #050208 100%);
+}
+
+/* Subtle motion when no custom cover (default profile hero) */
+@keyframes profile-banner-gradient-drift {
+  0% { background-position: 0% 40%; opacity: 1; }
+  50% { background-position: 100% 60%; opacity: 0.92; }
+  100% { background-position: 0% 40%; opacity: 1; }
+}
+.profile-banner-default-motion {
+  background: linear-gradient(
+    125deg,
+    #0a0614 0%,
+    #1a0a28 25%,
+    #0d1622 50%,
+    #1a0a28 75%,
+    #08060f 100%
+  );
+  background-size: 200% 200%;
+  animation: profile-banner-gradient-drift 14s ease-in-out infinite;
+}
+
+@keyframes profile-matrix-fall {
+  0% { transform: translateY(-100%); opacity: 0.4; }
+  100% { transform: translateY(100%); opacity: 0.15; }
+}
+.profile-banner-effect-matrix::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(34, 197, 94, 0.07) 2px,
+    rgba(34, 197, 94, 0.07) 4px
+  );
+  animation: profile-matrix-fall 6s linear infinite;
+  mix-blend-mode: screen;
+}
+
+@keyframes profile-neon-waves {
+  0%, 100% { transform: translateX(-5%) scaleY(1); opacity: 0.35; }
+  50% { transform: translateX(5%) scaleY(1.08); opacity: 0.55; }
+}
+.profile-banner-effect-waves::after {
+  content: "";
+  position: absolute;
+  inset: -20% 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 80% 40% at 50% 100%, rgba(236, 72, 153, 0.35), transparent 60%);
+  animation: profile-neon-waves 5s ease-in-out infinite;
+}
+
+@keyframes profile-stars-twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.85; }
+}
+.profile-banner-effect-stars::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(1px 1px at 10% 20%, white, transparent),
+    radial-gradient(1px 1px at 30% 70%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1px 1px at 70% 30%, white, transparent),
+    radial-gradient(1px 1px at 90% 60%, rgba(200, 220, 255, 0.8), transparent),
+    radial-gradient(1px 1px at 50% 50%, white, transparent);
+  background-size: 100% 100%;
+  animation: profile-stars-twinkle 3.5s ease-in-out infinite;
+}
+
+/* Neon VIP ($18.99) — username glow in Pulse + profile */
+.neon-vip-name-gold {
+  text-shadow:
+    0 0 6px rgba(251, 191, 36, 0.95),
+    0 0 14px rgba(245, 158, 11, 0.75),
+    0 0 28px rgba(234, 179, 8, 0.45);
+}
+.neon-vip-name-blue {
+  text-shadow:
+    0 0 6px rgba(56, 189, 248, 0.95),
+    0 0 14px rgba(14, 165, 233, 0.7),
+    0 0 26px rgba(59, 130, 246, 0.45);
+}
+
+/* Shop urgency banner */
+@keyframes shop-flash-sale-pulse {
+  0%, 100% { transform: scale(1); filter: brightness(1); box-shadow: 0 0 20px rgba(251, 113, 133, 0.35); }
+  50% { transform: scale(1.02); filter: brightness(1.15); box-shadow: 0 0 36px rgba(244, 63, 94, 0.55); }
+}
+.shop-flash-sale-banner {
+  animation: shop-flash-sale-pulse 1.8s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-neon-h1,
   .hero-cta-connect,
@@ -412,4 +809,53 @@ body {
   .hero-neon-h1 {
     text-shadow: 0 0 20px rgba(244, 114, 182, 0.8), 0 0 40px rgba(192, 38, 211, 0.4);
   }
+
+  .profile-avatar-neon-wrap,
+  .profile-avatar-gold-neon-wrap {
+    animation: none;
+  }
+
+  .profile-banner-default-motion,
+  .profile-banner-effect-matrix::after,
+  .profile-banner-effect-waves::after,
+  .profile-banner-effect-stars::before,
+  .shop-flash-sale-banner {
+    animation: none;
+  }
+}
+
+/* Theater / Agora: fill neon frames — object-fit: cover (no letterboxing), centered crop on main stage */
+.theater-agora-remote {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  /* position comes from layout utilities (e.g. absolute inset-0) — do not set position here */
+}
+
+.theater-agora-remote video {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none;
+  object-fit: cover;
+  object-position: center center;
+}
+
+/* Self PiP: same treatment — tight crop in the small neon window */
+.theater-agora-local {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.theater-agora-local video {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none;
+  object-fit: cover;
+  object-position: center center;
 }

@@ -138,6 +138,15 @@ export default function ShopModal({
         aria-modal="true"
         aria-labelledby="shop-modal-title"
       >
+        <div
+          className="shop-flash-sale-banner mb-5 rounded-xl border border-rose-500/50 bg-gradient-to-r from-rose-600/40 via-fuchsia-600/35 to-amber-500/30 px-4 py-2.5 text-center"
+          role="status"
+        >
+          <span className="text-sm font-extrabold uppercase tracking-[0.25em] text-rose-100 drop-shadow-[0_0_12px_rgba(251,113,133,0.9)]">
+            {t("shop.flashSale")}
+          </span>
+          <span className="mt-1 block text-xs font-medium text-white/80">{t("shop.flashSaleSub")}</span>
+        </div>
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h2 id="shop-modal-title" className="text-xl font-bold text-white" style={{ fontFamily: "var(--font-syne), system-ui" }}>

@@ -17,6 +17,34 @@ type Props = {
   giftShopPanel?: React.ReactNode | null;
 };
 
+/** Glowing joystick — future Neon Arcade (non-interactive placeholder). */
+function JoystickComingSoonIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <path
+        d="M8 18h8a3 3 0 003-3v-1a3 3 0 00-3-3H8a3 3 0 00-3 3v1a3 3 0 003 3z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 8V5M12 5l1.5 1.5M12 5l-1.5 1.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="11" r="2.25" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
 /**
  * Slim collapsible stage rail: icon-only when collapsed, expands for Daily Quest + rewards.
  */
@@ -73,6 +101,19 @@ export default function StageLeftRail({
             🎁
           </button>
         )}
+        <div
+          className="flex min-h-11 shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-cyan-500/35 bg-black/40 px-2 py-1"
+          title={t.gamesComingSoon}
+          aria-label={`Games — ${t.gamesComingSoon}`}
+          role="status"
+        >
+          <span className="arcade-joystick-glow flex h-9 w-9 items-center justify-center rounded-md border border-cyan-400/45 bg-gradient-to-br from-cyan-950/80 to-fuchsia-950/50">
+            <JoystickComingSoonIcon className="h-[1.35rem] w-[1.35rem] text-cyan-200 drop-shadow-[0_0_8px_rgba(34,211,238,0.9)]" />
+          </span>
+          <span className="max-w-[4.5rem] text-center text-[8px] font-bold uppercase leading-tight tracking-wide text-cyan-200/90">
+            {t.gamesComingSoon}
+          </span>
+        </div>
         {hasRewards && rewardsPanel && (
           <button
             type="button"
@@ -137,6 +178,21 @@ export default function StageLeftRail({
               🎁
             </button>
           )}
+          <div
+            className="mx-auto flex w-11 flex-col items-center gap-1 py-0.5"
+            title={t.gamesComingSoon}
+            aria-label={`Games — ${t.gamesComingSoon}`}
+            role="status"
+          >
+            <span className="arcade-joystick-glow flex h-11 w-11 items-center justify-center rounded-lg border border-cyan-400/50 bg-gradient-to-br from-cyan-950/75 to-violet-950/45">
+              <JoystickComingSoonIcon className="h-5 w-5 text-cyan-200 drop-shadow-[0_0_10px_rgba(34,211,238,0.85)]" />
+            </span>
+            {expanded && (
+              <span className="text-center text-[7px] font-bold uppercase leading-tight tracking-wider text-cyan-200/85">
+                {t.gamesComingSoon}
+              </span>
+            )}
+          </div>
           {hasRewards && rewardsPanel && (
             <button
               type="button"

@@ -18,15 +18,20 @@ type Props = {
   onStartConnecting?: () => void;
   isAuthenticated?: boolean;
   onGoToStage?: () => void;
+  /** When true (18+ gate only): show branding without START CTA — user confirms age below */
+  ageGateMode?: boolean;
 };
 
 export default function HeroGlobal({
   onStartConnecting,
   isAuthenticated = false,
   onGoToStage,
+  ageGateMode = false,
 }: Props) {
   return (
-    <section className="landing-hero-section relative mx-auto mt-6 w-full max-w-6xl overflow-hidden rounded-3xl border border-fuchsia-500/20 shadow-[0_0_60px_rgba(236,72,153,0.15)] sm:mt-10">
+    <section
+      className={`landing-hero-section relative mx-auto w-full max-w-6xl overflow-hidden rounded-3xl border border-fuchsia-500/20 shadow-[0_0_60px_rgba(236,72,153,0.15)] ${ageGateMode ? "mt-0 mb-2" : "mt-6 sm:mt-10"}`}
+    >
       <div className="pointer-events-none absolute inset-0">
         <Image
           src={HERO_BG}
@@ -61,24 +66,26 @@ export default function HeroGlobal({
           Video chat worldwide. Real people, neon nights, gifts that hit different.
         </p>
 
-        <button
-          type="button"
-          onClick={() => {
-            if (isAuthenticated) {
-              onGoToStage?.();
-            } else {
-              onStartConnecting?.();
-            }
-          }}
-          className="hero-cta-connect mt-10 min-h-[3.75rem] scale-110 rounded-2xl px-10 py-4 text-base font-bold text-white transition-transform hover:scale-[1.14] active:scale-105 sm:min-h-[3.5rem] sm:text-lg"
-          style={{
-            background: "linear-gradient(135deg, #7c3aed 0%, #c026d3 55%, #db2777 100%)",
-            boxShadow: "0 0 40px rgba(168, 85, 247, 0.45)",
-            fontFamily: "var(--font-syne), system-ui, sans-serif",
-          }}
-        >
-          {isAuthenticated ? "Jump into the stage" : "Start Connecting Now"}
-        </button>
+        {!ageGateMode && (
+          <button
+            type="button"
+            onClick={() => {
+              if (isAuthenticated) {
+                onGoToStage?.();
+              } else {
+                onStartConnecting?.();
+              }
+            }}
+            className="hero-cta-connect mt-10 min-h-[3.75rem] scale-110 rounded-2xl px-10 py-4 text-base font-bold text-white transition-transform hover:scale-[1.14] active:scale-105 sm:min-h-[3.5rem] sm:text-lg"
+            style={{
+              background: "linear-gradient(135deg, #7c3aed 0%, #c026d3 55%, #db2777 100%)",
+              boxShadow: "0 0 40px rgba(168, 85, 247, 0.45)",
+              fontFamily: "var(--font-syne), system-ui, sans-serif",
+            }}
+          >
+            {isAuthenticated ? "Jump into the stage" : "Start Connecting Now"}
+          </button>
+        )}
       </div>
 
       <div

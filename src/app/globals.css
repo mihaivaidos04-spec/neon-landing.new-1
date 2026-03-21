@@ -455,4 +455,173 @@ body {
       0 0 18px rgba(139, 92, 246, 0.45),
       0 0 40px rgba(124, 58, 237, 0.3);
   }
+
+  .mystic-mesh,
+  .mystic-orb-a,
+  .mystic-orb-b,
+  .mystic-orb-c,
+  .mystic-veil,
+  .mystic-star {
+    animation: none !important;
+  }
+}
+
+/* WorldMapLive — fundal abstract mov: mister / romantism (fără planetă) */
+.mystic-canvas {
+  position: relative;
+  background: radial-gradient(ellipse 95% 70% at 50% 38%, #3b1f6b 0%, #1a0a2e 42%, #06020f 100%);
+}
+
+.mystic-mesh {
+  position: absolute;
+  inset: -45%;
+  opacity: 0.65;
+  background: conic-gradient(
+    from 200deg at 50% 50%,
+    rgba(139, 92, 246, 0.4) 0deg,
+    rgba(236, 72, 153, 0.18) 90deg,
+    rgba(91, 33, 182, 0.35) 180deg,
+    rgba(192, 132, 252, 0.22) 270deg,
+    rgba(139, 92, 246, 0.4) 360deg
+  );
+  filter: blur(56px);
+  animation: mystic-mesh-spin 32s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes mystic-mesh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mystic-orb-a,
+.mystic-orb-b,
+.mystic-orb-c {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(36px);
+}
+
+.mystic-orb-a {
+  width: 48%;
+  height: 58%;
+  left: -8%;
+  top: 8%;
+  background: radial-gradient(circle, rgba(196, 181, 253, 0.5) 0%, rgba(139, 92, 246, 0.15) 55%, transparent 72%);
+  animation: mystic-float-a 14s ease-in-out infinite;
+}
+
+.mystic-orb-b {
+  width: 42%;
+  height: 50%;
+  right: -6%;
+  top: 22%;
+  background: radial-gradient(circle, rgba(244, 114, 182, 0.35) 0%, rgba(168, 85, 247, 0.2) 50%, transparent 70%);
+  animation: mystic-float-b 18s ease-in-out infinite;
+}
+
+.mystic-orb-c {
+  width: 55%;
+  height: 40%;
+  left: 22%;
+  bottom: -12%;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.45) 0%, rgba(30, 10, 50, 0.3) 45%, transparent 68%);
+  animation: mystic-float-c 16s ease-in-out infinite;
+}
+
+@keyframes mystic-float-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate(6%, 4%) scale(1.06);
+    opacity: 1;
+  }
+}
+
+@keyframes mystic-float-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1.02);
+    opacity: 0.75;
+  }
+  50% {
+    transform: translate(-5%, 6%) scale(1);
+    opacity: 0.95;
+  }
+}
+
+@keyframes mystic-float-c {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(3%, -5%) scale(1.08);
+    opacity: 0.9;
+  }
+}
+
+.mystic-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    118deg,
+    transparent 0%,
+    transparent 38%,
+    rgba(255, 240, 255, 0.07) 49%,
+    rgba(216, 180, 254, 0.06) 52%,
+    transparent 63%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  animation: mystic-shimmer 9s ease-in-out infinite;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+@keyframes mystic-shimmer {
+  0%,
+  100% {
+    background-position: 120% 0;
+    opacity: 0.5;
+  }
+  50% {
+    background-position: -20% 0;
+    opacity: 0.85;
+  }
+}
+
+.mystic-star {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(237, 233, 254, 0.95);
+  box-shadow:
+    0 0 6px rgba(196, 181, 253, 0.95),
+    0 0 14px rgba(168, 85, 247, 0.5);
+  pointer-events: none;
+  animation: mystic-twinkle 3.2s ease-in-out infinite;
+}
+
+@keyframes mystic-twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.mystic-vignette {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 80px rgba(5, 0, 15, 0.75);
+  pointer-events: none;
 }

@@ -1,19 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ContentLocale } from "../lib/content-i18n";
 import type { FilterType } from "../lib/access";
 import { getContentT } from "../lib/content-i18n";
-import { canAffordGift, getGiftCost, BEAUTY_BLUR_COST_PER_MIN, GHOST_MODE_COST_PER_2MIN, GHOST_MODE_INTERVAL_MS, LIVE_TRANSLATION_COST_PER_MIN, UNDO_NEXT_COST, INSTANT_REVEAL_COST, BATTERY_QUICK_CHARGE_COST, BATTERY_QUICK_CHARGE_AMOUNT, PRIVATE_ROOM_COST_PER_MIN } from "../lib/coins";
+import { BEAUTY_BLUR_COST_PER_MIN, GHOST_MODE_COST_PER_2MIN, GHOST_MODE_INTERVAL_MS, LIVE_TRANSLATION_COST_PER_MIN, UNDO_NEXT_COST, INSTANT_REVEAL_COST, BATTERY_QUICK_CHARGE_COST, BATTERY_QUICK_CHARGE_AMOUNT, PRIVATE_ROOM_COST_PER_MIN } from "../lib/coins";
 import { feedbackClick, feedbackSuccess, playLowBatterySound, playGiftSound, playWhooshSound, triggerPremiumGiftHaptic } from "../lib/feedback";
 import { getDailyQuestProgress, setDailyQuestProgress } from "../lib/daily-quest-storage";
 import DailyQuestPanel, { DAILY_GOAL, DAILY_REWARD_COINS } from "./DailyQuestPanel";
 import DailyRewardCalendar from "./DailyRewardCalendar";
 import { type GiftId, getGiftName } from "./GiftsBar";
+import type { PartnerVideoGiftPayload } from "./PartnerVideoGiftOverlay";
+import {
+  type TheaterGiftId,
+  canAffordTheaterGift,
+  getTheaterGiftCost,
+} from "../lib/theater-gifts";
 import { GiftShopQuestStack } from "./GiftShopPanel";
 import StageLeftRail from "./StageLeftRail";
 import type { ActiveGift } from "./GiftLayer";
 import VideoBridge from "./VideoBridge";
+import MobileVideoSwipeStart from "./MobileVideoSwipeStart";
 import VideoAdOverlay from "./VideoAdOverlay";
 import GenderFilterCTA from "./GenderFilterCTA";
 import MatchFilterBar, { type MatchFilter } from "./MatchFilterBar";
@@ -26,7 +33,6 @@ import { getReactionCost } from "../lib/coins";
 import { useReactions } from "../hooks/useReactions";
 import { useLeaderboard } from "../hooks/useLeaderboard";
 import { useDailyReward } from "../hooks/useDailyReward";
-import BatteryIndicator from "./BatteryIndicator";
 import BatteryDepletedModal from "./BatteryDepletedModal";
 import BioCard from "./BioCard";
 import ModerationViolationModal from "./ModerationViolationModal";
@@ -81,10 +87,22 @@ type Props = {
   onRequireAuth?: () => void;
   /** Shown on gift overlay (e.g. session name) */
   viewerDisplayName?: string | null;
+  /** Push battery % / loading to parent header (toolbar next to coins) */
+  onBatteryDisplayChange?: (state: { percent: number; loading: boolean }) => void;
 };
 
 const MATCH_POLL_MS = 500;
 const MATCH_TIMEOUT_MS = 30000;
+/** Desktop (Tailwind lg): săgeata dreaptă = același lucru ca START / NEXT */
+const NEXT_KEY_DESKTOP_MIN_WIDTH_PX = 1024;
+
+function isKeyboardTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+  if (target.isContentEditable) return true;
+  return Boolean(target.closest("[contenteditable='true'], [role='textbox']"));
+}
 /** ~3% / min apel — ~25% în ~8–9 min (mai lent decât 5%/min) */
 const BATTERY_DRAIN_MS = 60 * 1000;
 const BATTERY_DRAIN_VIP_MS = 2 * 60 * 1000; // VIP: același drain la 2× interval
@@ -114,8 +132,11 @@ export default function ContentSection({
   isGuest = false,
   onRequireAuth,
   viewerDisplayName = null,
+  onBatteryDisplayChange,
 }: Props) {
   const [activeGift, setActiveGift] = useState<ActiveGift | null>(null);
+  const [partnerVideoGift, setPartnerVideoGift] =
+    useState<PartnerVideoGiftPayload | null>(null);
   const [topSupportersRefreshKey, setTopSupportersRefreshKey] = useState(0);
   const [searching, setSearching] = useState(true);
   const [connected, setConnected] = useState(false);
@@ -400,6 +421,21 @@ export default function ContentSection({
     }, 2000 + Math.random() * 2000);
     return () => clearTimeout(timeout);
   }, [connected, nextCount, dailyQuestCompleted, dailyQuestCount, setCoins, onAddCoins, ensureFilterAccess, premiumSecondsLeft, onMissionIncrement, useRealMatching, partnerId, matchFilter, requireAuth]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowRight") return;
+      if (e.repeat) return;
+      if (typeof window === "undefined") return;
+      if (window.innerWidth < NEXT_KEY_DESKTOP_MIN_WIDTH_PX) return;
+      if (isKeyboardTypingTarget(e.target)) return;
+      if (battery === 0) return;
+      e.preventDefault();
+      void handleStartOrNext();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [handleStartOrNext, battery]);
 
   const handleUndoNext = useCallback(async () => {
     if (requireAuth()) return;
@@ -686,10 +722,10 @@ export default function ContentSection({
   }, [useRealMatching]);
 
   const handleSendGift = useCallback(
-    async (giftId: GiftId) => {
+    async (giftId: TheaterGiftId) => {
       if (requireAuth()) return;
-      const cost = getGiftCost(giftId);
-      if (!canAffordGift(coins, giftId)) {
+      const cost = getTheaterGiftCost(giftId);
+      if (!canAffordTheaterGift(coins, giftId)) {
         toast(t.needCoinsMessage, { icon: "💎" });
         onOpenShop();
         return;
@@ -702,27 +738,96 @@ export default function ContentSection({
         setCoins((c) => c - cost);
       }
       const sender = viewerDisplayName?.trim() || "You";
-      const giftLabel = getGiftName(giftId, locale);
-      setActiveGift({
-        giftId,
-        receivedAt: Date.now(),
-        senderLabel: sender,
-        giftLabel,
-      });
+      const giftLabel =
+        giftId === "fire"
+          ? "Fire"
+          : giftId === "rocket"
+            ? "Rocket"
+            : getGiftName(giftId as GiftId, locale);
+
+      if (giftId === "fire" || giftId === "rocket") {
+        if (partnerId && socket && socketConnected) {
+          socket.emit("theater_gift_overlay", {
+            toUserId: partnerId,
+            giftType: giftId,
+            senderLabel: sender,
+            giftLabel,
+          });
+        }
+      } else {
+        setActiveGift({
+          giftId: giftId as GiftId,
+          receivedAt: Date.now(),
+          senderLabel: sender,
+          giftLabel,
+        });
+      }
+
       setTopSupportersRefreshKey((k) => k + 1);
       playGiftSound();
       if (cost >= 10 && typeof navigator !== "undefined" && "vibrate" in navigator) {
         triggerPremiumGiftHaptic();
       }
-      const giftName = getGiftName(giftId, locale);
+      const giftName =
+        giftId === "fire"
+          ? "Fire"
+          : giftId === "rocket"
+            ? "Rocket"
+            : getGiftName(giftId as GiftId, locale);
       toast(t.giftSentToast.replace("{{giftName}}", giftName));
     },
-    [coins, t.needCoinsMessage, t.giftSentToast, setCoins, onOpenShop, onSpend, locale, requireAuth, viewerDisplayName]
+    [
+      coins,
+      t.needCoinsMessage,
+      t.giftSentToast,
+      setCoins,
+      onOpenShop,
+      onSpend,
+      locale,
+      requireAuth,
+      viewerDisplayName,
+      partnerId,
+      socket,
+      socketConnected,
+    ]
   );
 
   const handleGiftComplete = useCallback(() => {
     setActiveGift(null);
   }, []);
+
+  const handlePartnerVideoGiftComplete = useCallback(() => {
+    setPartnerVideoGift(null);
+  }, []);
+
+  useEffect(() => {
+    if (!connected || !partnerId || searching) {
+      setPartnerVideoGift(null);
+    }
+  }, [connected, partnerId, searching]);
+
+  useEffect(() => {
+    if (!socket || !partnerId) return;
+    const onTheaterGiftOverlay = (payload: {
+      giftType?: string;
+      fromUserId?: string | null;
+      senderLabel?: string;
+      giftLabel?: string;
+    }) => {
+      if (!payload.fromUserId || payload.fromUserId !== partnerId) return;
+      if (payload.giftType !== "fire" && payload.giftType !== "rocket") return;
+      setPartnerVideoGift({
+        giftType: payload.giftType,
+        receivedAt: Date.now(),
+        senderLabel: payload.senderLabel,
+        giftLabel: payload.giftLabel,
+      });
+    };
+    socket.on("theater_gift_overlay", onTheaterGiftOverlay);
+    return () => {
+      socket.off("theater_gift_overlay", onTheaterGiftOverlay);
+    };
+  }, [socket, partnerId]);
 
   // ─── useEffect hooks ───
   useEffect(() => {
@@ -797,6 +902,10 @@ export default function ContentSection({
       setBatteryLoading(false);
     }
   }, [userId]);
+
+  useEffect(() => {
+    onBatteryDisplayChange?.({ percent: battery, loading: batteryLoading });
+  }, [battery, batteryLoading, onBatteryDisplayChange]);
 
   // Mystery Box: battery bonus & zero-drain from custom events
   useEffect(() => {
@@ -1145,6 +1254,19 @@ export default function ContentSection({
   const questCurrent = onMissionIncrement ? (missionCount ?? 0) : dailyQuestCount;
   const questCompleted = onMissionIncrement ? (missionCompleted ?? false) : dailyQuestCompleted;
 
+  const agoraChannelName = useMemo(() => {
+    if (
+      !useRealMatching ||
+      !userId ||
+      !partnerId ||
+      !connected ||
+      searching
+    ) {
+      return null;
+    }
+    return [userId, partnerId].sort().join("__");
+  }, [useRealMatching, userId, partnerId, connected, searching]);
+
   const giftShopSharedProps = {
     locale,
     activeFilter,
@@ -1201,19 +1323,12 @@ export default function ContentSection({
         {/* Theater column: video-first on mobile, ~65–70vw stage on xl */}
         <div className="order-1 flex min-w-0 w-full flex-1 flex-col gap-3 xl:order-2 xl:min-w-0">
           <div className="theater-stage theater-ambient-glow relative z-[1] mt-0 w-full min-w-0 rounded-2xl xl:mx-0 xl:mt-0">
+              <MobileVideoSwipeStart
+                locale={locale}
+                disabled={battery === 0}
+                onCommit={() => void handleStartOrNext()}
+              >
               <div className="theater-video-shell relative overflow-hidden rounded-2xl">
-              <div className="absolute left-3 top-3 z-10 flex flex-col gap-1">
-                {batteryLoading ? (
-                  <span className="neon-spinner-sm" aria-hidden />
-                ) : (
-                  <BatteryIndicator percent={battery} />
-                )}
-                {battery < 25 && battery > 0 && (
-                  <span className="rounded bg-red-500/80 px-2 py-0.5 text-[10px] font-semibold text-white shadow-lg">
-                    {t.batteryLowPowerWarning}
-                  </span>
-                )}
-              </div>
               <VideoBridge
                 locale={locale}
                 searching={searching}
@@ -1263,10 +1378,15 @@ export default function ContentSection({
                 theaterGiftCoins={coins}
                 onTheaterGift={handleSendGift}
                 topSupportersRefreshKey={topSupportersRefreshKey}
+                agoraChannelName={agoraChannelName}
+                agoraUserIdKey={userId}
+                partnerVideoGift={partnerVideoGift}
+                onPartnerVideoGiftComplete={handlePartnerVideoGiftComplete}
               />
               </div>
+              </MobileVideoSwipeStart>
               {searching && useRealMatching && (
-                <div className="absolute left-3 top-14 z-20">
+                <div className="absolute left-3 top-3 z-20">
                   <MatchFilterBar
                     filter={matchFilter}
                     onFilterChange={(f) => {
