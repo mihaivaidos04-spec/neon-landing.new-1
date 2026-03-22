@@ -237,6 +237,15 @@ export default function VideoBridge({
     faceMask,
     maskPipelineEnabled
   );
+  const transcriptBufferRef = useRef(createTranscriptBuffer());
+  const pushTranscript = useCallback((text: string) => {
+    transcriptBufferRef.current.push(text);
+  }, []);
+  const neonWhisper = useNeonWhisper({
+    remoteContainerRef: agoraRemoteRef,
+    active: neonWhisperEnabled && agoraEnabled && !searching && agora.hasRemoteVideo,
+    transcriptBuffer: transcriptBufferRef.current,
+  });
 
   useEffect(() => {
     const next =

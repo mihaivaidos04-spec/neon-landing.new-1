@@ -123,7 +123,6 @@ export default function LiveSubtitles({
     };
 
     recognition.onerror = (e: { error?: string }) => {
-      setIsListening(false);
       if (e.error === "not-allowed") {
         if (enabled) {
           setSubtitle(getContentT(locale).liveTranslationMicDenied);
