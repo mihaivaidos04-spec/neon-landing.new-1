@@ -50,6 +50,7 @@ model User {
   stripeSubscriptionId String?   @unique
   accounts         Account[]
   sessions         Session[]
+  authenticators   Authenticator[]
   sentTransactions Transaction[]   @relation("TransactionSender")
   receivedTransactions Transaction[] @relation("TransactionReceiver")
   inventory        UserInventory[]
@@ -213,6 +214,22 @@ model VerificationToken {
   expires    DateTime
 
   @@id([identifier, token])
+}
+
+/// WebAuthn / Passkeys — `PrismaAdapter` exposes CRUD for this model (see `@auth/prisma-adapter`).
+model Authenticator {
+  credentialID         String  @unique
+  userId               String
+  providerAccountId    String
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, credentialID])
 }
 
 model Streak {
