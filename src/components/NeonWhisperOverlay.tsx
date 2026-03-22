@@ -26,7 +26,7 @@ export default function NeonWhisperOverlay({
 
   return (
     <div
-      className="pointer-events-auto absolute bottom-14 left-2 right-2 z-[26] max-lg:bottom-[5.5rem] lg:bottom-4 lg:left-auto lg:right-4 lg:max-w-[min(20rem,calc(100%-1rem))]"
+      className="pointer-events-auto absolute bottom-14 left-2 right-2 z-[26] max-md:bottom-[calc(6.75rem+env(safe-area-inset-bottom,0px))] max-lg:bottom-[5.5rem] lg:bottom-4 lg:left-auto lg:right-4 lg:max-w-[min(20rem,calc(100%-1rem))]"
       role="status"
       aria-live="polite"
     >

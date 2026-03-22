@@ -600,6 +600,7 @@ export default function NeonLanding() {
                       : guestAlias
                   }
                   onBatteryDisplayChange={handleBatteryDisplayChange}
+                  onMobileChatOpen={() => setMobileMenuOpen(true)}
                 />
                 )}
               </div>

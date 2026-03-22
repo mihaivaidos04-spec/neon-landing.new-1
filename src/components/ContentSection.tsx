@@ -93,6 +93,8 @@ type Props = {
   viewerDisplayName?: string | null;
   /** Push battery % / loading to parent header (toolbar next to coins) */
   onBatteryDisplayChange?: (state: { percent: number; loading: boolean }) => void;
+  /** Below md: Ome bar chat icon — e.g. open mobile menu (auth) */
+  onMobileChatOpen?: () => void;
 };
 
 const MATCH_POLL_MS = 500;
@@ -138,6 +140,7 @@ export default function ContentSection({
   onGuestPaywallTrigger,
   viewerDisplayName = null,
   onBatteryDisplayChange,
+  onMobileChatOpen,
 }: Props) {
   const [activeGift, setActiveGift] = useState<ActiveGift | null>(null);
   const [partnerVideoGift, setPartnerVideoGift] =
@@ -1354,7 +1357,7 @@ export default function ContentSection({
   };
 
   return (
-    <section className="mt-0 flex h-full min-h-0 w-full max-w-full flex-col overflow-hidden bg-black">
+    <section className="mt-0 flex h-full min-h-0 w-full max-w-full flex-col overflow-hidden bg-black max-md:max-w-[100vw] max-md:overflow-x-hidden">
       <div className="relative flex h-full min-h-0 w-full max-w-full flex-col gap-2 overflow-hidden xl:flex-row xl:items-stretch xl:gap-3">
         {/* Slim left rail — icon row below video on mobile, vertical rail on xl */}
         <div className="order-2 hidden w-full shrink-0 xl:order-1 xl:block xl:w-auto xl:overflow-visible">
@@ -1395,11 +1398,11 @@ export default function ContentSection({
         <div className="order-1 flex h-full min-h-0 min-w-0 w-full flex-1 flex-col gap-2 overflow-hidden xl:order-2 xl:min-w-0">
           <div className={`theater-stage theater-ambient-glow relative z-[1] mt-0 min-h-0 w-full min-w-0 flex-1 overflow-hidden rounded-2xl xl:mx-0 xl:mt-0 ${
             mobileInCallMode
-              ? "max-lg:fixed max-lg:inset-0 max-lg:z-[35] max-lg:h-[100dvh] max-lg:w-[100vw] max-lg:rounded-none"
+              ? "max-md:fixed max-md:inset-0 max-md:z-[35] max-md:h-[100dvh] max-md:w-[100vw] max-md:max-w-[100vw] max-md:overflow-x-hidden max-md:rounded-none"
               : ""
           }`}>
               {searching && (
-                <div className="pointer-events-none absolute inset-x-0 top-2 z-[34] flex justify-center px-3 max-lg:top-3 lg:hidden">
+                <div className="pointer-events-none absolute inset-x-0 top-2 z-[34] flex justify-center px-3 max-md:top-3 md:hidden">
                   <div className="flex min-h-[34px] items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 backdrop-blur-md">
                     <NeonLiveLogo
                       variant="compact"
@@ -1417,7 +1420,7 @@ export default function ContentSection({
                 disabled={battery === 0}
                 onCommit={() => void handleStartOrNext()}
               >
-              <div className="theater-video-shell relative h-full min-h-0 overflow-hidden rounded-2xl">
+              <div className="theater-video-shell relative h-full min-h-0 max-md:h-full overflow-hidden rounded-2xl max-md:rounded-none">
               <VideoBridge
                 locale={locale}
                 searching={searching}
@@ -1462,8 +1465,8 @@ export default function ContentSection({
                 showPartnerSkeleton={showPartnerSkeleton}
                 userRank={getRankFromCoinsSpent(sessionSpent)}
                 onReport={handleReport}
-                showReportButton={connected && !searching && !!partnerId && !mobileInCallMode}
-                theaterGiftsEnabled={connected && !searching && !!partnerId && !mobileInCallMode}
+                showReportButton={connected && !searching && !!partnerId}
+                theaterGiftsEnabled={connected && !searching && !!partnerId}
                 theaterGiftCoins={coins}
                 onTheaterGift={handleSendGift}
                 agoraChannelName={agoraChannelName}
@@ -1475,6 +1478,8 @@ export default function ContentSection({
                   userId && connected && !searching && useRealMatching
                 )}
                 transitionOutActive={videoTransitionOut}
+                mobileSplitActive={mobileInCallMode}
+                onMobileNext={() => void handleStartOrNext()}
               />
               </div>
               </MobileVideoSwipeStart>
@@ -1533,11 +1538,79 @@ export default function ContentSection({
             onClose={() => setShowNeonVipGenderModal(false)}
             locale={locale}
           />
-          <p className="single-screen-compact mt-1 text-center text-xs text-white/65 sm:text-sm">
+          <p
+            className={`single-screen-compact mt-1 text-center text-xs text-white/65 sm:text-sm ${
+              mobileInCallMode ? "max-md:hidden" : ""
+            }`}
+          >
             {t.subPlayerText}
           </p>
+          {mobileInCallMode && (
+            <div
+              className="fixed inset-x-0 bottom-0 z-[45] hidden max-md:flex max-md:items-center max-md:justify-between max-md:gap-2 max-md:border-t max-md:border-fuchsia-500/30 max-md:bg-black/88 max-md:px-3 max-md:py-2 max-md:shadow-[0_-12px_40px_rgba(139,92,246,0.2)] max-md:backdrop-blur-xl max-md:[padding-bottom:max(0.5rem,env(safe-area-inset-bottom))]"
+              role="toolbar"
+              aria-label="Quick chat and reactions"
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  if (isGuest) onGuestPaywallTrigger?.("chat");
+                  else onMobileChatOpen?.();
+                }}
+                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-violet-500/35 bg-violet-950/40 text-violet-200 transition active:scale-95"
+                aria-label="Chat"
+              >
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+              </button>
+              <div className="flex flex-1 items-center justify-center gap-2 sm:gap-3">
+                {(
+                  [
+                    { id: "heart" as ReactionId, emoji: "❤️", label: "Heart" },
+                    { id: "laugh" as ReactionId, emoji: "😂", label: "Laugh" },
+                    { id: "love" as ReactionId, emoji: "😍", label: "Like" },
+                  ] as const
+                ).map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => {
+                      if (isGuest) {
+                        onGuestPaywallTrigger?.("gift");
+                        return;
+                      }
+                      void handleSendReaction(r.id);
+                    }}
+                    className="flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-xl shadow-[0_0_16px_rgba(236,72,153,0.15)] transition active:scale-90"
+                    aria-label={r.label}
+                  >
+                    {r.emoji}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (isGuest) onGuestPaywallTrigger?.("gift");
+                  else onOpenShop();
+                }}
+                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-fuchsia-500/40 bg-fuchsia-950/45 text-fuchsia-200 transition active:scale-95"
+                aria-label="Gifts and coins"
+              >
+                <span className="text-lg" aria-hidden>
+                  🎁
+                </span>
+              </button>
+            </div>
+          )}
           <div className={`action-bar sticky bottom-0 z-20 mt-0 shrink-0 rounded-2xl border border-white/10 bg-black/55 px-2 py-2 backdrop-blur-xl ${
-            mobileInCallMode ? "max-lg:hidden" : ""
+            mobileInCallMode ? "max-md:hidden" : ""
           }`}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex gap-2">
@@ -1546,7 +1619,7 @@ export default function ContentSection({
                 onClick={handleStartOrNext}
                 disabled={battery === 0}
                 className={`relative min-h-[46px] min-w-[110px] rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-all active:scale-[0.98] sm:min-h-[50px] sm:min-w-[132px] sm:px-8 sm:py-3 ${
-                  !connected ? "max-lg:hidden" : ""
+                  !connected ? "max-md:hidden" : ""
                 } ${
                   battery === 0
                     ? "cursor-not-allowed bg-zinc-600 opacity-60"
@@ -1589,7 +1662,7 @@ export default function ContentSection({
                 type="button"
                 onClick={onOpenShop}
                 className={`min-h-[44px] min-w-[78px] rounded-full border border-fuchsia-400/40 bg-fuchsia-950/30 px-3 py-2 text-xs font-semibold text-fuchsia-100 transition-all hover:bg-fuchsia-900/35 sm:min-h-[48px] ${
-                  mobileInCallMode ? "max-lg:hidden" : ""
+                  mobileInCallMode ? "max-md:hidden" : ""
                 }`}
               >
                 Gifts
@@ -1608,7 +1681,7 @@ export default function ContentSection({
                 type="button"
                 onClick={handleReport}
                 className={`min-h-[44px] min-w-[80px] rounded-full border border-white/20 px-4 py-3 text-sm font-medium text-white/80 transition-all active:scale-[0.98] hover:bg-white/10 sm:min-h-[48px] ${
-                  mobileInCallMode ? "max-lg:hidden" : ""
+                  mobileInCallMode ? "max-md:hidden" : ""
                 }`}
               >
                 {t.reportBtn}
@@ -1616,14 +1689,14 @@ export default function ContentSection({
               <button
                 type="button"
                 className={`min-h-[44px] min-w-[80px] rounded-full border border-white/20 px-4 py-3 text-sm font-medium text-white/80 transition-all active:scale-[0.98] hover:bg-white/10 sm:min-h-[48px] ${
-                  mobileInCallMode ? "max-lg:hidden" : ""
+                  mobileInCallMode ? "max-md:hidden" : ""
                 }`}
               >
                 {t.blockBtn}
               </button>
             </div>
           </div>
-          <div className={`mt-2 flex items-center gap-2 ${mobileInCallMode ? "max-lg:hidden" : ""}`}>
+          <div className={`mt-2 flex items-center gap-2 ${mobileInCallMode ? "max-md:hidden" : ""}`}>
             <input
               type="text"
               value={quickChatDraft}
