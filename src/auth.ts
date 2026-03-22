@@ -25,12 +25,12 @@ import { neonVipGlowVariant } from "@/src/lib/neon-vip-style";
 /** Email Magic Link – no password (Resend sau EMAIL_SERVER) */
 async function sendVerificationRequest(params: { identifier: string; url: string }) {
   const { identifier, url } = params;
-  if (process.env.AUTH_RESEND_KEY) {
+  if (RESEND_API_KEY) {
     try {
       const { Resend } = await import("resend");
-      const r = new Resend(process.env.AUTH_RESEND_KEY);
+      const r = new Resend(RESEND_API_KEY);
       await r.emails.send({
-        from: process.env.EMAIL_FROM ?? "NEON <onboarding@resend.dev>",
+        from: EMAIL_FROM,
         to: identifier,
         subject: "Conectează-te la NEON",
         html: `<p>Apasă pentru a te conecta: <a href="${url}">${url}</a></p>`,
@@ -49,6 +49,10 @@ const FACEBOOK_ID = process.env.FACEBOOK_CLIENT_ID ?? process.env.AUTH_FACEBOOK_
 const FACEBOOK_SECRET = process.env.FACEBOOK_CLIENT_SECRET ?? process.env.AUTH_FACEBOOK_SECRET;
 const DISCORD_ID = process.env.DISCORD_CLIENT_ID ?? process.env.AUTH_DISCORD_ID;
 const DISCORD_SECRET = process.env.DISCORD_CLIENT_SECRET ?? process.env.AUTH_DISCORD_SECRET;
+const RESEND_API_KEY = process.env.AUTH_RESEND_KEY?.trim() || process.env.RESEND_API_KEY?.trim();
+const EMAIL_SERVER = process.env.EMAIL_SERVER?.trim() || process.env.AUTH_EMAIL_SERVER?.trim();
+const EMAIL_FROM =
+  process.env.EMAIL_FROM?.trim() || process.env.AUTH_EMAIL_FROM?.trim() || "NEON <onboarding@resend.dev>";
 
 function resolvedAuthBaseUrl(): string | undefined {
   return process.env.AUTH_URL?.trim() || process.env.NEXTAUTH_URL?.trim();
@@ -116,8 +120,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         ]
       : []),
     EmailProvider({
-      server: (process.env.EMAIL_SERVER as unknown as Record<string, unknown>) ?? {},
-      from: process.env.EMAIL_FROM ?? "noreply@neon.app",
+      server: EMAIL_SERVER ? EMAIL_SERVER : ({} as Record<string, unknown>),
+      from: EMAIL_FROM,
       sendVerificationRequest: async (p) => sendVerificationRequest({ identifier: p.identifier, url: p.url }),
     }),
   ],

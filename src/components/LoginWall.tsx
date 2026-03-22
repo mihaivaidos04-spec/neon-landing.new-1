@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { signIn, getProviders } from "next-auth/react";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
@@ -71,7 +71,10 @@ export default function LoginWall({ open, onClose, locale }: Props) {
   const [showOther, setShowOther] = useState(false);
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [resendReady, setResendReady] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
+  const resendTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (open) getProviders().then(setProviders);
@@ -81,8 +84,31 @@ export default function LoginWall({ open, onClose, locale }: Props) {
     if (!open) {
       setShowOther(false);
       setEmailSent(false);
+      setEmailError(null);
+      setResendReady(false);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (resendTimerRef.current) {
+      clearTimeout(resendTimerRef.current);
+      resendTimerRef.current = null;
+    }
+    if (!open || !emailSent) {
+      setResendReady(false);
+      return;
+    }
+    setResendReady(false);
+    resendTimerRef.current = setTimeout(() => {
+      setResendReady(true);
+    }, 60_000);
+    return () => {
+      if (resendTimerRef.current) {
+        clearTimeout(resendTimerRef.current);
+        resendTimerRef.current = null;
+      }
+    };
+  }, [open, emailSent]);
 
   useEffect(() => {
     if (!open) return;
@@ -97,6 +123,8 @@ export default function LoginWall({ open, onClose, locale }: Props) {
 
   const postAuthUrl = getSafeAuthCallbackUrl("/");
 
+  const isValidEmail = (value: string): boolean => /\S+@\S+\.\S+/.test(value);
+
   const handleOAuth = async (provider: string) => {
     setLoading(provider);
     try {
@@ -110,11 +138,34 @@ export default function LoginWall({ open, onClose, locale }: Props) {
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    const trimmed = email.trim();
+    if (!trimmed) return;
+    if (!isValidEmail(trimmed)) {
+      setEmailError("Please enter a valid email address.");
+      return;
+    }
+    setEmailError(null);
     setLoading("email");
     try {
-      await signIn("email", { email: email.trim(), callbackUrl: postAuthUrl, redirect: false });
+      await signIn("email", { email: trimmed, callbackUrl: postAuthUrl, redirect: false });
       setEmailSent(true);
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleResendEmail = async () => {
+    const trimmed = email.trim();
+    if (!trimmed || !isValidEmail(trimmed)) {
+      setEmailError("Please enter a valid email address.");
+      return;
+    }
+    setEmailError(null);
+    setLoading("email-resend");
+    try {
+      await signIn("email", { email: trimmed, callbackUrl: postAuthUrl, redirect: false });
+      setEmailSent(true);
+      setResendReady(false);
     } finally {
       setLoading(null);
     }
@@ -236,25 +287,47 @@ export default function LoginWall({ open, onClose, locale }: Props) {
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (emailError) setEmailError(null);
+                    }}
                     placeholder={t.emailPlaceholder}
                     className="min-h-[52px] rounded-2xl border border-white/15 bg-black/60 px-4 py-3 text-base text-white placeholder:text-white/35 focus:border-fuchsia-500/50 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/25"
                   />
+                  {emailError && (
+                    <p className="text-center text-xs text-rose-300/95 sm:text-sm">{emailError}</p>
+                  )}
                   <p className="text-center text-xs text-white/45 sm:text-sm">{t.emailNoPasswordNeeded}</p>
                   <button
                     type="submit"
                     disabled={!!loading || !email.trim()}
+                    aria-busy={loading === "email"}
                     className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl py-3.5 text-base font-bold text-white transition-opacity disabled:opacity-45"
                     style={{ background: "linear-gradient(135deg, #db2777 0%, #a855f7 50%, #c026d3 100%)" }}
                   >
                     {loading === "email" ? (
-                      <NeonPinkSpinner label="Sending…" className="text-white" />
+                      <NeonPinkSpinner label="Sending..." className="text-white" />
                     ) : emailSent ? (
                       t.emailLinkSent
                     ) : (
                       t.emailProceed
                     )}
                   </button>
+                  {emailSent && (
+                    <p className="text-center text-xs text-amber-200/85">
+                      Check your Spam folder if you don&apos;t see the email.
+                    </p>
+                  )}
+                  {emailSent && resendReady && (
+                    <button
+                      type="button"
+                      onClick={() => void handleResendEmail()}
+                      disabled={!!loading}
+                      className="min-h-[48px] rounded-2xl border border-fuchsia-400/40 bg-fuchsia-950/35 px-4 py-2.5 text-sm font-semibold text-fuchsia-100 transition-all hover:bg-fuchsia-900/45 disabled:cursor-not-allowed disabled:opacity-55"
+                    >
+                      {loading === "email-resend" ? "Sending again…" : "Resend Email"}
+                    </button>
+                  )}
                 </form>
 
                 {providers?.reddit && (
