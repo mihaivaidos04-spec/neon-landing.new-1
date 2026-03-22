@@ -1,12 +1,34 @@
 /**
  * Auth.js v5 reads AUTH_SECRET / AUTH_URL. Many hosts still set NEXTAUTH_* — mirror before NextAuth loads.
  */
+function normalizePublicBaseUrl(input: string | undefined): string | undefined {
+  if (!input?.trim()) return undefined;
+  let s = input.trim();
+  while (s.endsWith(".")) s = s.slice(0, -1);
+  s = s.replace(/\/+$/, "");
+  try {
+    const u = new URL(s);
+    let host = u.hostname;
+    while (host.endsWith(".")) host = host.slice(0, -1);
+    return `${u.protocol}//${host}`;
+  } catch {
+    return s;
+  }
+}
+
 if (typeof process !== "undefined") {
   if (process.env.NEXTAUTH_SECRET?.trim() && !process.env.AUTH_SECRET?.trim()) {
     process.env.AUTH_SECRET = process.env.NEXTAUTH_SECRET.trim();
   }
   if (process.env.NEXTAUTH_URL?.trim() && !process.env.AUTH_URL?.trim()) {
     process.env.AUTH_URL = process.env.NEXTAUTH_URL.trim();
+  }
+  const authNorm = normalizePublicBaseUrl(process.env.AUTH_URL);
+  const nextNorm = normalizePublicBaseUrl(process.env.NEXTAUTH_URL);
+  const canonical = authNorm ?? nextNorm;
+  if (canonical) {
+    process.env.AUTH_URL = canonical;
+    process.env.NEXTAUTH_URL = canonical;
   }
 }
 
