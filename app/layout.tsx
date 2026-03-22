@@ -66,24 +66,22 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: {
-    default: "NeonLive - Anonymous Streaming & Gifting",
-    template: "%s | NeonLive",
+  title: "NeonLive",
+  description: "Live video chat",
+  icons: {
+    icon: "/favicon.svg",
   },
-  description:
-    "NeonLive - Premium anonymous video chat. Connect with new people worldwide. Send gifts, earn rewards, and enjoy real connections under neon lights.",
   keywords: ["video chat", "anonymous chat", "live streaming", "gifting", "random chat", "neon"],
   openGraph: {
-    title: "NeonLive - Anonymous Streaming & Gifting",
-    description: "Premium anonymous video chat. Connect worldwide. Send gifts, earn rewards, real connections.",
-    url: "/",
+    title: "NeonLive",
+    description: "Live video chat",
+    url: "https://www.neonlive.chat",
     siteName: "NeonLive",
     images: [
       {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "NeonLive - Anonymous Streaming & Gifting. Join Now.",
+        url: "https://www.neonlive.chat/og-image.png",
+        width: 512,
+        height: 512,
       },
     ],
     locale: "en_US",
@@ -91,9 +89,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "NeonLive - Anonymous Streaming & Gifting",
-    description: "Premium anonymous video chat. Connect worldwide. Send gifts, earn rewards.",
-    images: ["/og-image.png"],
+    title: "NeonLive",
+    description: "Live video chat",
+    images: ["https://www.neonlive.chat/og-image.png"],
   },
   robots: {
     index: true,

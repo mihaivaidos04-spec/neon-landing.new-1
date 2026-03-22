@@ -13,6 +13,8 @@ model User {
   email            String?   @unique
   emailVerified    DateTime?
   image            String?
+  /// Public display name in video chat; 3–20 chars, [a-zA-Z0-9_], unique when set
+  nickname         String?   @unique
   coins            Int       @default(0)
   isGhost          Boolean   @default(false)
   country          String?

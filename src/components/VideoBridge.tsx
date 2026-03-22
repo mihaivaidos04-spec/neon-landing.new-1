@@ -119,6 +119,10 @@ type Props = {
   partnerInterests?: string[];
   partnerGiftsReceived?: number;
   partnerName?: string;
+  /** When set, shown as a label on the remote video panel */
+  partnerNickname?: string | null;
+  /** Shown on local camera panel (e.g. user nickname) */
+  selfDisplayName?: string | null;
   /** Partner country for flag on bio card */
   partnerCountryCode?: string | null;
   partnerLocale?: ContentLocale;
@@ -150,8 +154,10 @@ type Props = {
   transitionOutActive?: boolean;
   /** Below md (768px): vertical 50/50 partner/local + Ome-style chrome; md+ unchanged. */
   mobileSplitActive?: boolean;
-  /** Shown only when mobileSplitActive && !searching — big “next user” CTA. */
+  /** Shown only when mobileSplitActive && !searching — NEXT (skip partner, same as action bar). */
   onMobileNext?: () => void;
+  /** Mobile split: STOP — same as action bar stop / session end flow. */
+  onMobileStop?: () => void;
 };
 
 export default function VideoBridge({
@@ -192,6 +198,8 @@ export default function VideoBridge({
   partnerInterests = [],
   partnerGiftsReceived = 0,
   partnerName = "Partner",
+  partnerNickname = null,
+  selfDisplayName = null,
   partnerCountryCode = null,
   partnerLocale = locale,
   onBioCardDismiss,
@@ -211,6 +219,7 @@ export default function VideoBridge({
   transitionOutActive = false,
   mobileSplitActive = false,
   onMobileNext,
+  onMobileStop,
 }: Props) {
   const t = getContentT(locale);
   const fsLabels = videoFullscreenLabels(locale);
@@ -408,15 +417,21 @@ export default function VideoBridge({
           : undefined;
 
   return (
-    <div className="h-full w-full min-h-0 overflow-visible">
+    <div
+      className={`h-full w-full min-h-0 ${mobileSplitActive ? "max-md:overflow-hidden" : "overflow-visible"}`}
+    >
       <div
-        className={`video-player-wrap video-glow relative h-full min-h-0 min-w-0 w-full overflow-hidden rounded-2xl bg-black ${rankGlowClass}`}
+        className={`video-player-wrap video-glow relative h-full min-h-0 min-w-0 w-full overflow-hidden rounded-2xl bg-black max-md:min-h-0 ${rankGlowClass}`}
       >
       <div
         ref={splitContainerRef}
         className={`relative h-full min-h-0 w-full overflow-hidden bg-black ${
-          searching ? "aspect-video md:aspect-video max-md:aspect-auto" : "aspect-auto"
-        } ${mobileSplitActive ? "max-md:flex max-md:min-h-0 max-md:flex-col" : ""}`}
+          mobileSplitActive
+            ? "max-md:aspect-auto"
+            : searching
+              ? "aspect-video md:aspect-video max-md:aspect-auto"
+              : "aspect-auto"
+        } ${mobileSplitActive ? "max-md:flex max-md:h-full max-md:min-h-0 max-md:flex-col max-md:overflow-hidden" : ""}`}
         style={{
           backgroundColor: "#000000",
           filter: transitionOutActive ? "blur(12px)" : undefined,
@@ -484,7 +499,7 @@ export default function VideoBridge({
             mobileSplitActive
               ? searching
                 ? "max-md:relative max-md:h-full max-md:min-h-0 max-md:flex-1 md:absolute md:inset-0 md:h-full"
-                : "max-md:relative max-md:h-1/2 max-md:min-h-0 max-md:shrink-0 max-md:border-b-2 max-md:border-fuchsia-500/55 max-md:shadow-[0_8px_28px_rgba(168,85,247,0.45),inset_0_-1px_0_rgba(34,211,238,0.35)] md:absolute md:inset-0 md:h-full md:border-b-0 md:shadow-none"
+                : "max-md:relative max-md:h-[50dvh] max-md:max-h-[50dvh] max-md:min-h-0 max-md:shrink-0 max-md:border-b-2 max-md:border-fuchsia-500/55 max-md:shadow-[0_8px_28px_rgba(168,85,247,0.45),inset_0_-1px_0_rgba(34,211,238,0.35)] md:absolute md:inset-0 md:h-full md:border-b-0 md:shadow-none"
               : "absolute inset-0 h-full min-h-0"
           } ${showVipBorder ? "vip-border-glow" : ""}`}
           style={partnerFilterStyle}
@@ -546,10 +561,12 @@ export default function VideoBridge({
           )}
           {showPartnerSkeleton && !agoraEnabled && <VideoSkeletonLoader />}
           {agoraEnabled ? (
-            <div className="relative h-full min-h-[120px] w-full lg:min-h-0">
+            <div
+              className={`relative h-full min-h-0 w-full ${mobileSplitActive ? "max-md:min-h-0" : "min-h-[120px] lg:min-h-0"}`}
+            >
               <div
                 ref={agoraRemoteRef}
-                className="theater-agora-remote h-full min-h-[120px] w-full bg-black lg:min-h-0"
+                className={`theater-agora-remote h-full w-full bg-black ${mobileSplitActive ? "max-md:min-h-0" : "min-h-[120px] lg:min-h-0"}`}
               />
               {agora.joining && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/70 text-sm text-fuchsia-200/90">
@@ -574,7 +591,7 @@ export default function VideoBridge({
             <>
               <video
                 ref={localPreviewVideoRef}
-                className="h-full min-h-[120px] w-full object-cover object-center lg:min-h-0"
+                className={`h-full w-full object-cover object-center ${mobileSplitActive ? "max-md:min-h-0" : "min-h-[120px] lg:min-h-0"}`}
                 autoPlay
                 muted
                 playsInline
@@ -587,6 +604,14 @@ export default function VideoBridge({
                 </div>
               )}
             </>
+          )}
+          {!searching && partnerNickname?.trim() && (
+            <div
+              className="pointer-events-none absolute bottom-2 left-1/2 z-[19] max-w-[min(92%,18rem)] -translate-x-1/2 truncate rounded-full border border-fuchsia-500/25 bg-black/70 px-3 py-1 text-center text-[11px] font-semibold tracking-wide text-fuchsia-100/95 backdrop-blur-sm"
+              title={partnerNickname.trim()}
+            >
+              {partnerNickname.trim()}
+            </div>
           )}
           <PartnerVideoGiftOverlay
             gift={partnerVideoGift}
@@ -614,14 +639,14 @@ export default function VideoBridge({
               : mobileSplitActive
                 ? searching
                   ? "max-md:hidden md:absolute md:bottom-3 md:right-3 md:h-[7.2rem] md:w-[5.4rem] md:rounded-lg md:border-2 md:shadow-[0_0_18px_rgba(0,0,0,0.45)] lg:bottom-3 lg:right-3 lg:h-[8.3rem] lg:w-[10.8rem]"
-                  : "max-md:relative max-md:h-1/2 max-md:min-h-0 max-md:w-full max-md:shrink-0 max-md:rounded-none max-md:border-t-2 max-md:border-cyan-400/50 max-md:shadow-[0_-6px_24px_rgba(34,211,238,0.35)] md:absolute md:bottom-3 md:right-3 md:h-[7.2rem] md:w-[5.4rem] md:rounded-lg md:border-2 md:border-amber-500/50 md:shadow-[0_0_18px_rgba(0,0,0,0.45)] lg:bottom-3 lg:right-3 lg:h-[8.3rem] lg:w-[10.8rem]"
+                  : "max-md:relative max-md:h-[50dvh] max-md:max-h-[50dvh] max-md:min-h-0 max-md:w-full max-md:shrink-0 max-md:rounded-none max-md:border-t-2 max-md:border-cyan-400/50 max-md:shadow-[0_-6px_24px_rgba(34,211,238,0.35)] md:absolute md:bottom-3 md:right-3 md:h-[7.2rem] md:w-[5.4rem] md:rounded-lg md:border-2 md:border-amber-500/50 md:shadow-[0_0_18px_rgba(0,0,0,0.45)] lg:bottom-3 lg:right-3 lg:h-[8.3rem] lg:w-[10.8rem]"
                 : searching
                   ? "max-lg:hidden"
                   : "max-lg:absolute max-lg:bottom-3 max-lg:right-3 max-lg:h-[7.2rem] max-lg:w-[5.4rem] max-lg:rounded-lg max-lg:border-2 max-lg:shadow-[0_0_18px_rgba(0,0,0,0.45)] lg:absolute lg:bottom-3 lg:right-3 lg:h-[8.3rem] lg:w-[10.8rem] lg:shrink-0 lg:rounded-lg"
           }`}
         >
           <div
-            className="relative h-full w-full min-h-[120px] transition-[filter] duration-300 lg:min-h-0"
+            className={`relative h-full w-full transition-[filter] duration-300 ${mobileSplitActive ? "max-md:min-h-0" : "min-h-[120px] lg:min-h-0"}`}
             style={{
               filter: agoraEnabled
                 ? undefined
@@ -633,7 +658,7 @@ export default function VideoBridge({
           <CrownOverlay visible={showCrownOnSelf} position="self" />
             {agoraEnabled ? (
               <div
-                className="relative h-full w-full min-h-[120px] lg:min-h-0"
+                className={`relative h-full w-full ${mobileSplitActive ? "max-md:min-h-0" : "min-h-[120px] lg:min-h-0"}`}
                 style={{
                   filter: ghostMode
                     ? undefined
@@ -645,7 +670,7 @@ export default function VideoBridge({
                   className={
                     ghostMode
                       ? "absolute left-0 top-0 h-px w-px overflow-hidden opacity-0"
-                      : "theater-agora-local h-full w-full min-h-[120px] bg-black lg:min-h-0"
+                      : `theater-agora-local h-full w-full bg-black ${mobileSplitActive ? "max-md:min-h-0" : "min-h-[120px] lg:min-h-0"}`
                   }
                   aria-hidden={ghostMode}
                 />
@@ -687,7 +712,7 @@ export default function VideoBridge({
               </div>
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-zinc-900 text-xs text-white/60">
-                You
+                {selfDisplayName?.trim() || "You"}
               </div>
             )}
             <BeautyBlurOverlay
@@ -698,13 +723,21 @@ export default function VideoBridge({
               loading={beautyBlurLoading}
               canAfford={canAffordBeautyBlur}
             />
+            {selfDisplayName?.trim() && (
+              <div
+                className="pointer-events-none absolute bottom-2 left-1/2 z-[18] max-w-[min(92%,18rem)] -translate-x-1/2 truncate rounded-full border border-cyan-500/25 bg-black/70 px-3 py-1 text-center text-[11px] font-semibold tracking-wide text-cyan-100/95 backdrop-blur-sm"
+                title={selfDisplayName.trim()}
+              >
+                {selfDisplayName.trim()}
+              </div>
+            )}
           </div>
         </div>
         {agoraEnabled && agora.joined && (
           <div
             className={`absolute left-1/2 z-[72] flex -translate-x-1/2 gap-2 ${
               mobileSplitActive
-                ? "bottom-3 max-md:bottom-[calc(3.85rem+env(safe-area-inset-bottom,0px))]"
+                ? "bottom-3 max-md:bottom-[calc(4rem+0.75rem+env(safe-area-inset-bottom,0px))]"
                 : "bottom-3 max-lg:bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
             }`}
           >
@@ -826,23 +859,53 @@ export default function VideoBridge({
             </div>
           </>
         )}
-        {mobileSplitActive && !searching && onMobileNext && (
+        {mobileSplitActive && !searching && onMobileNext && onMobileStop && (
           <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 z-[58] hidden max-md:flex max-md:h-1/2 max-md:items-center max-md:justify-center max-md:px-4"
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-[80] hidden max-md:flex max-md:h-[50dvh] max-md:max-h-[50dvh] max-md:items-center max-md:justify-center max-md:px-4"
             aria-hidden={false}
           >
-            <button
-              type="button"
-              onClick={onMobileNext}
-              className="pointer-events-auto min-h-[52px] w-full max-w-[min(22rem,calc(100vw-1.5rem))] rounded-2xl px-4 py-3.5 text-center text-[0.8125rem] font-extrabold uppercase leading-tight tracking-wide text-white shadow-[0_0_28px_rgba(168,85,247,0.7),0_0_56px_rgba(139,92,246,0.35)] transition active:scale-[0.98]"
+            <div
+              className="pointer-events-auto relative z-[81] max-w-[min(100%,calc(100vw-2rem))]"
               style={{
-                background: "linear-gradient(135deg, #6d28d9 0%, #a855f7 42%, #c026d3 100%)",
-                boxShadow:
-                  "0 0 32px rgba(168, 85, 247, 0.55), 0 0 64px rgba(34, 211, 238, 0.12), inset 0 1px 0 rgba(255,255,255,0.12)",
+                display: "flex",
+                gap: 12,
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              {locale === "ro" ? "URMĂTORUL UTILIZATOR" : "NEXT USER"}
-            </button>
+              <button
+                type="button"
+                onClick={onMobileStop}
+                style={{
+                  background: "transparent",
+                  border: "1px solid #444",
+                  color: "#666",
+                  padding: "12px 28px",
+                  borderRadius: 24,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  letterSpacing: "1.5px",
+                }}
+              >
+                {t.stopBtn}
+              </button>
+              <button
+                type="button"
+                onClick={onMobileNext}
+                style={{
+                  background: "#7c3aed",
+                  border: "none",
+                  color: "#fff",
+                  padding: "12px 36px",
+                  borderRadius: 24,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  letterSpacing: "1.5px",
+                }}
+              >
+                {t.nextBtn}
+              </button>
+            </div>
           </div>
         )}
         <LiveSubtitles

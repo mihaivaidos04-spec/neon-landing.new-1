@@ -20,7 +20,7 @@ type Props = {
   setCoins?: (fn: (prev: number) => number) => void;
   onOpenShop?: () => void;
   onWalletRefetch?: () => void | Promise<void>;
-  onBoostedMatch?: (partnerId: string) => void;
+  onBoostedMatch?: (partnerId: string, partnerNickname?: string | null) => void;
 };
 
 export default function QueuePreview({
@@ -65,7 +65,10 @@ export default function QueuePreview({
         await onWalletRefetch?.();
         feedbackSuccess();
         if (data.status === "matched" && data.partnerId) {
-          onBoostedMatch?.(data.partnerId);
+          onBoostedMatch?.(
+            data.partnerId,
+            typeof data.partnerNickname === "string" ? data.partnerNickname : null
+          );
         }
         fetchQueue();
       }

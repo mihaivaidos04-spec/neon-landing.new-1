@@ -8,6 +8,7 @@ import { TARGET_COUNTRY_MATCH_COST } from "@/src/lib/coins";
 import { isPlausibleCountryCode } from "@/src/lib/valid-country-code";
 import { isUserMatchingSuspended } from "@/src/lib/report-store";
 import { checkMatchRateLimit } from "@/src/lib/rate-limit";
+import { getPartnerNickname } from "@/src/lib/partner-nickname";
 
 export async function POST(req: Request) {
   try {
@@ -98,9 +99,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
 
+    let partnerNickname: string | null | undefined;
+    if (result.status === "matched" && result.partnerId) {
+      partnerNickname = await getPartnerNickname(result.partnerId);
+    }
+
     return NextResponse.json({
       status: result.status,
       partnerId: result.status === "matched" ? result.partnerId : undefined,
+      partnerNickname: result.status === "matched" ? partnerNickname ?? null : undefined,
       newBalance:
         result.status === "matched" && result.newBalance != null
           ? result.newBalance

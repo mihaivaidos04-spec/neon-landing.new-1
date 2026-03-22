@@ -4,6 +4,7 @@ import { getSupabase } from "@/src/lib/supabase";
 import { spendCoins } from "@/src/lib/wallet";
 import { PRIORITY_BOOST_COST } from "@/src/lib/coins";
 import { reRunMatchingForUser } from "@/src/lib/matching";
+import { getPartnerNickname } from "@/src/lib/partner-nickname";
 
 export async function POST() {
   try {
@@ -50,11 +51,17 @@ export async function POST() {
 
     const matchResult = await reRunMatchingForUser(userId);
 
+    let partnerNickname: string | null | undefined;
+    if (matchResult.status === "matched" && matchResult.partnerId) {
+      partnerNickname = await getPartnerNickname(matchResult.partnerId);
+    }
+
     return NextResponse.json({
       success: true,
       newBalance: spendResult.newBalance,
       status: matchResult.status,
       partnerId: matchResult.status === "matched" ? matchResult.partnerId : undefined,
+      partnerNickname: matchResult.status === "matched" ? partnerNickname ?? null : undefined,
     });
   } catch (err) {
     console.error("[api/match/boost]", err);

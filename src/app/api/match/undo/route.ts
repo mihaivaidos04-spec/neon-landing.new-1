@@ -3,6 +3,7 @@ import { auth } from "@/src/auth";
 import { matchWithPartner } from "@/src/lib/matching";
 import { spendCoins } from "@/src/lib/wallet";
 import { UNDO_NEXT_COST } from "@/src/lib/coins";
+import { getPartnerNickname } from "@/src/lib/partner-nickname";
 
 export async function POST(req: Request) {
   try {
@@ -28,9 +29,15 @@ export async function POST(req: Request) {
 
     const result = await matchWithPartner(userId, partnerId);
 
+    let partnerNickname: string | null | undefined;
+    if (result.status === "matched" && result.partnerId) {
+      partnerNickname = await getPartnerNickname(result.partnerId);
+    }
+
     return NextResponse.json({
       status: result.status,
       partnerId: result.status === "matched" ? result.partnerId : undefined,
+      partnerNickname: result.status === "matched" ? partnerNickname ?? null : undefined,
     });
   } catch (err) {
     console.error("[api/match/undo]", err);

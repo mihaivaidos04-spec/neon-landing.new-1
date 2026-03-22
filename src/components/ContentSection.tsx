@@ -91,6 +91,8 @@ type Props = {
   onGuestPaywallTrigger?: (source: "chat" | "gift" | "next_limit") => void;
   /** Shown on gift overlay (e.g. session name) */
   viewerDisplayName?: string | null;
+  /** Video-chat display name on own camera panel */
+  viewerNickname?: string | null;
   /** Push battery % / loading to parent header (toolbar next to coins) */
   onBatteryDisplayChange?: (state: { percent: number; loading: boolean }) => void;
   /** Below md: Ome bar chat icon — e.g. open mobile menu (auth) */
@@ -139,6 +141,7 @@ export default function ContentSection({
   onRequireAuth,
   onGuestPaywallTrigger,
   viewerDisplayName = null,
+  viewerNickname = null,
   onBatteryDisplayChange,
   onMobileChatOpen,
 }: Props) {
@@ -185,6 +188,7 @@ export default function ContentSection({
   }, []);
   const [liveTranslationEnabled, setLiveTranslationEnabled] = useState(false);
   const [partnerId, setPartnerId] = useState<string | null>(null);
+  const [partnerNickname, setPartnerNickname] = useState<string | null>(null);
   const [previousPartnerId, setPreviousPartnerId] = useState<string | null>(null);
   const [showUndoBack, setShowUndoBack] = useState(false);
   const [localReaction, setLocalReaction] = useState<ReactionId | null>(null);
@@ -393,6 +397,7 @@ export default function ContentSection({
     setGhostMode(false);
     setLiveTranslationEnabled(false);
     setPartnerId(null);
+    setPartnerNickname(null);
     setPartnerIsPremium(false);
     setShowBioCard(true);
 
@@ -431,7 +436,12 @@ export default function ContentSection({
         if (data.status === "matched") {
           setSearching(false);
           setConnected(true);
-          if (data.partnerId) setPartnerId(data.partnerId);
+          if (data.partnerId) {
+            setPartnerId(data.partnerId);
+            setPartnerNickname(
+              typeof data.partnerNickname === "string" ? data.partnerNickname : null
+            );
+          }
           void onWalletRefetch?.();
           return;
         }
@@ -447,7 +457,12 @@ export default function ContentSection({
           if (d.status === "matched") {
             setSearching(false);
             setConnected(true);
-            if (d.partnerId) setPartnerId(d.partnerId);
+            if (d.partnerId) {
+              setPartnerId(d.partnerId);
+              setPartnerNickname(
+                typeof d.partnerNickname === "string" ? d.partnerNickname : null
+              );
+            }
             void onWalletRefetch?.();
             return;
           }
@@ -524,7 +539,12 @@ export default function ContentSection({
         setPreviousPartnerId(null);
         setSearching(false);
         setConnected(true);
-        if (data.partnerId) setPartnerId(data.partnerId);
+        if (data.partnerId) {
+          setPartnerId(data.partnerId);
+          setPartnerNickname(
+            typeof data.partnerNickname === "string" ? data.partnerNickname : null
+          );
+        }
         await onWalletRefetch?.();
         feedbackSuccess();
         return;
@@ -542,7 +562,12 @@ export default function ContentSection({
             setPreviousPartnerId(null);
             setSearching(false);
             setConnected(true);
-            if (d.partnerId) setPartnerId(d.partnerId);
+            if (d.partnerId) {
+              setPartnerId(d.partnerId);
+              setPartnerNickname(
+                typeof d.partnerNickname === "string" ? d.partnerNickname : null
+              );
+            }
             await onWalletRefetch?.();
             feedbackSuccess();
             return;
@@ -767,6 +792,8 @@ export default function ContentSection({
     setSessionSummaryVisible(false);
     setConnected(false);
     setSearching(true);
+    setPartnerId(null);
+    setPartnerNickname(null);
     if (useRealMatching) {
       fetch("/api/match/leave", { method: "POST" }).catch(() => {});
     }
@@ -787,6 +814,7 @@ export default function ContentSection({
     setConnected(false);
     setSearching(true);
     setPartnerId(null);
+    setPartnerNickname(null);
     if (useRealMatching) {
       fetch("/api/match/leave", { method: "POST" }).catch(() => {});
     }
@@ -1198,7 +1226,12 @@ export default function ContentSection({
       if (data.status === "matched") {
         setSearching(false);
         setConnected(true);
-        if (data.partnerId) setPartnerId(data.partnerId);
+        if (data.partnerId) {
+          setPartnerId(data.partnerId);
+          setPartnerNickname(
+            typeof data.partnerNickname === "string" ? data.partnerNickname : null
+          );
+        }
         void onWalletRefetch?.();
         return;
       }
@@ -1216,7 +1249,12 @@ export default function ContentSection({
         if (d.status === "matched") {
           setSearching(false);
           setConnected(true);
-          if (d.partnerId) setPartnerId(d.partnerId);
+          if (d.partnerId) {
+            setPartnerId(d.partnerId);
+            setPartnerNickname(
+              typeof d.partnerNickname === "string" ? d.partnerNickname : null
+            );
+          }
           void onWalletRefetch?.();
           return;
         }
@@ -1398,7 +1436,7 @@ export default function ContentSection({
         <div className="order-1 flex h-full min-h-0 min-w-0 w-full flex-1 flex-col gap-2 overflow-hidden xl:order-2 xl:min-w-0">
           <div className={`theater-stage theater-ambient-glow relative z-[1] mt-0 min-h-0 w-full min-w-0 flex-1 overflow-hidden rounded-2xl xl:mx-0 xl:mt-0 ${
             mobileInCallMode
-              ? "max-md:fixed max-md:inset-0 max-md:z-[35] max-md:h-[100dvh] max-md:w-[100vw] max-md:max-w-[100vw] max-md:overflow-x-hidden max-md:rounded-none"
+              ? "max-md:fixed max-md:inset-0 max-md:z-[35] max-md:flex max-md:h-[100dvh] max-md:w-[100vw] max-md:max-w-[100vw] max-md:flex-col max-md:overflow-hidden max-md:overflow-x-hidden max-md:rounded-none"
               : ""
           }`}>
               {searching && (
@@ -1420,7 +1458,7 @@ export default function ContentSection({
                 disabled={battery === 0}
                 onCommit={() => void handleStartOrNext()}
               >
-              <div className="theater-video-shell relative h-full min-h-0 max-md:h-full overflow-hidden rounded-2xl max-md:rounded-none">
+              <div className="theater-video-shell relative h-full min-h-0 max-md:min-h-0 max-md:flex-1 max-md:overflow-hidden rounded-2xl max-md:rounded-none">
               <VideoBridge
                 locale={locale}
                 searching={searching}
@@ -1458,7 +1496,9 @@ export default function ContentSection({
                 showBioCard={!!(connected && !searching && partnerId && showBioCard)}
                 partnerInterests={["Music", "Travel", "Photography"]}
                 partnerGiftsReceived={0}
-                partnerName="Partner"
+                partnerName={partnerNickname ?? "Partner"}
+                partnerNickname={partnerNickname}
+                selfDisplayName={viewerNickname}
                 partnerCountryCode={partnerCountryCode}
                 partnerLocale={locale}
                 onBioCardDismiss={() => setShowBioCard(false)}
@@ -1480,6 +1520,7 @@ export default function ContentSection({
                 transitionOutActive={videoTransitionOut}
                 mobileSplitActive={mobileInCallMode}
                 onMobileNext={() => void handleStartOrNext()}
+                onMobileStop={handleStop}
               />
               </div>
               </MobileVideoSwipeStart>
@@ -1518,12 +1559,77 @@ export default function ContentSection({
                   setCoins={setCoins}
                   onOpenShop={onOpenShop}
                   onWalletRefetch={onWalletRefetch}
-                  onBoostedMatch={(partnerId) => {
+                  onBoostedMatch={(pid, pNick) => {
                     setSearching(false);
                     setConnected(true);
-                    setPartnerId(partnerId);
+                    setPartnerId(pid);
+                    setPartnerNickname(typeof pNick === "string" ? pNick : null);
                   }}
                 />
+              )}
+              {mobileInCallMode && (
+                <div
+                  className="absolute bottom-0 left-0 right-0 z-[45] hidden h-16 max-md:flex max-md:items-center max-md:justify-between max-md:gap-2 max-md:border-t max-md:border-fuchsia-500/25 max-md:bg-black/70 max-md:px-3 max-md:shadow-[0_-8px_32px_rgba(0,0,0,0.45)] max-md:backdrop-blur-md max-md:[padding-bottom:max(0px,env(safe-area-inset-bottom))]"
+                  role="toolbar"
+                  aria-label="Quick chat and reactions"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isGuest) onGuestPaywallTrigger?.("chat");
+                      else onMobileChatOpen?.();
+                    }}
+                    className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-violet-500/35 bg-violet-950/40 text-violet-200 transition active:scale-95"
+                    aria-label="Chat"
+                  >
+                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                      />
+                    </svg>
+                  </button>
+                  <div className="flex flex-1 items-center justify-center gap-2 sm:gap-3">
+                    {(
+                      [
+                        { id: "heart" as ReactionId, emoji: "❤️", label: "Heart" },
+                        { id: "laugh" as ReactionId, emoji: "😂", label: "Laugh" },
+                        { id: "love" as ReactionId, emoji: "😍", label: "Like" },
+                      ] as const
+                    ).map((r) => (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => {
+                          if (isGuest) {
+                            onGuestPaywallTrigger?.("gift");
+                            return;
+                          }
+                          void handleSendReaction(r.id);
+                        }}
+                        className="flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-xl shadow-[0_0_16px_rgba(236,72,153,0.15)] transition active:scale-90"
+                        aria-label={r.label}
+                      >
+                        {r.emoji}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isGuest) onGuestPaywallTrigger?.("gift");
+                      else onOpenShop();
+                    }}
+                    className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-fuchsia-500/40 bg-fuchsia-950/45 text-fuchsia-200 transition active:scale-95"
+                    aria-label="Gifts and coins"
+                  >
+                    <span className="text-lg" aria-hidden>
+                      🎁
+                    </span>
+                  </button>
+                </div>
               )}
             </div>
           <VideoAdOverlay visible={showVideoAd} onClose={() => setShowVideoAd(false)} />
@@ -1545,70 +1651,6 @@ export default function ContentSection({
           >
             {t.subPlayerText}
           </p>
-          {mobileInCallMode && (
-            <div
-              className="fixed inset-x-0 bottom-0 z-[45] hidden max-md:flex max-md:items-center max-md:justify-between max-md:gap-2 max-md:border-t max-md:border-fuchsia-500/30 max-md:bg-black/88 max-md:px-3 max-md:py-2 max-md:shadow-[0_-12px_40px_rgba(139,92,246,0.2)] max-md:backdrop-blur-xl max-md:[padding-bottom:max(0.5rem,env(safe-area-inset-bottom))]"
-              role="toolbar"
-              aria-label="Quick chat and reactions"
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  if (isGuest) onGuestPaywallTrigger?.("chat");
-                  else onMobileChatOpen?.();
-                }}
-                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-violet-500/35 bg-violet-950/40 text-violet-200 transition active:scale-95"
-                aria-label="Chat"
-              >
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                  />
-                </svg>
-              </button>
-              <div className="flex flex-1 items-center justify-center gap-2 sm:gap-3">
-                {(
-                  [
-                    { id: "heart" as ReactionId, emoji: "❤️", label: "Heart" },
-                    { id: "laugh" as ReactionId, emoji: "😂", label: "Laugh" },
-                    { id: "love" as ReactionId, emoji: "😍", label: "Like" },
-                  ] as const
-                ).map((r) => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => {
-                      if (isGuest) {
-                        onGuestPaywallTrigger?.("gift");
-                        return;
-                      }
-                      void handleSendReaction(r.id);
-                    }}
-                    className="flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-xl shadow-[0_0_16px_rgba(236,72,153,0.15)] transition active:scale-90"
-                    aria-label={r.label}
-                  >
-                    {r.emoji}
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (isGuest) onGuestPaywallTrigger?.("gift");
-                  else onOpenShop();
-                }}
-                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-fuchsia-500/40 bg-fuchsia-950/45 text-fuchsia-200 transition active:scale-95"
-                aria-label="Gifts and coins"
-              >
-                <span className="text-lg" aria-hidden>
-                  🎁
-                </span>
-              </button>
-            </div>
-          )}
           <div className={`action-bar sticky bottom-0 z-20 mt-0 shrink-0 rounded-2xl border border-white/10 bg-black/55 px-2 py-2 backdrop-blur-xl ${
             mobileInCallMode ? "max-md:hidden" : ""
           }`}>

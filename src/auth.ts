@@ -312,6 +312,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               coins: true,
               totalSpent: true,
               isVip: true,
+              nickname: true,
             },
           });
           if (user) {
@@ -320,6 +321,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             session.currentLevel = user.currentLevel;
             session.totalSpent = user.totalSpent ?? 0;
             session.countryCode = user.country ?? null;
+            session.nickname = user.nickname ?? undefined;
             const ghostActive = user.ghostModeUntil ? user.ghostModeUntil > new Date() : user.isGhost;
             session.isGhost = ghostActive;
             session.isNeonVip = user.isVip === true;

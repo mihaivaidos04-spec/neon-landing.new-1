@@ -13,6 +13,8 @@ declare module "next-auth" {
       coins?: number;
     };
     userId?: string;
+    /** Set when user chose a public video-chat display name */
+    nickname?: string | null;
     tier?: string;
     coins?: number;
     isGhost?: boolean;

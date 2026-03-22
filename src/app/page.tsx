@@ -11,7 +11,7 @@ import {
   setAgeVerifiedLocalStorage,
 } from "../lib/age-verification-cookie";
 import { getOrCreateGuestAlias } from "../lib/guest-identity";
-import { getBrowserLocale, getContentT } from "../lib/content-i18n";
+import { getBrowserLocale, getContentT, type ContentLocale } from "../lib/content-i18n";
 import { getRankFromCoinsSpent } from "../lib/ranks";
 import RankBadge from "../components/RankBadge";
 import WalletSkeleton from "../components/WalletSkeleton";
@@ -94,10 +94,12 @@ const GlobalPulseGuestPanel = dynamic(() => import("@/src/components/GlobalPulse
   ssr: false,
 });
 const LoginWall = dynamic(() => import("@/src/components/LoginWall"), { ssr: false });
+const NicknameSetupModal = dynamic(() => import("@/src/components/NicknameSetupModal"), { ssr: false });
 
 /** Custom fields from NextAuth JWT/callbacks */
 type AppSession = NonNullable<ReturnType<typeof useSession>["data"]> & {
   userId?: string;
+  nickname?: string | null;
   user?: NonNullable<NonNullable<ReturnType<typeof useSession>["data"]>["user"]> & { id?: string };
 };
 
@@ -359,6 +361,9 @@ export default function NeonLanding() {
   const viewerCountryCode = useEffectiveViewerCountryCode(status, session?.countryCode);
   const showAgeGate = mounted && ageGateResolved && !ageGateOk;
   const canShowLanding = mounted && !showAgeGate;
+  const authSession = session as AppSession | null | undefined;
+  const needsNicknameSetup =
+    status === "authenticated" && !authSession?.nickname?.trim();
 
   return (
     <div className="relative flex h-[100dvh] max-h-[100dvh] max-w-[100vw] flex-col overflow-hidden bg-[#000000] text-white antialiased">
@@ -601,6 +606,7 @@ export default function NeonLanding() {
                   }
                   onBatteryDisplayChange={handleBatteryDisplayChange}
                   onMobileChatOpen={() => setMobileMenuOpen(true)}
+                  viewerNickname={authSession?.nickname ?? null}
                 />
                 )}
               </div>
@@ -670,6 +676,9 @@ export default function NeonLanding() {
       )}
       {showAgeGate && (
         <AgeVerificationModal onAccept={handleAgeVerified} />
+      )}
+      {needsNicknameSetup && (
+        <NicknameSetupModal open locale={locale as ContentLocale} />
       )}
       <LoginWall open={showLoginWall} onClose={() => setShowLoginWall(false)} locale={locale} />
 

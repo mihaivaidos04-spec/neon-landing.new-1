@@ -47,6 +47,7 @@ type DayStat = {
 };
 
 type MeResponse = {
+  nickname: string | null;
   bio: string;
   profileGender: string | null;
   profileBannerUrl: string | null;
@@ -279,6 +280,7 @@ export default function ProfileDashboard() {
       .then((d: MeResponse & { error?: string }) => {
         if (d.error) throw new Error(d.error);
         setMe(d);
+        setNicknameDraft(d.nickname ?? "");
         setBioDraft(d.bio ?? "");
         setProfileGenderDraft(d.profileGender ?? null);
         setBioEditing(false);
@@ -338,6 +340,29 @@ export default function ProfileDashboard() {
     const id = window.setInterval(() => setBoostTick((n) => n + 1), 1000);
     return () => window.clearInterval(id);
   }, [me?.ghostModeUntil]);
+
+  const saveNickname = async () => {
+    setNicknameSaving(true);
+    try {
+      const res = await fetch("/api/user/nickname", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nickname: nicknameDraft }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(typeof data?.error === "string" ? data.error : "Save failed");
+        return;
+      }
+      toast.success(t("profile.nicknameSaved"));
+      await loadMe();
+      void updateSession?.();
+    } catch {
+      toast.error("Save failed");
+    } finally {
+      setNicknameSaving(false);
+    }
+  };
 
   const saveProfile = async () => {
     if (!me) return;
@@ -777,6 +802,33 @@ export default function ProfileDashboard() {
 
         {activeTab === "profile" && (
           <>
+        {/* Video chat display name */}
+        <section className={`mb-8 p-5 sm:p-6 ${GLASS_PANEL}`}>
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-violet-300">
+            {t("profile.videoNickname")}
+          </h2>
+          <p className="mb-4 text-xs text-white/55">{t("profile.videoNicknameHint")}</p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <input
+              type="text"
+              maxLength={20}
+              value={nicknameDraft}
+              onChange={(e) => setNicknameDraft(e.target.value)}
+              className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-white/35 focus:border-fuchsia-500/45 focus:outline-none focus:ring-1 focus:ring-fuchsia-500/30 sm:max-w-md"
+              placeholder="NeonUser_42"
+              autoComplete="username"
+            />
+            <button
+              type="button"
+              disabled={nicknameSaving || nicknameDraft.trim().length < 3}
+              onClick={() => void saveNickname()}
+              className="shrink-0 rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_0_16px_rgba(168,85,247,0.35)] disabled:opacity-45"
+            >
+              {nicknameSaving ? t("profile.saving") : t("profile.saveNickname")}
+            </button>
+          </div>
+        </section>
+
         {/* Level / XP bar */}
         <section className={`mb-8 p-5 ${GLASS_PANEL} ring-1 ring-violet-500/20`}>
           <div className="flex flex-wrap items-baseline justify-between gap-2">

@@ -136,11 +136,11 @@ export default function MobileVideoSwipeStart({ locale, children, onCommit, disa
   }
 
   return (
-    <div className="relative w-full [perspective:1100px]">
+    <div className="relative h-full min-h-0 w-full [perspective:1100px] max-md:flex max-md:min-h-0 max-md:flex-1 max-md:flex-col">
       <div
         ref={containerRef}
         {...bind()}
-        className={`relative overflow-hidden rounded-2xl ${dragging && axisLock === "horizontal" ? "touch-none select-none" : "touch-pan-y"}`}
+        className={`relative h-full min-h-0 flex-1 overflow-hidden rounded-2xl max-md:min-h-0 ${dragging && axisLock === "horizontal" ? "touch-none select-none" : "touch-pan-y"}`}
         style={{
           transformStyle: "preserve-3d" as const,
           transform: `translate3d(${dragX}px, 0, 0) rotate(${rotate}deg)`,
