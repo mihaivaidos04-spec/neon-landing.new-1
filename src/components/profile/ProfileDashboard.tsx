@@ -233,6 +233,7 @@ export default function ProfileDashboard() {
   const [activity, setActivity] = useState<Record<string, number>>({});
   const [dayStats, setDayStats] = useState<Record<string, DayStat>>({});
   const [supporters, setSupporters] = useState<Supporter[]>([]);
+  const [nicknameDraft, setNicknameDraft] = useState(me?.nickname ?? "");
   const [bioDraft, setBioDraft] = useState("");
   const [bannerDraft, setBannerDraft] = useState("");
   const [langsDraft, setLangsDraft] = useState<string[]>([]);
