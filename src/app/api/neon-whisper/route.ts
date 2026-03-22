@@ -7,7 +7,7 @@ const MIN_INTERVAL_MS = 12_000;
 
 const lastCallByUser = new Map<string, number>();
 
-function getUserId(session: { userId?: string; user?: { id?: string } } | null): string | null {
+function getUserId(session: { userId?: string; user?: { id?: string } } | null | undefined): string | null {
   return session?.userId ?? session?.user?.id ?? null;
 }
 
