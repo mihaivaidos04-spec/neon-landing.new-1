@@ -5,6 +5,7 @@ import { useSession, signIn } from "next-auth/react";
 import toast from "react-hot-toast";
 import { buyItem } from "@/src/app/actions/shop";
 import { getShopItems, type ShopItem } from "@/src/lib/shop-items";
+import { getSafeAuthCallbackUrl } from "@/src/lib/auth-callback-url";
 import type { I18nLocale } from "@/src/i18n";
 import { getT } from "@/src/i18n";
 
@@ -111,7 +112,7 @@ export default function ShopModal({
             type="button"
             onClick={() =>
               signIn(undefined, {
-                callbackUrl: typeof window !== "undefined" ? window.location.href : "/",
+                callbackUrl: getSafeAuthCallbackUrl("/"),
                 redirect: false,
               })
             }

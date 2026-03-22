@@ -26,7 +26,7 @@ export default function LoginPage() {
   }, [mounted]);
 
   useEffect(() => {
-    if (status === "authenticated") router.replace("/dashboard");
+    if (status === "authenticated") router.replace("/");
   }, [status, router]);
 
   if (!mounted) {

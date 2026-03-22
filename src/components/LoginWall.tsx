@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { signIn, getProviders } from "next-auth/react";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
+import { getSafeAuthCallbackUrl } from "../lib/auth-callback-url";
 import NeonLiveLogo from "./NeonLiveLogo";
 import NeonPinkSpinner from "./NeonPinkSpinner";
 
@@ -94,13 +95,14 @@ export default function LoginWall({ open, onClose, locale }: Props) {
 
   if (!open) return null;
 
-  const postAuthUrl =
-    typeof window !== "undefined" ? window.location.href : "/";
+  const postAuthUrl = getSafeAuthCallbackUrl("/");
 
   const handleOAuth = async (provider: string) => {
     setLoading(provider);
     try {
       await signIn(provider, { callbackUrl: postAuthUrl, redirect: false });
+    } catch (error) {
+      console.error(`[login] signIn(${provider}) failed`, error);
     } finally {
       setLoading(null);
     }
@@ -169,7 +171,7 @@ export default function LoginWall({ open, onClose, locale }: Props) {
                 type="button"
                 onClick={() => handleOAuth("discord")}
                 disabled={!!loading}
-                className="flex min-h-[58px] w-full items-center justify-center gap-3 rounded-2xl bg-[#5865F2] py-4 text-base font-bold text-white shadow-[0_0_32px_rgba(88,101,242,0.55)] transition-all hover:scale-[1.01] hover:bg-[#4752C4] hover:shadow-[0_0_48px_rgba(88,101,242,0.65)] disabled:cursor-not-allowed disabled:opacity-55 active:scale-[0.99] sm:min-h-16 sm:text-lg md:text-xl"
+                className="pointer-events-auto relative z-[2] flex min-h-[58px] w-full items-center justify-center gap-3 rounded-2xl bg-[#5865F2] py-4 text-base font-bold text-white shadow-[0_0_32px_rgba(88,101,242,0.55)] transition-all hover:scale-[1.01] hover:bg-[#4752C4] hover:shadow-[0_0_48px_rgba(88,101,242,0.65)] disabled:cursor-not-allowed disabled:opacity-55 active:scale-[0.99] sm:min-h-16 sm:text-lg md:text-xl"
               >
                 {loading === "discord" ? (
                   <NeonPinkSpinner label="Connecting…" className="text-white" />
@@ -186,7 +188,7 @@ export default function LoginWall({ open, onClose, locale }: Props) {
                   type="button"
                   onClick={() => handleOAuth("google")}
                   disabled={!!loading}
-                  className="flex min-h-[58px] w-full items-center justify-center gap-3 rounded-2xl border-2 border-white/30 bg-white py-4 text-base font-bold text-gray-900 shadow-[0_0_32px_rgba(255,255,255,0.2)] transition-all hover:scale-[1.01] hover:bg-gray-50 hover:shadow-[0_0_44px_rgba(66,133,244,0.35)] disabled:cursor-not-allowed disabled:opacity-55 active:scale-[0.99] sm:min-h-16 sm:text-lg md:text-xl"
+                  className="pointer-events-auto relative z-[2] flex min-h-[58px] w-full items-center justify-center gap-3 rounded-2xl border-2 border-white/30 bg-white py-4 text-base font-bold text-gray-900 shadow-[0_0_32px_rgba(255,255,255,0.2)] transition-all hover:scale-[1.01] hover:bg-gray-50 hover:shadow-[0_0_44px_rgba(66,133,244,0.35)] disabled:cursor-not-allowed disabled:opacity-55 active:scale-[0.99] sm:min-h-16 sm:text-lg md:text-xl"
                 >
                   {loading === "google" ? (
                     <NeonPinkSpinner label="Connecting…" labelClassName="text-gray-800" />
@@ -204,7 +206,7 @@ export default function LoginWall({ open, onClose, locale }: Props) {
                   type="button"
                   onClick={() => handleOAuth("facebook")}
                   disabled={!!loading}
-                  className="flex min-h-[58px] w-full items-center justify-center gap-3 rounded-2xl bg-[#1877F2] py-4 text-base font-bold text-white shadow-[0_0_32px_rgba(24,119,242,0.5)] transition-all hover:scale-[1.01] hover:bg-[#166fe5] hover:shadow-[0_0_48px_rgba(24,119,242,0.6)] disabled:cursor-not-allowed disabled:opacity-55 active:scale-[0.99] sm:min-h-16 sm:text-lg md:text-xl"
+                  className="pointer-events-auto relative z-[2] flex min-h-[58px] w-full items-center justify-center gap-3 rounded-2xl bg-[#1877F2] py-4 text-base font-bold text-white shadow-[0_0_32px_rgba(24,119,242,0.5)] transition-all hover:scale-[1.01] hover:bg-[#166fe5] hover:shadow-[0_0_48px_rgba(24,119,242,0.6)] disabled:cursor-not-allowed disabled:opacity-55 active:scale-[0.99] sm:min-h-16 sm:text-lg md:text-xl"
                 >
                   {loading === "facebook" ? (
                     <NeonPinkSpinner label="Connecting…" className="text-white" />

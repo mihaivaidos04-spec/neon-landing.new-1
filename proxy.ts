@@ -9,6 +9,18 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
  * @see https://nextjs.org/docs/app/api-reference/file-conventions/proxy
  */
 export async function proxy(req: NextRequest) {
+  if (req.nextUrl.pathname.startsWith("/login")) {
+    const token = await getToken({
+      req,
+      secret: process.env.AUTH_SECRET || "dev-secret-min-32-chars-for-local",
+      salt: "authjs.session-token",
+    });
+    if (token) {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+    return NextResponse.next();
+  }
+
   if (!req.nextUrl.pathname.startsWith("/admin")) {
     return NextResponse.next();
   }
@@ -32,5 +44,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/login"],
 };

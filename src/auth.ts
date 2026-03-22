@@ -50,6 +50,10 @@ const FACEBOOK_SECRET = process.env.FACEBOOK_CLIENT_SECRET ?? process.env.AUTH_F
 const DISCORD_ID = process.env.DISCORD_CLIENT_ID ?? process.env.AUTH_DISCORD_ID;
 const DISCORD_SECRET = process.env.DISCORD_CLIENT_SECRET ?? process.env.AUTH_DISCORD_SECRET;
 
+function resolvedAuthBaseUrl(): string | undefined {
+  return process.env.AUTH_URL?.trim() || process.env.NEXTAUTH_URL?.trim();
+}
+
 function resolveAuthSecret(): string | undefined {
   const s =
     process.env.AUTH_SECRET?.trim() ||
@@ -61,6 +65,18 @@ function resolveAuthSecret(): string | undefined {
     );
   }
   return s;
+}
+
+if (typeof process !== "undefined") {
+  const authBase = resolvedAuthBaseUrl();
+  if (authBase) {
+    const cleaned = authBase.replace(/\/+$/, "");
+    console.log("[auth] Expected OAuth callback URLs:", {
+      discord: `${cleaned}/api/auth/callback/discord`,
+      google: `${cleaned}/api/auth/callback/google`,
+      facebook: `${cleaned}/api/auth/callback/facebook`,
+    });
+  }
 }
 
 /** Exported for `app/api/auth/[...nextauth]/route.ts` — Google OAuth persists `User` + `Account` here. */

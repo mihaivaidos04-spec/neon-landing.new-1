@@ -1,6 +1,7 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import { getSafeAuthCallbackUrl } from "../lib/auth-callback-url";
 
 type Props = {
   className?: string;
@@ -15,7 +16,7 @@ export default function FacebookButton({ className = "", children, disabled }: P
       disabled={disabled}
       onClick={() =>
         signIn("facebook", {
-          callbackUrl: typeof window !== "undefined" ? window.location.href : "/",
+          callbackUrl: getSafeAuthCallbackUrl("/"),
           redirect: false,
         })
       }

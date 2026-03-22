@@ -2,6 +2,7 @@
 
 import { signIn } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getSafeAuthCallbackUrl } from "../lib/auth-callback-url";
 
 type Props = {
   open: boolean;
@@ -39,7 +40,7 @@ export default function GuestLoginPromptModal({ open, onClose }: Props) {
                 type="button"
                 onClick={() =>
                   void signIn("discord", {
-                    callbackUrl: typeof window !== "undefined" ? window.location.href : "/",
+                    callbackUrl: getSafeAuthCallbackUrl("/"),
                     redirect: false,
                   })
                 }
@@ -51,7 +52,7 @@ export default function GuestLoginPromptModal({ open, onClose }: Props) {
                 type="button"
                 onClick={() =>
                   void signIn("google", {
-                    callbackUrl: typeof window !== "undefined" ? window.location.href : "/",
+                    callbackUrl: getSafeAuthCallbackUrl("/"),
                     redirect: false,
                   })
                 }
