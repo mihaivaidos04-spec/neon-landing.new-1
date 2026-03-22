@@ -126,9 +126,15 @@ export default function LoginWall({ open, onClose, locale }: Props) {
   const isValidEmail = (value: string): boolean => /\S+@\S+\.\S+/.test(value);
 
   const handleOAuth = async (provider: string) => {
+    console.log("Se incearca logarea cu...", provider);
     setLoading(provider);
     try {
-      await signIn(provider, { callbackUrl: postAuthUrl, redirect: false });
+      const result = await signIn(provider, { callbackUrl: postAuthUrl, redirect: false });
+      if (result?.url) {
+        window.location.href = result.url;
+        return;
+      }
+      console.warn(`[login] signIn(${provider}) did not return a redirect URL`);
     } catch (error) {
       console.error(`[login] signIn(${provider}) failed`, error);
     } finally {
