@@ -146,6 +146,8 @@ type Props = {
   onSpend?: (amount: number, reason?: string) => Promise<boolean>;
   /** Logged-in: enable Neon Whisper AI wingman (local-only overlay; uses partner video + your mic transcript). */
   neonWhisperEnabled?: boolean;
+  /** Brief 0.2s blur/fade when moving to next partner on mobile. */
+  transitionOutActive?: boolean;
 };
 
 export default function VideoBridge({
@@ -202,6 +204,7 @@ export default function VideoBridge({
   agoraUserIdKey = null,
   onSpend,
   neonWhisperEnabled = false,
+  transitionOutActive = false,
 }: Props) {
   const t = getContentT(locale);
   const fsLabels = videoFullscreenLabels(locale);
@@ -406,8 +409,14 @@ export default function VideoBridge({
       <div
         ref={splitContainerRef}
         className={`relative h-full min-h-0 w-full overflow-hidden bg-black ${
-          searching ? "aspect-video" : "max-lg:flex max-lg:flex-col max-lg:aspect-auto lg:aspect-video"
+          searching ? "aspect-video" : "aspect-auto"
         }`}
+        style={{
+          backgroundColor: "#000000",
+          filter: transitionOutActive ? "blur(12px)" : undefined,
+          opacity: transitionOutActive ? 0.2 : 1,
+          transition: "filter 0.2s ease, opacity 0.2s ease",
+        }}
       >
         {!searching && (
           <button
@@ -460,7 +469,7 @@ export default function VideoBridge({
           className={`relative w-full overflow-hidden transition-[filter] duration-500 ${
             searching
               ? "absolute inset-0 h-full min-h-0"
-              : "max-lg:flex-1 max-lg:basis-0 max-lg:min-h-0 lg:absolute lg:inset-0 lg:h-full lg:min-h-0 lg:flex-none"
+              : "absolute inset-0 h-full min-h-0"
           } ${showVipBorder ? "vip-border-glow" : ""}`}
           style={partnerFilterStyle}
         >
@@ -579,11 +588,11 @@ export default function VideoBridge({
         </div>
         {/* Self-view — bottom half on mobile when connected; PiP on desktop */}
         <div
-          className={`relative z-[15] overflow-hidden bg-black max-lg:flex-1 max-lg:basis-0 max-lg:min-h-[22dvh] max-lg:rounded-none max-lg:border-t-2 max-lg:border-white/20 lg:absolute lg:bottom-3 lg:right-3 lg:h-[8.3rem] lg:w-[10.8rem] lg:shrink-0 lg:rounded-lg ${
+          className={`relative z-[15] overflow-hidden bg-black ${
             isWhale
               ? "border-amber-400/90 shadow-[0_0_12px_rgba(251,191,36,0.6)] lg:border-2"
               : "border-amber-500/50 lg:border-2"
-          } ${hideSelfPip ? "hidden" : searching ? "max-lg:hidden" : ""}`}
+          } ${hideSelfPip ? "hidden" : searching ? "max-lg:hidden" : "max-lg:absolute max-lg:bottom-3 max-lg:right-3 max-lg:h-[7.2rem] max-lg:w-[5.4rem] max-lg:rounded-lg max-lg:border-2 max-lg:shadow-[0_0_18px_rgba(0,0,0,0.45)] lg:absolute lg:bottom-3 lg:right-3 lg:h-[8.3rem] lg:w-[10.8rem] lg:shrink-0 lg:rounded-lg"}`}
         >
           <div
             className="relative h-full w-full min-h-[120px] transition-[filter] duration-300 lg:min-h-0"
@@ -767,7 +776,24 @@ export default function VideoBridge({
             )}
           </div>
         )}
-        {searching && <SearchingSpinner label={t.searching} />}
+        {searching && (
+          <>
+            <div className="pointer-events-none absolute inset-0 z-[34] flex items-center justify-center px-6 lg:hidden">
+              <div className="flex flex-col items-center gap-3">
+                <div className="neon-pulse-loader" aria-hidden />
+                <p
+                  className="text-center text-[1.08rem] font-semibold tracking-[0.02em] text-white/94"
+                  style={{ textShadow: "0 1px 2px rgba(0,0,0,0.95), 0 0 16px rgba(255,255,255,0.2)" }}
+                >
+                  Searching for partner...
+                </p>
+              </div>
+            </div>
+            <div className="max-lg:hidden">
+              <SearchingSpinner label={t.searching} />
+            </div>
+          </>
+        )}
         <LiveSubtitles
           locale={locale}
           enabled={liveTranslationEnabled && !searching}

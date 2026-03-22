@@ -112,6 +112,7 @@ export default function ShopModal({
             onClick={() =>
               signIn(undefined, {
                 callbackUrl: typeof window !== "undefined" ? window.location.href : "/",
+                redirect: false,
               })
             }
             className="mt-2 min-h-11 w-full rounded-xl border border-white/15 py-2.5 text-sm font-medium text-violet-200 transition hover:bg-white/5"

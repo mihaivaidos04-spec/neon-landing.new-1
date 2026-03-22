@@ -95,11 +95,15 @@ export default function LoginWall({ open, onClose, locale }: Props) {
   if (!open) return null;
 
   const postAuthUrl =
-    typeof window !== "undefined" ? `${window.location.origin}/dashboard` : "/dashboard";
+    typeof window !== "undefined" ? window.location.href : "/";
 
-  const handleOAuth = (provider: string) => {
+  const handleOAuth = async (provider: string) => {
     setLoading(provider);
-    signIn(provider, { callbackUrl: postAuthUrl }).finally(() => setLoading(null));
+    try {
+      await signIn(provider, { callbackUrl: postAuthUrl, redirect: false });
+    } finally {
+      setLoading(null);
+    }
   };
 
   const handleMagicLink = async (e: React.FormEvent) => {
@@ -107,7 +111,7 @@ export default function LoginWall({ open, onClose, locale }: Props) {
     if (!email.trim()) return;
     setLoading("email");
     try {
-      await signIn("email", { email: email.trim(), callbackUrl: postAuthUrl });
+      await signIn("email", { email: email.trim(), callbackUrl: postAuthUrl, redirect: false });
       setEmailSent(true);
     } finally {
       setLoading(null);

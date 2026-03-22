@@ -87,7 +87,7 @@ export default function GlobalPulseGuestPanel({ locale, onOpenLogin, onAttemptCh
 
   return (
     <aside
-      className="global-pulse-panel flex w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/50 shadow-[0_0_32px_rgba(236,72,153,0.08),0_8px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl xl:max-h-[min(85vh,720px)] xl:rounded-l-xl xl:rounded-r-md"
+      className="global-pulse-panel flex h-full min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/50 shadow-[0_0_32px_rgba(236,72,153,0.08),0_8px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl xl:rounded-l-xl xl:rounded-r-md"
       aria-label="Global Pulse preview"
     >
       <div
@@ -104,7 +104,7 @@ export default function GlobalPulseGuestPanel({ locale, onOpenLogin, onAttemptCh
 
       <div
         ref={scrollRef}
-        className="min-h-[200px] flex-1 space-y-2 overflow-y-auto overflow-x-hidden overscroll-y-contain px-2.5 py-2 sm:min-h-[240px] xl:min-h-[180px] xl:space-y-1.5 xl:px-2 [scrollbar-gutter:stable]"
+        className="min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden overscroll-y-contain px-2.5 py-2 xl:space-y-1.5 xl:px-2 [scrollbar-gutter:stable]"
         style={{ contain: "content" }}
       >
         {lines.map((m) => {

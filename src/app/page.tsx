@@ -361,7 +361,7 @@ export default function NeonLanding() {
   const canShowLanding = mounted && !showAgeGate;
 
   return (
-    <div className="h-[100dvh] max-h-[100dvh] max-w-[100vw] overflow-hidden bg-[#000000] text-white antialiased">
+    <div className="relative flex h-[100dvh] max-h-[100dvh] max-w-[100vw] flex-col overflow-hidden bg-[#000000] text-white antialiased">
       <NeonParticleField />
       <div
         className="pointer-events-none fixed inset-0 z-0"
@@ -372,7 +372,7 @@ export default function NeonLanding() {
       />
       {/* Header: Titlu + Conectare / Profile */}
       {canShowLanding && (
-        <header className="relative z-20 max-w-[100vw] px-3 py-2 sm:px-6 sm:py-3">
+        <header className="relative z-20 shrink-0 max-w-[100vw] px-3 py-2 sm:px-6 sm:py-3">
           <div className="mx-auto flex max-w-6xl min-w-0 items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2 sm:gap-3">
               <h1 className="m-0 flex min-w-0 items-center">
@@ -605,7 +605,7 @@ export default function NeonLanding() {
               </div>
               <div
                 id="global-pulse"
-                className="global-pulse-column relative z-[12] hidden min-h-0 w-full min-w-0 shrink-0 xl:block xl:h-full xl:w-52 xl:max-w-[13.5rem]"
+                className="global-pulse-column relative z-[12] hidden min-h-0 w-full min-w-0 shrink-0 overflow-hidden xl:block xl:h-full xl:w-52 xl:max-w-[13.5rem]"
               >
                 {canShowLanding && status === "authenticated" ? (
                   <GlobalPulseChat locale={locale} />

@@ -37,14 +37,24 @@ export default function GuestLoginPromptModal({ open, onClose }: Props) {
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               <button
                 type="button"
-                onClick={() => void signIn("discord", { callbackUrl: "/dashboard" })}
+                onClick={() =>
+                  void signIn("discord", {
+                    callbackUrl: typeof window !== "undefined" ? window.location.href : "/",
+                    redirect: false,
+                  })
+                }
                 className="min-h-[46px] flex-1 rounded-xl bg-[#5865F2] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_rgba(88,101,242,0.45)]"
               >
                 Continue with Discord
               </button>
               <button
                 type="button"
-                onClick={() => void signIn("google", { callbackUrl: "/dashboard" })}
+                onClick={() =>
+                  void signIn("google", {
+                    callbackUrl: typeof window !== "undefined" ? window.location.href : "/",
+                    redirect: false,
+                  })
+                }
                 className="min-h-[46px] flex-1 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-[#111827]"
               >
                 Continue with Google

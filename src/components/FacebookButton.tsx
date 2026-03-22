@@ -13,7 +13,12 @@ export default function FacebookButton({ className = "", children, disabled }: P
     <button
       type="button"
       disabled={disabled}
-      onClick={() => signIn("facebook", { callbackUrl: typeof window !== "undefined" ? window.location.href : "/" })}
+      onClick={() =>
+        signIn("facebook", {
+          callbackUrl: typeof window !== "undefined" ? window.location.href : "/",
+          redirect: false,
+        })
+      }
       className={`flex w-full items-center justify-center gap-2 rounded-lg bg-[#1877F2] px-4 py-3 text-white transition-all hover:bg-[#166fe5] hover:shadow-[0_0_15px_#1877F2] disabled:opacity-60 disabled:cursor-not-allowed ${className}`}
     >
       <svg className="h-5 w-5 shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden>

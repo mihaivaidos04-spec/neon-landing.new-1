@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useDrag } from "@use-gesture/react";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
 
@@ -30,10 +31,9 @@ export default function MobileVideoSwipeStart({ locale, children, onCommit, disa
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [axisLock, setAxisLock] = useState<AxisLock>("none");
-  const startRef = useRef<{ x: number; y: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const lockRef = useRef<AxisLock>("none");
   const widthRef = useRef(320);
-  const activePointerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const mq = window.matchMedia(`(max-width: ${LG_BREAKPOINT - 1}px)`);
@@ -43,7 +43,6 @@ export default function MobileVideoSwipeStart({ locale, children, onCommit, disa
         setDragX(0);
         setDragging(false);
         setAxisLock("none");
-        startRef.current = null;
         lockRef.current = "none";
       }
     };
@@ -54,13 +53,18 @@ export default function MobileVideoSwipeStart({ locale, children, onCommit, disa
 
   const maxDrag = useCallback(() => -Math.max(140, widthRef.current * 0.42), []);
 
-  const endDrag = useCallback(
-    (clientX: number) => {
-      const start = startRef.current;
+  const resetDrag = useCallback(() => {
+    setDragging(false);
+    setDragX(0);
+    setAxisLock("none");
+    lockRef.current = "none";
+  }, []);
+
+  const commitSwipe = useCallback(
+    (dx: number) => {
       const w = widthRef.current;
       const threshold = Math.max(MIN_COMMIT_PX, w * COMMIT_RATIO);
-      const dx = clientX - (start?.x ?? clientX);
-      const shouldCommit = lockRef.current === "horizontal" && dx < -threshold && !disabled;
+      const shouldCommit = lockRef.current === "horizontal" && dx < -threshold;
 
       if (shouldCommit) {
         if (typeof navigator !== "undefined" && "vibrate" in navigator) {
@@ -72,83 +76,57 @@ export default function MobileVideoSwipeStart({ locale, children, onCommit, disa
         }
         void Promise.resolve(onCommit());
       }
-
-      setDragging(false);
-      setDragX(0);
-      setAxisLock("none");
-      startRef.current = null;
-      lockRef.current = "none";
-      activePointerRef.current = null;
     },
-    [disabled, onCommit]
+    [onCommit]
   );
 
-  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!narrow || disabled) return;
-    if (e.button !== 0 && e.pointerType === "mouse") return;
-    const el = e.currentTarget;
-    widthRef.current = el.getBoundingClientRect().width || 320;
-    startRef.current = { x: e.clientX, y: e.clientY };
-    lockRef.current = "none";
-    setAxisLock("none");
-    setDragging(true);
-    setDragX(0);
-    activePointerRef.current = e.pointerId;
-    el.setPointerCapture(e.pointerId);
-  };
+  const bind = useDrag(
+    ({ first, last, movement: [mx, my], event, cancel }) => {
+      if (!narrow || disabled) return;
 
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!narrow || disabled || !startRef.current || activePointerRef.current !== e.pointerId) return;
-    const dx = e.clientX - startRef.current.x;
-    const dy = e.clientY - startRef.current.y;
+      if (first) {
+        widthRef.current = containerRef.current?.getBoundingClientRect().width || 320;
+        lockRef.current = "none";
+        setAxisLock("none");
+        setDragging(true);
+        setDragX(0);
+      }
 
-    if (lockRef.current === "none") {
-      if (Math.abs(dx) >= DOMINANCE_PX && Math.abs(dx) > Math.abs(dy) * 1.15) {
-        lockRef.current = "horizontal";
-        setAxisLock("horizontal");
-      } else if (Math.abs(dy) >= DOMINANCE_PX && Math.abs(dy) > Math.abs(dx) * 1.15) {
-        lockRef.current = "vertical";
-        setAxisLock("vertical");
-        try {
-          e.currentTarget.releasePointerCapture(e.pointerId);
-        } catch {
-          /* ignore */
+      if (lockRef.current === "none") {
+        if (Math.abs(mx) >= DOMINANCE_PX && Math.abs(mx) > Math.abs(my) * 1.15) {
+          lockRef.current = "horizontal";
+          setAxisLock("horizontal");
+        } else if (Math.abs(my) >= DOMINANCE_PX && Math.abs(my) > Math.abs(mx) * 1.15) {
+          lockRef.current = "vertical";
+          setAxisLock("vertical");
+          setDragging(false);
+          setDragX(0);
+          cancel();
+          return;
         }
-        setDragging(false);
-        startRef.current = null;
-        activePointerRef.current = null;
+      }
+
+      if (lockRef.current !== "horizontal") {
+        if (last) resetDrag();
         return;
       }
+
+      const nativeEvent = event as Event;
+      if (nativeEvent.cancelable) nativeEvent.preventDefault();
+      const clamped = mx > 8 ? 0 : Math.max(mx, maxDrag());
+      setDragX(clamped);
+
+      if (last) {
+        commitSwipe(mx);
+        resetDrag();
+      }
+    },
+    {
+      enabled: narrow && !disabled,
+      filterTaps: true,
+      pointer: { touch: true },
     }
-
-    if (lockRef.current !== "horizontal") return;
-
-    if (dx > 8) return;
-    e.preventDefault();
-    const cap = maxDrag();
-    const clamped = Math.max(dx, cap);
-    setDragX(clamped);
-  };
-
-  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (activePointerRef.current !== e.pointerId) return;
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {
-      /* ignore */
-    }
-    endDrag(e.clientX);
-  };
-
-  const onPointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (activePointerRef.current !== e.pointerId) return;
-    setDragging(false);
-    setDragX(0);
-    setAxisLock("none");
-    startRef.current = null;
-    lockRef.current = "none";
-    activePointerRef.current = null;
-  };
+  );
 
   const rotate = dragX * ROTATION_PER_PX;
   const progress = narrow && dragX < 0 ? Math.min(1, Math.abs(dragX) / Math.max(MIN_COMMIT_PX, widthRef.current * COMMIT_RATIO)) : 0;
@@ -160,10 +138,8 @@ export default function MobileVideoSwipeStart({ locale, children, onCommit, disa
   return (
     <div className="relative w-full [perspective:1100px]">
       <div
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerCancel}
+        ref={containerRef}
+        {...bind()}
         className={`relative overflow-hidden rounded-2xl ${dragging && axisLock === "horizontal" ? "touch-none select-none" : "touch-pan-y"}`}
         style={{
           transformStyle: "preserve-3d" as const,

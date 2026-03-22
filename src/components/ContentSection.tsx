@@ -28,6 +28,7 @@ import MatchFilterBar, { type MatchFilter } from "./MatchFilterBar";
 import MatchTargetCountryBar from "./MatchTargetCountryBar";
 import QueuePreview from "./QueuePreview";
 import PrivateInviteModal from "./PrivateInviteModal";
+import NeonLiveLogo from "./NeonLiveLogo";
 import { useSocketContext } from "../contexts/SocketContext";
 import type { VideoFilterId } from "../lib/video-filters";
 import type { ReactionId } from "../lib/reactions";
@@ -189,6 +190,7 @@ export default function ContentSection({
   const [inviteLoading, setInviteLoading] = useState(false);
   const [partnerVideoRevealed, setPartnerVideoRevealed] = useState(false);
   const [partnerVideoCountdown, setPartnerVideoCountdown] = useState<number | null>(null);
+  const [videoTransitionOut, setVideoTransitionOut] = useState(false);
   const [battery, setBattery] = useState(100);
   const [isVipSubscriber, setIsVipSubscriber] = useState(false);
   /** User.isVip (Whale Pack) — gender preference matching */
@@ -324,6 +326,12 @@ export default function ContentSection({
         return;
       }
     }
+    if (videoTransitionOut) return;
+    setVideoTransitionOut(true);
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 200);
+    });
+    setVideoTransitionOut(false);
     feedbackClick();
     playWhooshSound();
     nextSoundRef.current?.play().catch(() => {});
@@ -467,6 +475,7 @@ export default function ContentSection({
     matchFilter,
     matchTargetCountry,
     isGuest,
+    videoTransitionOut,
     onGuestPaywallTrigger,
     onWalletRefetch,
     onOpenShop,
@@ -1313,6 +1322,7 @@ export default function ContentSection({
 
   const questCurrent = onMissionIncrement ? (missionCount ?? 0) : dailyQuestCount;
   const questCompleted = onMissionIncrement ? (missionCompleted ?? false) : dailyQuestCompleted;
+  const mobileInCallMode = connected && !searching;
 
   const agoraChannelName = useMemo(() => {
     if (
@@ -1344,8 +1354,8 @@ export default function ContentSection({
   };
 
   return (
-    <section className="mt-0 flex h-full min-h-0 w-full max-w-full flex-col overflow-hidden">
-      <div className="relative flex h-full min-h-0 w-full max-w-full flex-col gap-2 xl:flex-row xl:items-stretch xl:gap-3">
+    <section className="mt-0 flex h-full min-h-0 w-full max-w-full flex-col overflow-hidden bg-black">
+      <div className="relative flex h-full min-h-0 w-full max-w-full flex-col gap-2 overflow-hidden xl:flex-row xl:items-stretch xl:gap-3">
         {/* Slim left rail — icon row below video on mobile, vertical rail on xl */}
         <div className="order-2 hidden w-full shrink-0 xl:order-1 xl:block xl:w-auto xl:overflow-visible">
           <StageLeftRail
@@ -1382,14 +1392,32 @@ export default function ContentSection({
         </div>
 
         {/* Theater column: video-first on mobile, ~65–70vw stage on xl */}
-        <div className="order-1 flex h-full min-h-0 min-w-0 w-full flex-1 flex-col gap-2 xl:order-2 xl:min-w-0">
-          <div className="theater-stage theater-ambient-glow relative z-[1] mt-0 min-h-0 w-full min-w-0 flex-1 rounded-2xl xl:mx-0 xl:mt-0">
+        <div className="order-1 flex h-full min-h-0 min-w-0 w-full flex-1 flex-col gap-2 overflow-hidden xl:order-2 xl:min-w-0">
+          <div className={`theater-stage theater-ambient-glow relative z-[1] mt-0 min-h-0 w-full min-w-0 flex-1 overflow-hidden rounded-2xl xl:mx-0 xl:mt-0 ${
+            mobileInCallMode
+              ? "max-lg:fixed max-lg:inset-0 max-lg:z-[35] max-lg:h-[100dvh] max-lg:w-[100vw] max-lg:rounded-none"
+              : ""
+          }`}>
+              {searching && (
+                <div className="pointer-events-none absolute inset-x-0 top-2 z-[34] flex justify-center px-3 max-lg:top-3 lg:hidden">
+                  <div className="flex min-h-[34px] items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 backdrop-blur-md">
+                    <NeonLiveLogo
+                      variant="compact"
+                      as="span"
+                      className="scale-[0.8] opacity-85"
+                    />
+                    <span className="number-plain text-[11px] font-medium tracking-wide text-white/72">
+                      1,660 online
+                    </span>
+                  </div>
+                </div>
+              )}
               <MobileVideoSwipeStart
                 locale={locale}
                 disabled={battery === 0}
                 onCommit={() => void handleStartOrNext()}
               >
-              <div className="theater-video-shell relative h-full overflow-hidden rounded-2xl">
+              <div className="theater-video-shell relative h-full min-h-0 overflow-hidden rounded-2xl">
               <VideoBridge
                 locale={locale}
                 searching={searching}
@@ -1434,8 +1462,8 @@ export default function ContentSection({
                 showPartnerSkeleton={showPartnerSkeleton}
                 userRank={getRankFromCoinsSpent(sessionSpent)}
                 onReport={handleReport}
-                showReportButton={connected && !searching && !!partnerId}
-                theaterGiftsEnabled={connected && !searching && !!partnerId}
+                showReportButton={connected && !searching && !!partnerId && !mobileInCallMode}
+                theaterGiftsEnabled={connected && !searching && !!partnerId && !mobileInCallMode}
                 theaterGiftCoins={coins}
                 onTheaterGift={handleSendGift}
                 agoraChannelName={agoraChannelName}
@@ -1446,6 +1474,7 @@ export default function ContentSection({
                 neonWhisperEnabled={Boolean(
                   userId && connected && !searching && useRealMatching
                 )}
+                transitionOutActive={videoTransitionOut}
               />
               </div>
               </MobileVideoSwipeStart>
@@ -1507,7 +1536,9 @@ export default function ContentSection({
           <p className="single-screen-compact mt-1 text-center text-xs text-white/65 sm:text-sm">
             {t.subPlayerText}
           </p>
-          <div className="action-bar sticky bottom-0 z-20 mt-1 rounded-2xl border border-white/10 bg-black/55 px-2 py-2 backdrop-blur-xl">
+          <div className={`action-bar sticky bottom-0 z-20 mt-0 shrink-0 rounded-2xl border border-white/10 bg-black/55 px-2 py-2 backdrop-blur-xl ${
+            mobileInCallMode ? "max-lg:hidden" : ""
+          }`}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex gap-2">
               <button
@@ -1515,6 +1546,8 @@ export default function ContentSection({
                 onClick={handleStartOrNext}
                 disabled={battery === 0}
                 className={`relative min-h-[46px] min-w-[110px] rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-all active:scale-[0.98] sm:min-h-[50px] sm:min-w-[132px] sm:px-8 sm:py-3 ${
+                  !connected ? "max-lg:hidden" : ""
+                } ${
                   battery === 0
                     ? "cursor-not-allowed bg-zinc-600 opacity-60"
                     : "btn-gradient-neon hover:opacity-95"
@@ -1555,7 +1588,9 @@ export default function ContentSection({
               <button
                 type="button"
                 onClick={onOpenShop}
-                className="min-h-[44px] min-w-[78px] rounded-full border border-fuchsia-400/40 bg-fuchsia-950/30 px-3 py-2 text-xs font-semibold text-fuchsia-100 transition-all hover:bg-fuchsia-900/35 sm:min-h-[48px]"
+                className={`min-h-[44px] min-w-[78px] rounded-full border border-fuchsia-400/40 bg-fuchsia-950/30 px-3 py-2 text-xs font-semibold text-fuchsia-100 transition-all hover:bg-fuchsia-900/35 sm:min-h-[48px] ${
+                  mobileInCallMode ? "max-lg:hidden" : ""
+                }`}
               >
                 Gifts
               </button>
@@ -1572,19 +1607,23 @@ export default function ContentSection({
               <button
                 type="button"
                 onClick={handleReport}
-                className="min-h-[44px] min-w-[80px] rounded-full border border-white/20 px-4 py-3 text-sm font-medium text-white/80 transition-all active:scale-[0.98] hover:bg-white/10 sm:min-h-[48px]"
+                className={`min-h-[44px] min-w-[80px] rounded-full border border-white/20 px-4 py-3 text-sm font-medium text-white/80 transition-all active:scale-[0.98] hover:bg-white/10 sm:min-h-[48px] ${
+                  mobileInCallMode ? "max-lg:hidden" : ""
+                }`}
               >
                 {t.reportBtn}
               </button>
               <button
                 type="button"
-                className="min-h-[44px] min-w-[80px] rounded-full border border-white/20 px-4 py-3 text-sm font-medium text-white/80 transition-all active:scale-[0.98] hover:bg-white/10 sm:min-h-[48px]"
+                className={`min-h-[44px] min-w-[80px] rounded-full border border-white/20 px-4 py-3 text-sm font-medium text-white/80 transition-all active:scale-[0.98] hover:bg-white/10 sm:min-h-[48px] ${
+                  mobileInCallMode ? "max-lg:hidden" : ""
+                }`}
               >
                 {t.blockBtn}
               </button>
             </div>
           </div>
-          <div className="mt-2 flex items-center gap-2">
+          <div className={`mt-2 flex items-center gap-2 ${mobileInCallMode ? "max-lg:hidden" : ""}`}>
             <input
               type="text"
               value={quickChatDraft}

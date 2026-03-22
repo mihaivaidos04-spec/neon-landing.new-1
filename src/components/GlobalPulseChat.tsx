@@ -534,7 +534,7 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
     <>
       {floatingOverlay}
     <aside
-      className="global-pulse-panel relative flex w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/50 shadow-[0_0_32px_rgba(236,72,153,0.08),0_8px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl xl:max-h-[min(85vh,720px)] xl:rounded-l-xl xl:rounded-r-md"
+      className="global-pulse-panel relative flex h-full min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/50 shadow-[0_0_32px_rgba(236,72,153,0.08),0_8px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl xl:rounded-l-xl xl:rounded-r-md"
       aria-label="Global Pulse world chat"
     >
       {/* Neon pink top accent */}
@@ -558,7 +558,7 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
 
       <div
         ref={scrollRef}
-        className="global-pulse-scroll min-h-[220px] flex-1 space-y-2 overflow-y-auto overflow-x-hidden overscroll-y-contain px-3 py-2.5 scroll-smooth sm:min-h-[280px] xl:min-h-[200px]"
+        className="global-pulse-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden overscroll-y-contain px-3 py-2.5 scroll-smooth [scrollbar-gutter:stable]"
         style={{ contain: "content" }}
         onScroll={handleScroll}
       >
