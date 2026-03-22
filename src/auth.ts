@@ -204,6 +204,39 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/login",
   },
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      const configuredBase = resolvedAuthBaseUrl()?.replace(/\/+$/, "");
+      const fallbackBase = baseUrl.replace(/\/+$/, "");
+      const effectiveBase = configuredBase || fallbackBase;
+
+      try {
+        const resolved = new URL(url, effectiveBase);
+        const preferred = new URL(effectiveBase);
+
+        const resolvedHost = resolved.hostname.toLowerCase();
+        const preferredHost = preferred.hostname.toLowerCase();
+        const neonHosts = new Set(["neonlive.chat", "www.neonlive.chat"]);
+
+        // Keep OAuth callbacks stable if one side uses www and the other apex.
+        if (neonHosts.has(resolvedHost) && neonHosts.has(preferredHost)) {
+          resolved.protocol = preferred.protocol;
+          resolved.host = preferred.host;
+          return resolved.toString();
+        }
+
+        if (resolved.origin === preferred.origin) {
+          return resolved.toString();
+        }
+
+        if (url.startsWith("/")) {
+          return `${effectiveBase}${url}`;
+        }
+      } catch {
+        // Fall back to configured base URL if parsing fails.
+      }
+
+      return effectiveBase;
+    },
     async signIn({ user, account, profile }) {
       if (user?.id && typeof user.id === "string") {
         addLoginXp(user.id).catch(() => {});
