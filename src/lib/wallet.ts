@@ -3,6 +3,7 @@
  */
 
 import { getSupabase } from "./supabase";
+import { prisma } from "./prisma";
 
 export type SpendResult = { success: boolean; newBalance: number; error?: string };
 export type AddResult = { success: boolean; newBalance: number; error?: string };
@@ -41,6 +42,26 @@ export async function spendCoins(
     newBalance: (row.new_balance as number) ?? 0,
     error: row.error_message as string | undefined,
   };
+}
+
+/** Like spendCoins but also increments Prisma User.totalCoinsSpent (same as /api/wallet/spend). */
+export async function spendCoinsAndRecordTotal(
+  userId: string,
+  amount: number,
+  reason?: string
+): Promise<SpendResult> {
+  const result = await spendCoins(userId, amount, reason);
+  if (result.success) {
+    try {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { totalCoinsSpent: { increment: amount } },
+      });
+    } catch (e) {
+      console.error("[wallet spendCoinsAndRecordTotal] totalCoinsSpent", e);
+    }
+  }
+  return result;
 }
 
 export async function addCoins(

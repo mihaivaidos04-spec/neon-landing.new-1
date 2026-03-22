@@ -7,6 +7,23 @@ import { getContentT } from "../lib/content-i18n";
 import NeonLiveLogo from "./NeonLiveLogo";
 import NeonPinkSpinner from "./NeonPinkSpinner";
 
+function normalizeNumericText(input: string): string {
+  return input
+    .replace(/0️⃣/g, "0")
+    .replace(/1️⃣/g, "1")
+    .replace(/2️⃣/g, "2")
+    .replace(/3️⃣/g, "3")
+    .replace(/4️⃣/g, "4")
+    .replace(/5️⃣/g, "5")
+    .replace(/6️⃣/g, "6")
+    .replace(/7️⃣/g, "7")
+    .replace(/8️⃣/g, "8")
+    .replace(/9️⃣/g, "9")
+    .replace(/🔟/g, "10")
+    .replace(/\uFE0F/g, "")
+    .replace(/⃣/g, "");
+}
+
 /** Official Google "G" logo – multicolor per brand guidelines */
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -48,6 +65,7 @@ type Props = {
  */
 export default function LoginWall({ open, onClose, locale }: Props) {
   const t = getContentT(locale);
+  const firstLoginBonusText = normalizeNumericText(t.firstLoginBonus);
   const [providers, setProviders] = useState<Record<string, { id: string; name: string }> | null>(null);
   const [showOther, setShowOther] = useState(false);
   const [email, setEmail] = useState("");
@@ -76,9 +94,12 @@ export default function LoginWall({ open, onClose, locale }: Props) {
 
   if (!open) return null;
 
+  const postAuthUrl =
+    typeof window !== "undefined" ? `${window.location.origin}/dashboard` : "/dashboard";
+
   const handleOAuth = (provider: string) => {
     setLoading(provider);
-    signIn(provider, { callbackUrl: window.location.href }).finally(() => setLoading(null));
+    signIn(provider, { callbackUrl: postAuthUrl }).finally(() => setLoading(null));
   };
 
   const handleMagicLink = async (e: React.FormEvent) => {
@@ -86,7 +107,7 @@ export default function LoginWall({ open, onClose, locale }: Props) {
     if (!email.trim()) return;
     setLoading("email");
     try {
-      await signIn("email", { email: email.trim(), callbackUrl: window.location.href });
+      await signIn("email", { email: email.trim(), callbackUrl: postAuthUrl });
       setEmailSent(true);
     } finally {
       setLoading(null);
@@ -131,8 +152,8 @@ export default function LoginWall({ open, onClose, locale }: Props) {
             </div>
 
             <div className="mx-auto mt-6 max-w-md space-y-1.5 text-center sm:mt-8">
-              <p className="text-base font-bold leading-snug text-fuchsia-200/95 sm:text-lg md:text-xl">
-                {t.firstLoginBonus}
+              <p className="number-plain text-base font-bold leading-snug text-fuchsia-200/95 sm:text-lg md:text-xl">
+                {firstLoginBonusText}
               </p>
               <p className="text-sm font-medium leading-relaxed text-white/75 sm:text-base md:text-[1.05rem]">
                 {t.loginGatewayTagline}
@@ -140,6 +161,22 @@ export default function LoginWall({ open, onClose, locale }: Props) {
             </div>
 
             <div className="mx-auto mt-8 flex w-full max-w-md flex-col gap-3.5 sm:mt-10 sm:gap-4">
+              <button
+                type="button"
+                onClick={() => handleOAuth("discord")}
+                disabled={!!loading}
+                className="flex min-h-[58px] w-full items-center justify-center gap-3 rounded-2xl bg-[#5865F2] py-4 text-base font-bold text-white shadow-[0_0_32px_rgba(88,101,242,0.55)] transition-all hover:scale-[1.01] hover:bg-[#4752C4] hover:shadow-[0_0_48px_rgba(88,101,242,0.65)] disabled:cursor-not-allowed disabled:opacity-55 active:scale-[0.99] sm:min-h-16 sm:text-lg md:text-xl"
+              >
+                {loading === "discord" ? (
+                  <NeonPinkSpinner label="Connecting…" className="text-white" />
+                ) : (
+                  <>
+                    <DiscordIcon className="h-8 w-8 shrink-0 text-white sm:h-9 sm:w-9" />
+                    <span>{t.loginWithDiscord}</span>
+                  </>
+                )}
+              </button>
+
               {providers?.google && (
                 <button
                   type="button"
@@ -171,24 +208,6 @@ export default function LoginWall({ open, onClose, locale }: Props) {
                     <>
                       <FacebookIcon className="h-8 w-8 shrink-0 text-white sm:h-9 sm:w-9" />
                       <span>{t.loginWithFacebook}</span>
-                    </>
-                  )}
-                </button>
-              )}
-
-              {providers?.discord && (
-                <button
-                  type="button"
-                  onClick={() => handleOAuth("discord")}
-                  disabled={!!loading}
-                  className="flex min-h-[58px] w-full items-center justify-center gap-3 rounded-2xl bg-[#5865F2] py-4 text-base font-bold text-white shadow-[0_0_32px_rgba(88,101,242,0.55)] transition-all hover:scale-[1.01] hover:bg-[#4752C4] hover:shadow-[0_0_48px_rgba(88,101,242,0.65)] disabled:cursor-not-allowed disabled:opacity-55 active:scale-[0.99] sm:min-h-16 sm:text-lg md:text-xl"
-                >
-                  {loading === "discord" ? (
-                    <NeonPinkSpinner label="Connecting…" className="text-white" />
-                  ) : (
-                    <>
-                      <DiscordIcon className="h-8 w-8 shrink-0 text-white sm:h-9 sm:w-9" />
-                      <span>{t.loginWithDiscord}</span>
                     </>
                   )}
                 </button>

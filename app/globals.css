@@ -1,6 +1,19 @@
 @import "tailwindcss";
 
 :root {
+  /**
+   * Emoji stack: Apple Color Emoji = stil iOS pe iPhone / Mac;
+   * apoi Segoe UI Emoji (Windows), Noto Color Emoji (Android / Linux).
+   */
+  --font-emoji-stack:
+    "Apple Color Emoji",
+    "Segoe UI Emoji",
+    "Segoe UI Symbol",
+    "Noto Color Emoji",
+    "Noto Sans Symbols 2",
+    "Android Emoji",
+    "EmojiSymbols",
+    sans-serif;
   --background: #050508;
   --foreground: #faf5eb;
   --violet: #8b5cf6;
@@ -29,10 +42,215 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-syne), system-ui, sans-serif;
+  /* Text: Syne; caractere emoji: primul font din stack care are glyph (iOS → Apple). */
+  font-family: var(--font-syne), var(--font-emoji-stack);
   overflow-x: clip;
   max-width: 100vw;
   -webkit-tap-highlight-color: rgba(139, 92, 246, 0.15);
+  /* Preferă emoji color (standard modern), acolo unde browserul suportă */
+  font-variant-emoji: emoji;
+}
+
+:where(button, a, [role="button"]) {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Reacții / cadouri: forțează stack nativ (evită fontul principal pe glyph-uri emoji) */
+.emoji-ios {
+  font-family: var(--font-emoji-stack);
+  font-style: normal;
+  font-variant-emoji: emoji;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Premium numbers / coin labels */
+.gift-price-text {
+  font-family: var(--font-inter), var(--font-orbitron), var(--font-syne), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-variant-emoji: text;
+  letter-spacing: 0;
+  text-shadow:
+    0 0 10px rgba(168, 85, 247, 0.3),
+    0 0 18px rgba(34, 211, 238, 0.18);
+}
+
+.premium-number-glow {
+  font-family: var(--font-inter), var(--font-orbitron), var(--font-syne), ui-sans-serif, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-variant-emoji: text;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-shadow:
+    0 0 12px rgba(192, 132, 252, 0.45),
+    0 0 24px rgba(34, 211, 238, 0.18);
+}
+
+/* Force plain text numerals (avoid keycap-style emoji rendering). */
+.number-plain {
+  display: inline !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-variant-emoji: text;
+  font-family: var(--font-inter), var(--font-orbitron), var(--font-syne), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: normal !important;
+  line-height: inherit !important;
+  vertical-align: baseline !important;
+}
+
+/* Gifts: emoji „2026” — capsulă sticlă + scan + glow cyan/fuchsia */
+@keyframes gift-emoji-neo-glow {
+  0%,
+  100% {
+    filter: saturate(1.14) contrast(1.05)
+      drop-shadow(0 0 10px rgba(34, 211, 238, 0.5))
+      drop-shadow(0 0 20px rgba(168, 85, 247, 0.38));
+  }
+  50% {
+    filter: saturate(1.22) contrast(1.08)
+      drop-shadow(0 0 12px rgba(236, 72, 153, 0.62))
+      drop-shadow(0 0 26px rgba(34, 211, 238, 0.42));
+  }
+}
+
+@keyframes gift-emoji-neo-float {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.05);
+  }
+}
+
+@keyframes gift-emoji-scan {
+  0% {
+    background-position: 120% 0;
+  }
+  100% {
+    background-position: -120% 0;
+  }
+}
+
+.gift-emoji-future-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(
+    145deg,
+    rgba(99, 102, 241, 0.16) 0%,
+    rgba(18, 16, 28, 0.72) 42%,
+    rgba(236, 72, 153, 0.11) 100%
+  );
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 0 28px rgba(139, 92, 246, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+  isolation: isolate;
+}
+
+.gift-emoji-future-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    105deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.09) 50%,
+    transparent 62%
+  );
+  background-size: 220% 100%;
+  animation: gift-emoji-scan 3.8s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.gift-emoji-future-wrap--lg {
+  padding: 0.55rem 0.75rem;
+  border-radius: 1rem;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 0 40px rgba(139, 92, 246, 0.35),
+    0 0 64px rgba(34, 211, 238, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45);
+}
+
+.gift-emoji-future {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  font-family: var(--font-emoji-stack);
+  font-variant-emoji: emoji;
+  line-height: 1;
+  animation:
+    gift-emoji-neo-glow 2.8s ease-in-out infinite,
+    gift-emoji-neo-float 3.5s ease-in-out infinite;
+}
+
+@keyframes float-like-heart {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.75) rotate(0deg);
+  }
+  16% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--heart-drift, 0px), -150px, 0) scale(1.12) rotate(var(--heart-rot, 0deg));
+  }
+}
+
+.gift-like-heart-particle {
+  position: absolute;
+  bottom: 8%;
+  pointer-events: none;
+  animation: float-like-heart 1.5s ease-out forwards;
+  filter: drop-shadow(0 0 10px rgba(244, 114, 182, 0.48));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gift-emoji-future {
+    animation: none;
+    filter: saturate(1.05) drop-shadow(0 0 8px rgba(168, 85, 247, 0.35));
+  }
+  .gift-emoji-future-wrap::before {
+    animation: none;
+    opacity: 0.35;
+  }
+}
+
+/* Scrollbars invizibile — derularea rămâne (touch, rotiță, trackpad) */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Opțional: bară vizibilă doar unde pui clasa (ex. admin) */
+.scrollbar-visible {
+  scrollbar-width: thin;
+  -ms-overflow-style: auto;
+}
+.scrollbar-visible::-webkit-scrollbar {
+  display: block;
+  width: 8px;
+  height: 8px;
 }
 
 /* Divine: glass cards with warm undertones */
@@ -163,22 +381,6 @@ body {
 @keyframes confetti-fall {
   from { transform: translate3d(0, -10%, 0); }
   to { transform: translate3d(0, 10%, 0); }
-}
-
-/* Mystery Box opening animation */
-.mystery-box-opening .mystery-box-lid {
-  transform: rotateX(-110deg);
-  transform-style: preserve-3d;
-}
-.mystery-box-opening {
-  perspective: 400px;
-}
-.mystery-box-lid {
-  background: linear-gradient(to bottom, #6d28d9 0%, #4c1d95 100%);
-  border: 2px solid rgba(139, 92, 246, 0.4);
-  border-radius: 4px 4px 0 0;
-  transform-origin: bottom center;
-  transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* Login page fade-in */
@@ -318,6 +520,43 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Global Pulse — TikTok-style floating emoji (full viewport, portal to body) */
+@keyframes global-pulse-emoji-float {
+  0% {
+    transform: translate3d(calc(-50% + var(--gp-drift, 0px)), 0, 0) scale(var(--gp-sz, 1))
+      rotate(var(--gp-rot, 0deg));
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.92;
+  }
+  100% {
+    transform: translate3d(calc(-50% + var(--gp-drift, 0px)), -110vh, 0) scale(var(--gp-sz, 1))
+      rotate(calc(var(--gp-rot, 0deg) + 18deg));
+    opacity: 0;
+  }
+}
+
+.global-pulse-floating-emoji-particle {
+  position: fixed;
+  bottom: -8vh;
+  z-index: 9998;
+  pointer-events: none;
+  user-select: none;
+  line-height: 1;
+  font-family: var(--font-emoji-stack);
+  font-variant-emoji: emoji;
+  -webkit-font-smoothing: antialiased;
+  animation: global-pulse-emoji-float 3.4s cubic-bezier(0.22, 0.82, 0.28, 0.99) forwards;
+  will-change: transform, opacity;
+  text-shadow:
+    0 0 12px rgba(244, 114, 182, 0.55),
+    0 0 28px rgba(236, 72, 153, 0.35);
 }
 
 /* Theater video stage — purple / cyan ambient pulse */

@@ -43,6 +43,8 @@ model User {
   arcadeTokens     Int       @default(0)
   ghostModeUntil   DateTime? // Status boost: Ghost Mode until this timestamp
   isShadowBanned   Boolean   @default(false)
+  /// Auto: 3 reports in 10 min → 1h matching suspension (cleared after expiry; admin may use isShadowBanned)
+  systemSuspensionUntil DateTime?
   moderationFlags  String?   // JSON: { toxicCount, nsfwCount, lastFlaggedAt }
   stripeCustomerId     String?   @unique
   stripeSubscriptionId String?   @unique
@@ -78,6 +80,8 @@ model User {
   friendshipsReceived    Friendship[]          @relation("FriendshipAddressee")
   privateMessagesSent    PrivateMessage[]      @relation("DmSender")
   privateMessagesReceived PrivateMessage[]     @relation("DmReceiver")
+  blocksOutgoing         UserBlock[]           @relation("UserBlockBlocker")
+  blocksIncoming         UserBlock[]           @relation("UserBlockBlocked")
 
   @@index([xp])
   @@index([currentLevel])
@@ -139,6 +143,21 @@ model Report {
   @@index([reportedUserId])
   @@index([status])
   @@index([createdAt])
+}
+
+/// User A blocks B → neither is matched with the other in the pool
+model UserBlock {
+  id         String   @id @default(cuid())
+  blockerId  String
+  blockedId  String
+  createdAt  DateTime @default(now())
+
+  blocker User @relation("UserBlockBlocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("UserBlockBlocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
 }
 
 model ActivityLog {

@@ -88,6 +88,7 @@
     "noGiftsYet": "Belum ada hadiah.",
     "buyCoins": "Beli koin",
     "buyCoinsLoading": "Membuka checkout…",
+    "paymentSuccessToast": "Pembayaran berhasil! Koin akan muncul dalam beberapa detik.",
     "aboutMe": "Tentang saya",
     "aboutPlaceholder": "Catchphrase (maks 150 karakter)",
     "charsLeft": "Sisa {n}",

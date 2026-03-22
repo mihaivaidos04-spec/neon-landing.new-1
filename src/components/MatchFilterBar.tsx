@@ -2,35 +2,36 @@
 
 type MatchFilter = "everyone" | "female" | "male" | "verified";
 
-const GENDER_FILTER_MIN_COINS = 5;
-
 type Props = {
   filter: MatchFilter;
   onFilterChange: (f: MatchFilter) => void;
-  coins: number;
-  onOpenShop?: () => void;
+  /** Neon VIP (User.isVip — Whale Pack): required for Female / Male matching */
+  isNeonVip: boolean;
+  onOpenUpgradeVip: () => void;
   disabled?: boolean;
+  /** Shown on locked gender buttons, e.g. "Neon VIP" */
+  vipHint?: string;
 };
 
 export default function MatchFilterBar({
   filter,
   onFilterChange,
-  coins,
-  onOpenShop,
+  isNeonVip,
+  onOpenUpgradeVip,
   disabled = false,
+  vipHint = "VIP",
 }: Props) {
-  const canUseGenderFilter = coins >= GENDER_FILTER_MIN_COINS;
-  const filters: { id: MatchFilter; label: string; needsCoins: boolean }[] = [
-    { id: "everyone", label: "Everyone", needsCoins: false },
-    { id: "female", label: "Female", needsCoins: true },
-    { id: "male", label: "Male", needsCoins: true },
-    { id: "verified", label: "Verified", needsCoins: false },
+  const filters: { id: MatchFilter; label: string; requiresNeonVip: boolean }[] = [
+    { id: "everyone", label: "Everyone", requiresNeonVip: false },
+    { id: "female", label: "Female", requiresNeonVip: true },
+    { id: "male", label: "Male", requiresNeonVip: true },
+    { id: "verified", label: "Verified", requiresNeonVip: false },
   ];
 
   const handleSelect = (f: MatchFilter) => {
     const item = filters.find((x) => x.id === f);
-    if (item?.needsCoins && !canUseGenderFilter) {
-      onOpenShop?.();
+    if (item?.requiresNeonVip && !isNeonVip) {
+      onOpenUpgradeVip();
       return;
     }
     onFilterChange(f);
@@ -40,7 +41,7 @@ export default function MatchFilterBar({
     <div className="flex flex-wrap items-center gap-2">
       {filters.map((f) => {
         const isActive = filter === f.id;
-        const locked = f.needsCoins && !canUseGenderFilter;
+        const locked = f.requiresNeonVip && !isNeonVip;
         return (
           <button
             key={f.id}
@@ -51,13 +52,13 @@ export default function MatchFilterBar({
               isActive
                 ? "bg-[#8b5cf6] text-white ring-1 ring-[#a78bfa]/50"
                 : locked
-                ? "border border-violet-500/50 bg-violet-950/40 text-violet-300/80"
-                : "border border-white/20 text-white/80 hover:bg-white/10"
+                  ? "border border-amber-500/40 bg-amber-950/35 text-amber-200/90"
+                  : "border border-white/20 text-white/80 hover:bg-white/10"
             }`}
-            title={locked ? `${GENDER_FILTER_MIN_COINS} coins required` : undefined}
+            title={locked ? `${vipHint} required for gender preference` : undefined}
           >
             {f.label}
-            {locked && <span className="ml-1 opacity-70">({GENDER_FILTER_MIN_COINS})</span>}
+            {locked && <span className="ml-1 text-[10px] opacity-80">({vipHint})</span>}
           </button>
         );
       })}
@@ -66,4 +67,3 @@ export default function MatchFilterBar({
 }
 
 export type { MatchFilter };
-export { GENDER_FILTER_MIN_COINS };

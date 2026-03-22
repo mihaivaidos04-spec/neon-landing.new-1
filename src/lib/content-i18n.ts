@@ -34,6 +34,12 @@ export type ContentMessagesType = {
   searching: string;
   reportBtn: string;
   blockBtn: string;
+  /** Toast after blocking someone from theater */
+  blockUserSuccess: string;
+  /** Local camera auto-paused — no face detected (face-api) */
+  faceGuardCameraPaused: string;
+  /** Face visible again — camera restored */
+  faceGuardCameraRestored: string;
   filterStarter: string;
   filterPro: string;
   filterElite: string;
@@ -97,6 +103,12 @@ export type ContentMessagesType = {
   loginGatewayTagline: string;
   linkAccountToSaveProgress: string;
   connectAccount: string;
+  /** /trending — gift coins received last 24h */
+  trendingPageTitle: string;
+  trendingPageSubtitle: string;
+  trendingPageEmpty: string;
+  trendingPageBack: string;
+  trendingSidebarLink: string;
   // FAQ
   faqTitle: string;
   faqQ1: string;
@@ -124,6 +136,19 @@ export type ContentMessagesType = {
   genderFilterCtaMessage: string;
   genderFilterCtaButton: string;
   genderFilterCtaDismiss: string;
+  /** Modal when non–Neon VIP taps gender match filter */
+  neonVipGenderModalTitle: string;
+  neonVipGenderModalBody: string;
+  neonVipGenderModalUpgrade: string;
+  neonVipGenderModalDismiss: string;
+  matchFilterGenderVipHint: string;
+  /** IP-based peer country filter (User.country) */
+  matchTargetCountryLabel: string;
+  matchTargetCountryAny: string;
+  matchTargetCountryPick: string;
+  /** Use {{cost}} placeholder for coin amount */
+  matchTargetCountryHint: string;
+  insufficientCoinsCountryMatch: string;
   // Welcome toast (first OAuth login)
   welcomeToastMessage: string;
   // Bonus multiplier (mission complete)
@@ -156,6 +181,12 @@ export type ContentMessagesType = {
   liveTranslationActivate: string;
   liveTranslationActive: string;
   liveTranslationMicDenied: string;
+  // Neon Whisper AI wingman (local-only overlay)
+  neonWhisperTitle: string;
+  neonWhisperBadge: string;
+  neonWhisperDismiss: string;
+  neonWhisperLoading: string;
+  neonWhisperUnavailable: string;
   // Queue preview (next users in matching queue)
   queuePreviewTitle: string;
   queuePreviewUnlock: string;
@@ -173,15 +204,6 @@ export type ContentMessagesType = {
   // Live leaderboard (60 min rolling)
   leaderboardTitle: string;
   inviteFriendsBtn: string;
-  // Mystery Box
-  mysteryBoxTitle: string;
-  mysteryBoxOpen: string;
-  mysteryBoxOpening: string;
-  mysteryBoxOdds: string;
-  mysteryBoxSmallReward: string;
-  mysteryBoxBigReward: string;
-  mysteryBoxNothing: string;
-  mysteryBoxClose: string;
   // Exit intent offer (limited-time battery bonus)
   exitIntentTitle: string;
   exitIntentMessage: string;
@@ -214,6 +236,9 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     searching: "Căutare partener...",
     reportBtn: "RAPORTEAZĂ",
     blockBtn: "BLOCHEAZĂ",
+    blockUserSuccess: "Utilizator blocat. Nu veți mai fi potriviți la match.",
+    faceGuardCameraPaused: "Față nedetectată — camera oprită. Arată-te pentru a reveni live.",
+    faceGuardCameraRestored: "Față detectată — camera pornită din nou.",
     filterStarter: "Limbă comună",
     filterPro: "Locație / Țară",
     filterElite: "Gen + Mesaje private cu imagini",
@@ -272,13 +297,22 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginGatewayTagline: "Începe să te conectezi cu întreaga lume.",
     linkAccountToSaveProgress: "Leagă-ți contul ca să nu pierzi bănuții și progresul.",
     connectAccount: "Conectare",
+    trendingPageTitle: "Trending 24h",
+    trendingPageSubtitle:
+      "Creatorii care au primit cei mai mulți bănuți cadou în ultimele 24h. Top 3 au flacăra 🔥.",
+    trendingPageEmpty: "Niciun cadou în ultimele 24h. Trimite apreciere din scena principală!",
+    trendingPageBack: "Înapoi la NEON",
+    trendingSidebarLink: "Trending 24h →",
     faqTitle: "Întrebări frecvente",
     faqQ1: "Este anonim?",
-    faqA1: "Da, nu stocăm nicio înregistrare video.",
+    faqA1:
+      "NEON este gândit pentru intimitate: nu înregistrăm, nu arhivăm și nu redăm apelurile video. Sesiunile sunt live — nu păstrăm pe server înregistrări pe care tu sau partenerul să le puteți recupera mai târziu. Îți recomandăm totuși să eviți date personale foarte sensibile la cameră, ca pe orice platformă live.",
     faqQ2: "Cum apar pe ecran?",
-    faqA2: "Ai control total asupra camerei tale.",
+    faqA2:
+      "Tu decizi ce se vede mereu: poți opri camera, microfonul sau poți închide match-ul instant. Filtrele opționale (Beauty Blur, Ghost Mode și altele) se activează doar când alegi tu — nimic nu se aplică fără acțiunea ta.",
     faqQ3: "Bănuții expiră?",
-    faqA3: "Nu, rămân în contul tău pentru totdeauna.",
+    faqA3:
+      "Nu după un termen fix. Bănuții cumpărați sau câștigați rămân în cont până îi cheltui pentru cadouri, filtre, baterie sau alte funcții. Nu îți ștergem soldul automat doar pentru că nu ai intrat o perioadă.",
     level50Badge: "În curând",
     level50Title: "La Nivelul 50 deblochezi",
     level50Desc: "Invisible Mode – poți vedea pe alții fără să te vadă ei. Continuă să câștigi XP.",
@@ -293,6 +327,18 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     genderFilterCtaMessage: "Vrei să te conectezi cu femei?",
     genderFilterCtaButton: "Alege filtru gen",
     genderFilterCtaDismiss: "Mai târziu",
+    neonVipGenderModalTitle: "Neon VIP necesar",
+    neonVipGenderModalBody:
+      "Potrivirea după gen este inclusă în Neon VIP (Whale Pack). Achiziționează pachetul pentru a debloca acest filtru.",
+    neonVipGenderModalUpgrade: "Vezi Whale Pack",
+    neonVipGenderModalDismiss: "Închide",
+    matchFilterGenderVipHint: "Neon VIP",
+    matchTargetCountryLabel: "Țară țintă",
+    matchTargetCountryAny: "Oricare",
+    matchTargetCountryPick: "Alege țara",
+    matchTargetCountryHint:
+      "Partenerii trebuie să aibă aceeași țară (detectată IP / profil). {{cost}} bănuți la fiecare potrivire.",
+    insufficientCoinsCountryMatch: "Ai nevoie de cel puțin 5 bănuți pentru potrivire după țară.",
     welcomeToastMessage: "Bine ai venit pe NEON! Ai primit 10 bănuți pentru că te-ai alăturat comunității.",
     bonusMultiplierTitle: "Vrei să dublezi recompensa?",
     bonusMultiplierNo: "Nu, mulțumesc",
@@ -319,6 +365,11 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     liveTranslationActivate: "3 bănuți/min",
     liveTranslationActive: "Subtitrări active",
     liveTranslationMicDenied: "(Acces microfon refuzat)",
+    neonWhisperTitle: "Neon Whisper",
+    neonWhisperBadge: "Doar tu vezi",
+    neonWhisperDismiss: "Închide",
+    neonWhisperLoading: "Citesc atmosfera…",
+    neonWhisperUnavailable: "Indisponibil momentan",
     queuePreviewTitle: "Următorii în coadă",
     queuePreviewUnlock: "Dezblochează",
     queuePreviewEmpty: "Nimeni în coadă momentan.",
@@ -332,14 +383,6 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     privateRoomClosed: "Camera s-a închis. Hostul nu mai are bănuți suficienți.",
     leaderboardTitle: "Top cheltuitori (60 min)",
     inviteFriendsBtn: "Invită prieteni",
-    mysteryBoxTitle: "Cutie misterioasă",
-    mysteryBoxOpen: "Deschide",
-    mysteryBoxOpening: "Se deschide...",
-    mysteryBoxOdds: "60% premiu mic, 5% premiu mare, 35% nimic",
-    mysteryBoxSmallReward: "+{{coins}} bănuți!",
-    mysteryBoxBigReward: "JACKPOT! +{{coins}} bănuți!",
-    mysteryBoxNothing: "Mai mult noroc data viitoare!",
-    mysteryBoxClose: "Închide",
     exitIntentTitle: "Ofertă limitată!",
     exitIntentMessage: "Stai! Doar acum, primești +50% baterie la prima reîncărcare!",
     exitIntentExpiresIn: "Expiră în",
@@ -369,6 +412,9 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     searching: "Searching for partner...",
     reportBtn: "REPORT",
     blockBtn: "BLOCK",
+    blockUserSuccess: "User blocked. You won't be matched together.",
+    faceGuardCameraPaused: "No face detected — camera paused. Show your face to go live again.",
+    faceGuardCameraRestored: "Face detected — camera back on.",
     filterStarter: "Common language",
     filterPro: "Location / Country",
     filterElite: "Gender + Private messages with images",
@@ -427,13 +473,22 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginGatewayTagline: "Start connecting globally.",
     linkAccountToSaveProgress: "Link your account so you don't lose coins and progress.",
     connectAccount: "Sign in",
+    trendingPageTitle: "24h Trending",
+    trendingPageSubtitle:
+      "Creators who received the most gift coins in the last 24 hours. Top 3 earn the flame badge.",
+    trendingPageEmpty: "No gifts in the last 24 hours yet. Show love on the main stage!",
+    trendingPageBack: "Back to NEON",
+    trendingSidebarLink: "24h Trending →",
     faqTitle: "FAQ",
     faqQ1: "Is it anonymous?",
-    faqA1: "Yes, we don't store any video recordings.",
+    faqA1:
+      "NEON is built with privacy in mind: we do not record, archive, or replay your video calls. Sessions are live only—nothing is stored on our servers for you or your partner to download later. We still recommend avoiding highly sensitive personal details on camera, just like on any live platform.",
     faqQ2: "How do I appear on screen?",
-    faqA2: "You have full control over your camera.",
+    faqA2:
+      "You decide what is visible at all times. Turn your camera or microphone off, or end a match instantly with one tap. Optional filters (Beauty Blur, Ghost Mode, and others) only apply when you choose to enable them—nothing is turned on without your action.",
     faqQ3: "Do coins expire?",
-    faqA3: "No, they stay in your account forever.",
+    faqA3:
+      "Not on a fixed calendar date. Coins you buy or earn stay in your account until you spend them on gifts, filters, battery boosts, and other in-app features. We do not automatically wipe your balance just because you have been away for a while.",
     level50Badge: "Coming soon",
     level50Title: "At Level 50 you unlock",
     level50Desc: "Invisible Mode – see others without them seeing you. Keep earning XP.",
@@ -448,6 +503,18 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     genderFilterCtaMessage: "Want to connect with women?",
     genderFilterCtaButton: "Choose gender filter",
     genderFilterCtaDismiss: "Later",
+    neonVipGenderModalTitle: "Neon VIP required",
+    neonVipGenderModalBody:
+      "Gender preference matching is included with Neon VIP (Whale Pack). Upgrade to unlock this filter.",
+    neonVipGenderModalUpgrade: "View Whale Pack",
+    neonVipGenderModalDismiss: "Not now",
+    matchFilterGenderVipHint: "Neon VIP",
+    matchTargetCountryLabel: "Target country",
+    matchTargetCountryAny: "Any country",
+    matchTargetCountryPick: "Pick country",
+    matchTargetCountryHint:
+      "Partners must have this country on their profile (IP-based). {{cost}} coins charged per successful match.",
+    insufficientCoinsCountryMatch: "You need at least 5 coins to use target country matching.",
     welcomeToastMessage: "Welcome to NEON! You received 10 Coins for joining the community.",
     bonusMultiplierTitle: "Want to double your reward?",
     bonusMultiplierNo: "No, thanks",
@@ -474,6 +541,11 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     liveTranslationActivate: "3 coins/min",
     liveTranslationActive: "Subtitles active",
     liveTranslationMicDenied: "(Microphone access denied)",
+    neonWhisperTitle: "Neon Whisper",
+    neonWhisperBadge: "Only you",
+    neonWhisperDismiss: "Dismiss",
+    neonWhisperLoading: "Reading the room…",
+    neonWhisperUnavailable: "Unavailable right now",
     queuePreviewTitle: "Next in queue",
     queuePreviewUnlock: "Unlock",
     queuePreviewEmpty: "No one in queue right now.",
@@ -487,14 +559,6 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     privateRoomClosed: "Room closed. Host has insufficient balance.",
     leaderboardTitle: "Top spenders (60 min)",
     inviteFriendsBtn: "Invite Friends",
-    mysteryBoxTitle: "Mystery Box",
-    mysteryBoxOpen: "Open",
-    mysteryBoxOpening: "Opening...",
-    mysteryBoxOdds: "60% small, 5% big, 35% nothing",
-    mysteryBoxSmallReward: "+{{coins}} coins!",
-    mysteryBoxBigReward: "JACKPOT! +{{coins}} coins!",
-    mysteryBoxNothing: "Better luck next time!",
-    mysteryBoxClose: "Close",
     exitIntentTitle: "Limited offer!",
     exitIntentMessage: "Wait! Right now, get +50% battery on your first recharge!",
     exitIntentExpiresIn: "Expires in",
@@ -524,6 +588,9 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     searching: "Suche nach Partner...",
     reportBtn: "MELDEN",
     blockBtn: "BLOCKIEREN",
+    blockUserSuccess: "User blocked. You won't be matched together.",
+    faceGuardCameraPaused: "No face detected — camera paused. Show your face to go live again.",
+    faceGuardCameraRestored: "Face detected — camera back on.",
     filterStarter: "Gemeinsame Sprache",
     filterPro: "Standort / Land",
     filterElite: "Geschlecht + Private Nachrichten mit Bildern",
@@ -582,13 +649,22 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginGatewayTagline: "Verbinde dich mit der ganzen Welt.",
     linkAccountToSaveProgress: "Konto verknüpfen, um Coins und Fortschritt zu behalten.",
     connectAccount: "Anmelden",
+    trendingPageTitle: "24h Trending",
+    trendingPageSubtitle:
+      "Creators who received the most gift coins in the last 24 hours. Top 3 earn the flame badge.",
+    trendingPageEmpty: "No gifts in the last 24 hours yet. Show love on the main stage!",
+    trendingPageBack: "Back to NEON",
+    trendingSidebarLink: "24h Trending →",
     faqTitle: "Häufige Fragen",
     faqQ1: "Ist es anonym?",
-    faqA1: "Ja, wir speichern keine Videoaufnahmen.",
+    faqA1:
+      "NEON legt Wert auf Privatsphäre: Wir nehmen Videoanrufe nicht auf, archivieren sie nicht und spielen sie nicht ab. Alles läuft live—es gibt keine Server-Aufnahmen zum späteren Herunterladen. Sehr sensible Daten solltest du trotzdem nicht zeigen, wie überall im Live-Video.",
     faqQ2: "Wie erscheine ich auf dem Bildschirm?",
-    faqA2: "Du hast die volle Kontrolle über deine Kamera.",
+    faqA2:
+      "Du entscheidest jederzeit, was zu sehen ist: Kamera oder Mikrofon aus, Match sofort beenden. Optionale Filter (Beauty Blur, Ghost Mode usw.) sind nur aktiv, wenn du sie einschaltest.",
     faqQ3: "Verfallen die Coins?",
-    faqA3: "Nein, sie bleiben dauerhaft auf deinem Konto.",
+    faqA3:
+      "Nicht an einem festen Datum. Gekaufte oder verdiente Coins bleiben, bis du sie für Geschenke, Filter, Batterie und mehr ausgibst. Wir löschen dein Guthaben nicht automatisch bei Inaktivität.",
     level50Badge: "Demnächst",
     level50Title: "Auf Level 50 schaltest du frei",
     level50Desc: "Invisible Mode – andere sehen, ohne gesehen zu werden. Sammle weiter XP.",
@@ -603,6 +679,18 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     genderFilterCtaMessage: "Möchtest du dich mit Frauen verbinden?",
     genderFilterCtaButton: "Geschlechtsfilter wählen",
     genderFilterCtaDismiss: "Später",
+    neonVipGenderModalTitle: "Neon VIP required",
+    neonVipGenderModalBody:
+      "Gender preference matching is included with Neon VIP (Whale Pack). Upgrade to unlock this filter.",
+    neonVipGenderModalUpgrade: "View Whale Pack",
+    neonVipGenderModalDismiss: "Not now",
+    matchFilterGenderVipHint: "Neon VIP",
+    matchTargetCountryLabel: "Target country",
+    matchTargetCountryAny: "Any country",
+    matchTargetCountryPick: "Pick country",
+    matchTargetCountryHint:
+      "Partners must have this country on their profile (IP-based). {{cost}} coins charged per successful match.",
+    insufficientCoinsCountryMatch: "You need at least 5 coins to use target country matching.",
     welcomeToastMessage: "Willkommen bei NEON! Du hast 10 Münzen geschenkt bekommen.",
     bonusMultiplierTitle: "Belohnung verdoppeln?",
     bonusMultiplierNo: "Nein, danke",
@@ -629,6 +717,11 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     liveTranslationActivate: "3 Coins/Min",
     liveTranslationActive: "Untertitel aktiv",
     liveTranslationMicDenied: "(Mikrofonzugriff verweigert)",
+    neonWhisperTitle: "Neon Whisper",
+    neonWhisperBadge: "Nur du siehst das",
+    neonWhisperDismiss: "Schließen",
+    neonWhisperLoading: "Stimmung lesen…",
+    neonWhisperUnavailable: "Gerade nicht verfügbar",
     queuePreviewTitle: "Nächste in der Warteschlange",
     queuePreviewUnlock: "Entsperren",
     queuePreviewEmpty: "Niemand in der Warteschlange.",
@@ -642,14 +735,6 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     privateRoomClosed: "Raum geschlossen. Der Gastgeber hat nicht genug Guthaben.",
     leaderboardTitle: "Top-Ausgeber (60 Min)",
     inviteFriendsBtn: "Freunde einladen",
-    mysteryBoxTitle: "Mystery Box",
-    mysteryBoxOpen: "Öffnen",
-    mysteryBoxOpening: "Wird geöffnet...",
-    mysteryBoxOdds: "60% klein, 5% groß, 35% nichts",
-    mysteryBoxSmallReward: "+{{coins}} Münzen!",
-    mysteryBoxBigReward: "JACKPOT! +{{coins}} Münzen!",
-    mysteryBoxNothing: "Viel Glück beim nächsten Mal!",
-    mysteryBoxClose: "Schließen",
     exitIntentTitle: "Limitierte Aktion!",
     exitIntentMessage: "Warte! Jetzt erhältst du +50% Batterie bei deiner ersten Aufladung!",
     exitIntentExpiresIn: "Läuft ab in",
@@ -679,6 +764,9 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     searching: "Ricerca partner...",
     reportBtn: "SEGNALA",
     blockBtn: "BLOCCA",
+    blockUserSuccess: "User blocked. You won't be matched together.",
+    faceGuardCameraPaused: "No face detected — camera paused. Show your face to go live again.",
+    faceGuardCameraRestored: "Face detected — camera back on.",
     filterStarter: "Lingua comune",
     filterPro: "Posizione / Paese",
     filterElite: "Genere + Messaggi privati con immagini",
@@ -737,13 +825,22 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginGatewayTagline: "Inizia a connetterti con il mondo intero.",
     linkAccountToSaveProgress: "Collega l'account per non perdere monete e progressi.",
     connectAccount: "Accedi",
+    trendingPageTitle: "24h Trending",
+    trendingPageSubtitle:
+      "Creators who received the most gift coins in the last 24 hours. Top 3 earn the flame badge.",
+    trendingPageEmpty: "No gifts in the last 24 hours yet. Show love on the main stage!",
+    trendingPageBack: "Back to NEON",
+    trendingSidebarLink: "24h Trending →",
     faqTitle: "Domande frequenti",
     faqQ1: "È anonimo?",
-    faqA1: "Sì, non conserviamo alcuna registrazione video.",
+    faqA1:
+      "NEON è pensato per la privacy: non registriamo, archiviamo o riproduciamo le videochiamate. Le sessioni sono solo in diretta—nulla viene salvato sul server per scaricarlo dopo. Evita comunque dati personali molto sensibili in video, come su qualsiasi piattaforma live.",
     faqQ2: "Come appaio sullo schermo?",
-    faqA2: "Hai il controllo totale sulla tua camera.",
+    faqA2:
+      "Decidi tu cosa mostrare: puoi spegnere camera o microfono o chiudere il match subito. I filtri opzionali (Beauty Blur, Ghost Mode, ecc.) si attivano solo se li scegli tu.",
     faqQ3: "Le monete scadono?",
-    faqA3: "No, restano nel tuo account per sempre.",
+    faqA3:
+      "Non a una data fissa. Le monete acquistate o guadagnate restano fino a quando non le usi per regali, filtri, batteria e altro. Non azzeriamo il saldo solo perché non entri per un po’.",
     level50Badge: "In arrivo",
     level50Title: "Al Livello 50 sblocchi",
     level50Desc: "Invisible Mode – vedi gli altri senza essere visto. Continua a guadagnare XP.",
@@ -758,6 +855,18 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     genderFilterCtaMessage: "Vuoi connetterti con donne?",
     genderFilterCtaButton: "Scegli filtro genere",
     genderFilterCtaDismiss: "Più tardi",
+    neonVipGenderModalTitle: "Neon VIP required",
+    neonVipGenderModalBody:
+      "Gender preference matching is included with Neon VIP (Whale Pack). Upgrade to unlock this filter.",
+    neonVipGenderModalUpgrade: "View Whale Pack",
+    neonVipGenderModalDismiss: "Not now",
+    matchFilterGenderVipHint: "Neon VIP",
+    matchTargetCountryLabel: "Target country",
+    matchTargetCountryAny: "Any country",
+    matchTargetCountryPick: "Pick country",
+    matchTargetCountryHint:
+      "Partners must have this country on their profile (IP-based). {{cost}} coins charged per successful match.",
+    insufficientCoinsCountryMatch: "You need at least 5 coins to use target country matching.",
     welcomeToastMessage: "Benvenuto su NEON! Hai ricevuto 10 monete in regalo.",
     bonusMultiplierTitle: "Vuoi raddoppiare la ricompensa?",
     bonusMultiplierNo: "No, grazie",
@@ -784,6 +893,11 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     liveTranslationActivate: "3 monete/min",
     liveTranslationActive: "Sottotitoli attivi",
     liveTranslationMicDenied: "(Accesso microfono negato)",
+    neonWhisperTitle: "Neon Whisper",
+    neonWhisperBadge: "Solo tu",
+    neonWhisperDismiss: "Chiudi",
+    neonWhisperLoading: "Leggo la stanza…",
+    neonWhisperUnavailable: "Non disponibile",
     queuePreviewTitle: "Prossimi in coda",
     queuePreviewUnlock: "Sblocca",
     queuePreviewEmpty: "Nessuno in coda al momento.",
@@ -797,14 +911,6 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     privateRoomClosed: "Stanza chiusa. L'host non ha abbastanza monete.",
     leaderboardTitle: "Top spenditori (60 min)",
     inviteFriendsBtn: "Invita amici",
-    mysteryBoxTitle: "Scatola misteriosa",
-    mysteryBoxOpen: "Apri",
-    mysteryBoxOpening: "Si apre...",
-    mysteryBoxOdds: "60% piccolo, 5% grande, 35% niente",
-    mysteryBoxSmallReward: "+{{coins}} monete!",
-    mysteryBoxBigReward: "JACKPOT! +{{coins}} monete!",
-    mysteryBoxNothing: "Meglio fortuna la prossima volta!",
-    mysteryBoxClose: "Chiudi",
     exitIntentTitle: "Offerta limitata!",
     exitIntentMessage: "Aspetta! Ora ricevi +50% batteria al primo ricarico!",
     exitIntentExpiresIn: "Scade tra",
@@ -834,6 +940,9 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     searching: "Buscando compañero...",
     reportBtn: "REPORTAR",
     blockBtn: "BLOQUEAR",
+    blockUserSuccess: "User blocked. You won't be matched together.",
+    faceGuardCameraPaused: "No face detected — camera paused. Show your face to go live again.",
+    faceGuardCameraRestored: "Face detected — camera back on.",
     filterStarter: "Idioma común",
     filterPro: "Ubicación / País",
     filterElite: "Género + Mensajes privados con imágenes",
@@ -892,13 +1001,22 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginGatewayTagline: "Empieza a conectar con el mundo entero.",
     linkAccountToSaveProgress: "Vincula tu cuenta para no perder monedas ni progreso.",
     connectAccount: "Iniciar sesión",
+    trendingPageTitle: "24h Trending",
+    trendingPageSubtitle:
+      "Creators who received the most gift coins in the last 24 hours. Top 3 earn the flame badge.",
+    trendingPageEmpty: "No gifts in the last 24 hours yet. Show love on the main stage!",
+    trendingPageBack: "Back to NEON",
+    trendingSidebarLink: "24h Trending →",
     faqTitle: "Preguntas frecuentes",
     faqQ1: "¿Es anónimo?",
-    faqA1: "Sí, no guardamos grabaciones de vídeo.",
+    faqA1:
+      "NEON prioriza la privacidad: no grabamos, archivamos ni reproducimos tus videollamadas. Las sesiones son en vivo—no hay archivos en el servidor para descargar después. Aun así, evita mostrar datos muy sensibles, como en cualquier video en directo.",
     faqQ2: "¿Cómo aparezco en pantalla?",
-    faqA2: "Tienes control total sobre tu cámara.",
+    faqA2:
+      "Tú decides qué se ve: apaga cámara o micrófono o cierra el match al instante. Los filtros opcionales (Beauty Blur, Ghost Mode, etc.) solo se activan si tú los eliges.",
     faqQ3: "¿Las monedas caducan?",
-    faqA3: "No, permanecen en tu cuenta para siempre.",
+    faqA3:
+      "No en una fecha fija. Las monedas que compras o ganas permanecen hasta que las gastes en regalos, filtros, batería y más. No borramos tu saldo solo por inactividad.",
     level50Badge: "Próximamente",
     level50Title: "En Nivel 50 desbloqueas",
     level50Desc: "Invisible Mode – ver a otros sin que te vean. Sigue ganando XP.",
@@ -913,6 +1031,18 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     genderFilterCtaMessage: "¿Quieres conectarte con mujeres?",
     genderFilterCtaButton: "Elegir filtro de género",
     genderFilterCtaDismiss: "Más tarde",
+    neonVipGenderModalTitle: "Neon VIP required",
+    neonVipGenderModalBody:
+      "Gender preference matching is included with Neon VIP (Whale Pack). Upgrade to unlock this filter.",
+    neonVipGenderModalUpgrade: "View Whale Pack",
+    neonVipGenderModalDismiss: "Not now",
+    matchFilterGenderVipHint: "Neon VIP",
+    matchTargetCountryLabel: "Target country",
+    matchTargetCountryAny: "Any country",
+    matchTargetCountryPick: "Pick country",
+    matchTargetCountryHint:
+      "Partners must have this country on their profile (IP-based). {{cost}} coins charged per successful match.",
+    insufficientCoinsCountryMatch: "You need at least 5 coins to use target country matching.",
     welcomeToastMessage: "¡Bienvenido a NEON! Has recibido 10 monedas de regalo.",
     bonusMultiplierTitle: "¿Quieres duplicar la recompensa?",
     bonusMultiplierNo: "No, gracias",
@@ -939,6 +1069,11 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     liveTranslationActivate: "3 monedas/min",
     liveTranslationActive: "Subtítulos activos",
     liveTranslationMicDenied: "(Acceso al micrófono denegado)",
+    neonWhisperTitle: "Neon Whisper",
+    neonWhisperBadge: "Solo tú",
+    neonWhisperDismiss: "Cerrar",
+    neonWhisperLoading: "Leyendo el ambiente…",
+    neonWhisperUnavailable: "No disponible",
     queuePreviewTitle: "Siguientes en cola",
     queuePreviewUnlock: "Desbloquear",
     queuePreviewEmpty: "Nadie en cola en este momento.",
@@ -952,14 +1087,6 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     privateRoomClosed: "Sala cerrada. El anfitrión no tiene saldo suficiente.",
     leaderboardTitle: "Top gastadores (60 min)",
     inviteFriendsBtn: "Invitar amigos",
-    mysteryBoxTitle: "Caja misteriosa",
-    mysteryBoxOpen: "Abrir",
-    mysteryBoxOpening: "Abriendo...",
-    mysteryBoxOdds: "60% pequeño, 5% grande, 35% nada",
-    mysteryBoxSmallReward: "+{{coins}} monedas!",
-    mysteryBoxBigReward: "¡JACKPOT! +{{coins}} monedas!",
-    mysteryBoxNothing: "¡Más suerte la próxima!",
-    mysteryBoxClose: "Cerrar",
     exitIntentTitle: "¡Oferta limitada!",
     exitIntentMessage: "¡Espera! Ahora obtienes +50% de batería en tu primera recarga!",
     exitIntentExpiresIn: "Expira en",
@@ -989,6 +1116,9 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     searching: "Recherche de partenaire...",
     reportBtn: "SIGNALER",
     blockBtn: "BLOQUER",
+    blockUserSuccess: "User blocked. You won't be matched together.",
+    faceGuardCameraPaused: "No face detected — camera paused. Show your face to go live again.",
+    faceGuardCameraRestored: "Face detected — camera back on.",
     filterStarter: "Langue commune",
     filterPro: "Lieu / Pays",
     filterElite: "Genre + Messages privés avec images",
@@ -1047,13 +1177,22 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginGatewayTagline: "Commence à te connecter avec le monde entier.",
     linkAccountToSaveProgress: "Liez votre compte pour ne pas perdre vos pièces et votre progression.",
     connectAccount: "Connexion",
+    trendingPageTitle: "24h Trending",
+    trendingPageSubtitle:
+      "Creators who received the most gift coins in the last 24 hours. Top 3 earn the flame badge.",
+    trendingPageEmpty: "No gifts in the last 24 hours yet. Show love on the main stage!",
+    trendingPageBack: "Back to NEON",
+    trendingSidebarLink: "24h Trending →",
     faqTitle: "FAQ",
     faqQ1: "Est-ce anonyme ?",
-    faqA1: "Oui, nous ne stockons aucune vidéo.",
+    faqA1:
+      "NEON est conçu pour la vie privée : nous n’enregistrons, n’archivons ni ne rejouons vos appels vidéo. Les sessions sont en direct—rien n’est stocké sur nos serveurs pour être récupéré plus tard. Évitez tout de même les données très sensibles à l’image, comme sur tout live.",
     faqQ2: "Comment j'apparais à l'écran ?",
-    faqA2: "Vous contrôlez totalement votre caméra.",
+    faqA2:
+      "Vous choisissez ce qui est visible : coupez caméra ou micro, ou terminez un match instantanément. Les filtres optionnels (Beauty Blur, Ghost Mode, etc.) ne s’activent que si vous le décidez.",
     faqQ3: "Les pièces expirent-elles ?",
-    faqA3: "Non, elles restent sur votre compte.",
+    faqA3:
+      "Pas à une date fixe. Les pièces achetées ou gagnées restent jusqu’à ce que vous les dépensiez (cadeaux, filtres, batterie, etc.). Nous ne réinitialisons pas votre solde seulement pour inactivité.",
     level50Badge: "Bientôt",
     level50Title: "Au Niveau 50 vous débloquez",
     level50Desc: "Invisible Mode – voir les autres sans être vu. Continuez à gagner de l'XP.",
@@ -1068,6 +1207,18 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     genderFilterCtaMessage: "Tu veux te connecter avec des femmes?",
     genderFilterCtaButton: "Choisir filtre genre",
     genderFilterCtaDismiss: "Plus tard",
+    neonVipGenderModalTitle: "Neon VIP required",
+    neonVipGenderModalBody:
+      "Gender preference matching is included with Neon VIP (Whale Pack). Upgrade to unlock this filter.",
+    neonVipGenderModalUpgrade: "View Whale Pack",
+    neonVipGenderModalDismiss: "Not now",
+    matchFilterGenderVipHint: "Neon VIP",
+    matchTargetCountryLabel: "Target country",
+    matchTargetCountryAny: "Any country",
+    matchTargetCountryPick: "Pick country",
+    matchTargetCountryHint:
+      "Partners must have this country on their profile (IP-based). {{cost}} coins charged per successful match.",
+    insufficientCoinsCountryMatch: "You need at least 5 coins to use target country matching.",
     welcomeToastMessage: "Bienvenue sur NEON ! Tu as reçu 10 pièces offertes.",
     bonusMultiplierTitle: "Tu veux doubler la récompense ?",
     bonusMultiplierNo: "Non, merci",
@@ -1094,6 +1245,11 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     liveTranslationActivate: "3 pièces/min",
     liveTranslationActive: "Sous-titres actifs",
     liveTranslationMicDenied: "(Accès au microphone refusé)",
+    neonWhisperTitle: "Neon Whisper",
+    neonWhisperBadge: "Toi seul",
+    neonWhisperDismiss: "Fermer",
+    neonWhisperLoading: "Analyse de l’ambiance…",
+    neonWhisperUnavailable: "Indisponible",
     queuePreviewTitle: "Prochains dans la file",
     queuePreviewUnlock: "Débloquer",
     queuePreviewEmpty: "Personne dans la file pour le moment.",
@@ -1107,14 +1263,6 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     privateRoomClosed: "Salle fermée. L'hôte n'a pas assez de crédits.",
     leaderboardTitle: "Top dépensiers (60 min)",
     inviteFriendsBtn: "Inviter des amis",
-    mysteryBoxTitle: "Boîte mystère",
-    mysteryBoxOpen: "Ouvrir",
-    mysteryBoxOpening: "Ouverture...",
-    mysteryBoxOdds: "60% petit, 5% gros, 35% rien",
-    mysteryBoxSmallReward: "+{{coins}} pièces !",
-    mysteryBoxBigReward: "JACKPOT ! +{{coins}} pièces !",
-    mysteryBoxNothing: "Bonne chance la prochaine fois !",
-    mysteryBoxClose: "Fermer",
     exitIntentTitle: "Offre limitée !",
     exitIntentMessage: "Attendez ! Maintenant, recevez +50% de batterie lors de votre première recharge !",
     exitIntentExpiresIn: "Expire dans",
@@ -1144,6 +1292,9 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     searching: "À procura de parceiro...",
     reportBtn: "DENUNCIAR",
     blockBtn: "BLOQUEAR",
+    blockUserSuccess: "User blocked. You won't be matched together.",
+    faceGuardCameraPaused: "No face detected — camera paused. Show your face to go live again.",
+    faceGuardCameraRestored: "Face detected — camera back on.",
     filterStarter: "Língua comum",
     filterPro: "Localização / País",
     filterElite: "Género + Mensagens privadas com imagens",
@@ -1202,13 +1353,22 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginGatewayTagline: "Começa a conectar-te com o mundo inteiro.",
     linkAccountToSaveProgress: "Vincule a conta para não perder moedas e progresso.",
     connectAccount: "Entrar",
+    trendingPageTitle: "24h Trending",
+    trendingPageSubtitle:
+      "Creators who received the most gift coins in the last 24 hours. Top 3 earn the flame badge.",
+    trendingPageEmpty: "No gifts in the last 24 hours yet. Show love on the main stage!",
+    trendingPageBack: "Back to NEON",
+    trendingSidebarLink: "24h Trending →",
     faqTitle: "Perguntas frequentes",
     faqQ1: "É anónimo?",
-    faqA1: "Sim, não guardamos gravações de vídeo.",
+    faqA1:
+      "A NEON privilegia a privacidade: não gravamos, arquivamos nem reproduzimos as tuas videochamadas. As sessões são ao vivo—nada fica no servidor para descarregares depois. Mesmo assim, evita dados muito sensíveis na câmara, como em qualquer direto.",
     faqQ2: "Como apareço no ecrã?",
-    faqA2: "Tens controlo total sobre a tua câmara.",
+    faqA2:
+      "Tu decides o que é visível: desliga câmara ou micro ou fecha o match na hora. Os filtros opcionais (Beauty Blur, Ghost Mode, etc.) só se ligam se tu escolheres.",
     faqQ3: "As moedas expiram?",
-    faqA3: "Não, ficam na tua conta para sempre.",
+    faqA3:
+      "Não numa data fixa. As moedas que compras ou ganhas ficam até as gastares em prendas, filtros, bateria e mais. Não apagamos o saldo só por inatividade.",
     level50Badge: "Em breve",
     level50Title: "No Nível 50 desbloqueias",
     level50Desc: "Invisible Mode – ver outros sem ser visto. Continua a ganhar XP.",
@@ -1223,6 +1383,18 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     genderFilterCtaMessage: "Queres conectar-te com mulheres?",
     genderFilterCtaButton: "Escolher filtro de género",
     genderFilterCtaDismiss: "Mais tarde",
+    neonVipGenderModalTitle: "Neon VIP required",
+    neonVipGenderModalBody:
+      "Gender preference matching is included with Neon VIP (Whale Pack). Upgrade to unlock this filter.",
+    neonVipGenderModalUpgrade: "View Whale Pack",
+    neonVipGenderModalDismiss: "Not now",
+    matchFilterGenderVipHint: "Neon VIP",
+    matchTargetCountryLabel: "Target country",
+    matchTargetCountryAny: "Any country",
+    matchTargetCountryPick: "Pick country",
+    matchTargetCountryHint:
+      "Partners must have this country on their profile (IP-based). {{cost}} coins charged per successful match.",
+    insufficientCoinsCountryMatch: "You need at least 5 coins to use target country matching.",
     welcomeToastMessage: "Bem-vindo ao NEON! Recebeste 10 moedas de oferta.",
     bonusMultiplierTitle: "Queres duplicar a recompensa?",
     bonusMultiplierNo: "Não, obrigado",
@@ -1249,6 +1421,11 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     liveTranslationActivate: "3 moedas/min",
     liveTranslationActive: "Legendas ativas",
     liveTranslationMicDenied: "(Acesso ao microfone negado)",
+    neonWhisperTitle: "Neon Whisper",
+    neonWhisperBadge: "Só você vê",
+    neonWhisperDismiss: "Fechar",
+    neonWhisperLoading: "Lendo o clima…",
+    neonWhisperUnavailable: "Indisponível",
     queuePreviewTitle: "Próximos na fila",
     queuePreviewUnlock: "Desbloquear",
     queuePreviewEmpty: "Ninguém na fila no momento.",
@@ -1262,14 +1439,6 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     privateRoomClosed: "Sala fechada. O anfitrião não tem saldo suficiente.",
     leaderboardTitle: "Top gastadores (60 min)",
     inviteFriendsBtn: "Convidar amigos",
-    mysteryBoxTitle: "Caixa misteriosa",
-    mysteryBoxOpen: "Abrir",
-    mysteryBoxOpening: "Abrindo...",
-    mysteryBoxOdds: "60% pequeno, 5% grande, 35% nada",
-    mysteryBoxSmallReward: "+{{coins}} moedas!",
-    mysteryBoxBigReward: "JACKPOT! +{{coins}} moedas!",
-    mysteryBoxNothing: "Mais sorte da próxima!",
-    mysteryBoxClose: "Fechar",
     exitIntentTitle: "Oferta limitada!",
     exitIntentMessage: "Espere! Agora receba +50% de bateria na sua primeira recarga!",
     exitIntentExpiresIn: "Expira em",
@@ -1299,6 +1468,9 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     searching: "Zoeken naar partner...",
     reportBtn: "MELDEN",
     blockBtn: "BLOKKEREN",
+    blockUserSuccess: "User blocked. You won't be matched together.",
+    faceGuardCameraPaused: "No face detected — camera paused. Show your face to go live again.",
+    faceGuardCameraRestored: "Face detected — camera back on.",
     filterStarter: "Gemeenschappelijke taal",
     filterPro: "Locatie / Land",
     filterElite: "Geslacht + Privéberichten met afbeeldingen",
@@ -1357,13 +1529,22 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginGatewayTagline: "Begin wereldwijd te verbinden.",
     linkAccountToSaveProgress: "Koppel je account om munten en voortgang te behouden.",
     connectAccount: "Inloggen",
+    trendingPageTitle: "24h Trending",
+    trendingPageSubtitle:
+      "Creators who received the most gift coins in the last 24 hours. Top 3 earn the flame badge.",
+    trendingPageEmpty: "No gifts in the last 24 hours yet. Show love on the main stage!",
+    trendingPageBack: "Back to NEON",
+    trendingSidebarLink: "24h Trending →",
     faqTitle: "Veelgestelde vragen",
     faqQ1: "Is het anoniem?",
-    faqA1: "Ja, we slaan geen video-opnames op.",
+    faqA1:
+      "NEON is gebouwd rond privacy: we nemen videogesprekken niet op, archiveren ze niet en spelen ze niet af. Alles is live—er staan geen opnames op de server om later te downloaden. Vermijd wel zeer gevoelige gegevens op camera, zoals overal bij live video.",
     faqQ2: "Hoe verschijn ik op het scherm?",
-    faqA2: "Je hebt volledige controle over je camera.",
+    faqA2:
+      "Jij bepaalt wat zichtbaar is: camera of microfoon uit, of direct een match beëindigen. Optionele filters (Beauty Blur, Ghost Mode, enz.) gaan alleen aan als jij ze aanzet.",
     faqQ3: "Verlopen de munten?",
-    faqA3: "Nee, ze blijven voor altijd op je account.",
+    faqA3:
+      "Niet op een vaste datum. Munten die je koopt of verdient blijven tot je ze uitgeeft aan cadeaus, filters, batterij enz. We wissen je saldo niet automatisch bij inactiviteit.",
     level50Badge: "Binnenkort",
     level50Title: "Op Level 50 ontgrendel je",
     level50Desc: "Invisible Mode – anderen zien zonder gezien te worden. Blijf XP verdienen.",
@@ -1378,6 +1559,18 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     genderFilterCtaMessage: "Wil je verbinden met vrouwen?",
     genderFilterCtaButton: "Kies geslachtsfilter",
     genderFilterCtaDismiss: "Later",
+    neonVipGenderModalTitle: "Neon VIP required",
+    neonVipGenderModalBody:
+      "Gender preference matching is included with Neon VIP (Whale Pack). Upgrade to unlock this filter.",
+    neonVipGenderModalUpgrade: "View Whale Pack",
+    neonVipGenderModalDismiss: "Not now",
+    matchFilterGenderVipHint: "Neon VIP",
+    matchTargetCountryLabel: "Target country",
+    matchTargetCountryAny: "Any country",
+    matchTargetCountryPick: "Pick country",
+    matchTargetCountryHint:
+      "Partners must have this country on their profile (IP-based). {{cost}} coins charged per successful match.",
+    insufficientCoinsCountryMatch: "You need at least 5 coins to use target country matching.",
     welcomeToastMessage: "Welkom bij NEON! Je hebt 10 munten cadeau gekregen.",
     bonusMultiplierTitle: "Verdubbel je beloning?",
     bonusMultiplierNo: "Nee, bedankt",
@@ -1404,6 +1597,11 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     liveTranslationActivate: "3 munten/min",
     liveTranslationActive: "Ondertitels actief",
     liveTranslationMicDenied: "(Microfoontoegang geweigerd)",
+    neonWhisperTitle: "Neon Whisper",
+    neonWhisperBadge: "Alleen jij",
+    neonWhisperDismiss: "Sluiten",
+    neonWhisperLoading: "Sfeer peilen…",
+    neonWhisperUnavailable: "Niet beschikbaar",
     queuePreviewTitle: "Volgende in de wachtrij",
     queuePreviewUnlock: "Ontgrendelen",
     queuePreviewEmpty: "Niemand in de wachtrij.",
@@ -1417,14 +1615,6 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     privateRoomClosed: "Kamer gesloten. Host heeft onvoldoende saldo.",
     leaderboardTitle: "Top uitgaven (60 min)",
     inviteFriendsBtn: "Vrienden uitnodigen",
-    mysteryBoxTitle: "Mysteriebox",
-    mysteryBoxOpen: "Openen",
-    mysteryBoxOpening: "Wordt geopend...",
-    mysteryBoxOdds: "60% klein, 5% groot, 35% niets",
-    mysteryBoxSmallReward: "+{{coins}} munten!",
-    mysteryBoxBigReward: "JACKPOT! +{{coins}} munten!",
-    mysteryBoxNothing: "Beter geluk de volgende keer!",
-    mysteryBoxClose: "Sluiten",
     exitIntentTitle: "Beperkt aanbod!",
     exitIntentMessage: "Wacht! Ontvang nu +50% batterij bij je eerste oplading!",
     exitIntentExpiresIn: "Verloopt over",
@@ -1454,6 +1644,9 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     searching: "Szukam partnera...",
     reportBtn: "ZGŁOŚ",
     blockBtn: "ZABLOKUJ",
+    blockUserSuccess: "User blocked. You won't be matched together.",
+    faceGuardCameraPaused: "No face detected — camera paused. Show your face to go live again.",
+    faceGuardCameraRestored: "Face detected — camera back on.",
     filterStarter: "Wspólny język",
     filterPro: "Lokalizacja / Kraj",
     filterElite: "Płeć + Prywatne wiadomości z obrazami",
@@ -1512,13 +1705,22 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginGatewayTagline: "Zacznij łączyć się ze światem.",
     linkAccountToSaveProgress: "Połącz konto, aby nie stracić monet i postępów.",
     connectAccount: "Zaloguj się",
+    trendingPageTitle: "24h Trending",
+    trendingPageSubtitle:
+      "Creators who received the most gift coins in the last 24 hours. Top 3 earn the flame badge.",
+    trendingPageEmpty: "No gifts in the last 24 hours yet. Show love on the main stage!",
+    trendingPageBack: "Back to NEON",
+    trendingSidebarLink: "24h Trending →",
     faqTitle: "Często zadawane pytania",
     faqQ1: "Czy to jest anonimowe?",
-    faqA1: "Tak, nie przechowujemy nagrań wideo.",
+    faqA1:
+      "NEON stawia na prywatność: nie nagrywamy, nie archiwizujemy ani nie odtwarzamy rozmów wideo. Sesje są na żywo—nic nie jest trwale przechowywane na serwerze do późniejszego pobrania. Unikaj jednak bardzo wrażliwych danych w kadrze, jak wszędzie w live.",
     faqQ2: "Jak pojawiam się na ekranie?",
-    faqA2: "Masz pełną kontrolę nad kamerą.",
+    faqA2:
+      "Sam decydujesz, co widać: wyłącz kamerę lub mikrofon albo natychmiast zakończ dopasowanie. Opcjonalne filtry (Beauty Blur, Ghost Mode itd.) działają tylko wtedy, gdy je włączysz.",
     faqQ3: "Czy monety wygasają?",
-    faqA3: "Nie, pozostają na koncie na zawsze.",
+    faqA3:
+      "Nie w ustalonym terminie. Monety kupione lub zdobyte zostają, dopóki ich nie wydasz na prezenty, filtry, baterię itp. Nie zerujemy salda tylko z powodu nieaktywności.",
     level50Badge: "Wkrótce",
     level50Title: "Na Poziomie 50 odblokowujesz",
     level50Desc: "Tryb Niewidzialny – zobacz innych bez bycia widocznym. Zdobywaj dalej XP.",
@@ -1533,6 +1735,18 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     genderFilterCtaMessage: "Chcesz łączyć się z kobietami?",
     genderFilterCtaButton: "Wybierz filtr płci",
     genderFilterCtaDismiss: "Później",
+    neonVipGenderModalTitle: "Neon VIP required",
+    neonVipGenderModalBody:
+      "Gender preference matching is included with Neon VIP (Whale Pack). Upgrade to unlock this filter.",
+    neonVipGenderModalUpgrade: "View Whale Pack",
+    neonVipGenderModalDismiss: "Not now",
+    matchFilterGenderVipHint: "Neon VIP",
+    matchTargetCountryLabel: "Target country",
+    matchTargetCountryAny: "Any country",
+    matchTargetCountryPick: "Pick country",
+    matchTargetCountryHint:
+      "Partners must have this country on their profile (IP-based). {{cost}} coins charged per successful match.",
+    insufficientCoinsCountryMatch: "You need at least 5 coins to use target country matching.",
     welcomeToastMessage: "Witaj w NEON! Otrzymałeś 10 monet w prezencie.",
     bonusMultiplierTitle: "Nagrodę podwoić?",
     bonusMultiplierNo: "Nie, dziękuję",
@@ -1559,6 +1773,11 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     liveTranslationActivate: "3 monety/min",
     liveTranslationActive: "Napisy aktywne",
     liveTranslationMicDenied: "(Odmowa dostępu do mikrofonu)",
+    neonWhisperTitle: "Neon Whisper",
+    neonWhisperBadge: "Tylko ty",
+    neonWhisperDismiss: "Zamknij",
+    neonWhisperLoading: "Sprawdzam klimat…",
+    neonWhisperUnavailable: "Niedostępne",
     queuePreviewTitle: "Następni w kolejce",
     queuePreviewUnlock: "Odblokuj",
     queuePreviewEmpty: "Obecnie nikt nie czeka w kolejce.",
@@ -1572,14 +1791,6 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     privateRoomClosed: "Pokój zamknięty. Gospodarz ma niewystarczające saldo.",
     leaderboardTitle: "Top wydatki (60 min)",
     inviteFriendsBtn: "Zaproś znajomych",
-    mysteryBoxTitle: "Tajemnicze pudełko",
-    mysteryBoxOpen: "Otwórz",
-    mysteryBoxOpening: "Otwieranie...",
-    mysteryBoxOdds: "60% mała, 5% duża, 35% nic",
-    mysteryBoxSmallReward: "+{{coins}} monet!",
-    mysteryBoxBigReward: "JACKPOT! +{{coins}} monet!",
-    mysteryBoxNothing: "Powodzenia następnym razem!",
-    mysteryBoxClose: "Zamknij",
     exitIntentTitle: "Oferta limitowana!",
     exitIntentMessage: "Czekaj! Teraz otrzymasz +50% baterii przy pierwszym doładowaniu!",
     exitIntentExpiresIn: "Wygasa za",
@@ -1609,6 +1820,9 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     searching: "Partner aranıyor...",
     reportBtn: "ŞİKAYET",
     blockBtn: "ENGELLE",
+    blockUserSuccess: "User blocked. You won't be matched together.",
+    faceGuardCameraPaused: "No face detected — camera paused. Show your face to go live again.",
+    faceGuardCameraRestored: "Face detected — camera back on.",
     filterStarter: "Ortak dil",
     filterPro: "Konum / Ülke",
     filterElite: "Cinsiyet + Görselli özel mesajlar",
@@ -1667,13 +1881,22 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     loginGatewayTagline: "Dünyayla bağlantı kurmaya başla.",
     linkAccountToSaveProgress: "Jeton ve ilerlemenizi kaybetmemek için hesabı bağlayın.",
     connectAccount: "Giriş yap",
+    trendingPageTitle: "24h Trending",
+    trendingPageSubtitle:
+      "Creators who received the most gift coins in the last 24 hours. Top 3 earn the flame badge.",
+    trendingPageEmpty: "No gifts in the last 24 hours yet. Show love on the main stage!",
+    trendingPageBack: "Back to NEON",
+    trendingSidebarLink: "24h Trending →",
     faqTitle: "Sıkça sorulan sorular",
     faqQ1: "Anonim mi?",
-    faqA1: "Evet, video kaydı saklamıyoruz.",
+    faqA1:
+      "NEON gizlilik odaklıdır: görüntülü görüşmeleri kaydetmiyor, arşivlemiyor veya tekrar oynatmıyoruz. Oturumlar canlıdır—sunucuda sonra indirilebilecek kayıt tutulmaz. Yine de her canlı yayında olduğu gibi çok hassas kişisel verilerden kaçının.",
     faqQ2: "Ekranda nasıl görünürüm?",
-    faqA2: "Kameran üzerinde tam kontrol sende.",
+    faqA2:
+      "Ne görüneceğine sen karar verirsin: kameranı veya mikrofonu kapatabilir, eşleşmeyi anında bitirebilirsin. İsteğe bağlı filtreler (Beauty Blur, Ghost Mode vb.) yalnızca sen açtığında devreye girer.",
     faqQ3: "Jetonların süresi doluyor mu?",
-    faqA3: "Hayır, hesabında kalıcı olarak kalır.",
+    faqA3:
+      "Sabit bir takvim tarihinde değil. Satın aldığın veya kazandığın jetonlar, hediyeler, filtreler, batarya vb. için harcayana kadar hesabında kalır. Sadece uzun süre girmediğin için bakiyeni sıfırlamıyoruz.",
     level50Badge: "Yakında",
     level50Title: "50. Seviyede açarsın",
     level50Desc: "Görünmez Mod – seni görmeden başkalarını gör. XP kazanmaya devam et.",
@@ -1688,6 +1911,18 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     genderFilterCtaMessage: "Kadınlarla bağlanmak ister misin?",
     genderFilterCtaButton: "Cinsiyet filtresi seç",
     genderFilterCtaDismiss: "Sonra",
+    neonVipGenderModalTitle: "Neon VIP required",
+    neonVipGenderModalBody:
+      "Gender preference matching is included with Neon VIP (Whale Pack). Upgrade to unlock this filter.",
+    neonVipGenderModalUpgrade: "View Whale Pack",
+    neonVipGenderModalDismiss: "Not now",
+    matchFilterGenderVipHint: "Neon VIP",
+    matchTargetCountryLabel: "Target country",
+    matchTargetCountryAny: "Any country",
+    matchTargetCountryPick: "Pick country",
+    matchTargetCountryHint:
+      "Partners must have this country on their profile (IP-based). {{cost}} coins charged per successful match.",
+    insufficientCoinsCountryMatch: "You need at least 5 coins to use target country matching.",
     welcomeToastMessage: "NEON'a hoş geldin! 10 jeton hediye aldın.",
     bonusMultiplierTitle: "Ödülü ikiye katlamak ister misin?",
     bonusMultiplierNo: "Hayır, teşekkürler",
@@ -1714,6 +1949,11 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     liveTranslationActivate: "3 jeton/dk",
     liveTranslationActive: "Altyazılar aktif",
     liveTranslationMicDenied: "(Mikrofon erişimi reddedildi)",
+    neonWhisperTitle: "Neon Whisper",
+    neonWhisperBadge: "Sadece sen",
+    neonWhisperDismiss: "Kapat",
+    neonWhisperLoading: "Ortam okunuyor…",
+    neonWhisperUnavailable: "Kullanılamıyor",
     queuePreviewTitle: "Sıradakiler",
     queuePreviewUnlock: "Kilidi Aç",
     queuePreviewEmpty: "Şu anda sırada kimse yok.",
@@ -1727,14 +1967,6 @@ export const contentMessages: Record<ContentLocale, ContentMessagesType> = {
     privateRoomClosed: "Oda kapatıldı. Ev sahibinin bakiyesi yetersiz.",
     leaderboardTitle: "En çok harcayan (60 dk)",
     inviteFriendsBtn: "Arkadaşlarını davet et",
-    mysteryBoxTitle: "Gizemli kutu",
-    mysteryBoxOpen: "Aç",
-    mysteryBoxOpening: "Açılıyor...",
-    mysteryBoxOdds: "%60 küçük, %5 büyük, %35 hiçbir şey",
-    mysteryBoxSmallReward: "+{{coins}} jeton!",
-    mysteryBoxBigReward: "JACKPOT! +{{coins}} jeton!",
-    mysteryBoxNothing: "Bir dahaki sefere daha iyi şanslar!",
-    mysteryBoxClose: "Kapat",
     exitIntentTitle: "Sınırlı teklif!",
     exitIntentMessage: "Bekle! Şimdi ilk şarjında +50% pil al!",
     exitIntentExpiresIn: "Süresi doluyor",

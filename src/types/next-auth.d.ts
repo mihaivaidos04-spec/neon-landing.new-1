@@ -22,7 +22,7 @@ declare module "next-auth" {
     totalSpent?: number;
     /** ISO 3166-1 alpha-2 from User.country (IP or manual) */
     countryCode?: string | null;
-    /** Whale pack ($18.99) — GIF avatar + neon name glow */
+    /** Whale pack — GIF avatar + neon name glow */
     isNeonVip?: boolean;
     /** Deterministic gold | blue for VIP name styling */
     neonVipGlow?: "gold" | "blue";

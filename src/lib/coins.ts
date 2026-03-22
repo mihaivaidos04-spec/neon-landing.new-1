@@ -5,7 +5,7 @@
 import type { GiftId } from "../components/GiftsBar";
 import { BILLING_PACKS } from "./billing-packs";
 
-/** Starter pack rate for ~USD hints in UI (100 coins ≈ $0.99). */
+/** Starter pack rate for ~USD hints in UI (follows billing starter pack). */
 const GIFT_USD_REFERENCE_PACK = BILLING_PACKS.find((p) => p.id === "starter") ?? BILLING_PACKS[0];
 
 /** Cost in coins per gift */
@@ -54,10 +54,8 @@ export const BATTERY_QUICK_CHARGE_AMOUNT = 25;
 /** Queue preview: cost to unlock (remove blur) for one user */
 export const QUEUE_UNLOCK_COST = 2;
 
-/** Mystery Box: 5 coins to open, weighted random rewards */
-export const MYSTERY_BOX_COST = 5;
-export const MYSTERY_BOX_SMALL_REWARD = 3;
-export const MYSTERY_BOX_BIG_REWARD = 25;
+/** Match with a target peer country (User.country from IP/geo sync) — charged when a match is formed */
+export const TARGET_COUNTRY_MATCH_COST = 5;
 
 /** Reaction overlay costs (sent to peer) */
 export const REACTION_COST: Record<string, number> = {

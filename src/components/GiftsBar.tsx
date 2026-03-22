@@ -6,12 +6,19 @@ import { getGiftCost } from "../lib/coins";
 
 export type GiftId = "heart" | "rose" | "coffee" | "diamond";
 
-export const GIFTS: { id: GiftId; emoji: string }[] = [
-  { id: "heart", emoji: "❤️" },
-  { id: "rose", emoji: "🌹" },
-  { id: "coffee", emoji: "☕" },
-  { id: "diamond", emoji: "💎" },
+export const GIFTS: { id: GiftId }[] = [
+  { id: "heart" },
+  { id: "rose" },
+  { id: "coffee" },
+  { id: "diamond" },
 ];
+
+const GIFT_EMOJI: Record<GiftId, string> = {
+  heart: "❤️",
+  rose: "🌹",
+  coffee: "☕",
+  diamond: "💎",
+};
 
 type Props = {
   locale: ContentLocale;
@@ -32,10 +39,15 @@ export default function GiftsBar({ locale, coins, onSendGift }: Props) {
             key={g.id}
             type="button"
             onClick={() => onSendGift(g.id)}
-            className="btn-gradient-neon flex min-h-[52px] min-w-[64px] flex-col items-center justify-center gap-0.5 rounded-xl border border-white/20 px-4 py-3 text-white transition-all active:scale-[0.96] hover:opacity-95 sm:min-h-[56px] sm:min-w-[72px]"
+            disabled={!canAfford}
+            className="flex min-h-[52px] min-w-[64px] flex-col items-center justify-center gap-1 rounded-xl border border-white/15 bg-black/45 px-4 py-3 text-white shadow-[0_0_24px_rgba(139,92,246,0.12)] transition-all active:scale-[0.96] hover:border-fuchsia-500/30 hover:bg-black/55 disabled:opacity-45 sm:min-h-[56px] sm:min-w-[72px]"
           >
-            <span className="text-xl">{g.emoji}</span>
-            <span className="text-[10px] font-medium">{cost} {t.coinsLabel}</span>
+            <span className="gift-emoji-future-wrap shrink-0">
+              <span className="emoji-ios text-xl leading-none">{GIFT_EMOJI[g.id]}</span>
+            </span>
+            <span className="gift-price-text number-plain text-[10px] text-white/50">
+              {cost.toLocaleString("en-US")} {t.coinsLabel}
+            </span>
           </button>
         );
       })}

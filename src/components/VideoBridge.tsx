@@ -1,20 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
 import { useAgoraTheater } from "../hooks/useAgoraTheater";
+import { createTranscriptBuffer, useNeonWhisper } from "../hooks/useNeonWhisper";
+import { useJeelizMaskPipeline } from "../hooks/useJeelizMaskPipeline";
+import type { FaceMaskId } from "../lib/face-masks";
+import { NEON_GLASSES_COST } from "../lib/face-masks";
 import type { VideoFilterId } from "../lib/video-filters";
 import { getFilterCss } from "../lib/video-filters";
 import SearchingSpinner from "./SearchingSpinner";
 import BeautyBlurOverlay from "./BeautyBlurOverlay";
 import LiveSubtitles from "./LiveSubtitles";
+import NeonWhisperOverlay from "./NeonWhisperOverlay";
 import ReactionOverlay from "./ReactionOverlay";
 import CrownOverlay from "./CrownOverlay";
 import LiveLeaderboard from "./LiveLeaderboard";
 import CountrySelector from "./CountrySelector";
 import GiftLayer, { type ActiveGift } from "./GiftLayer";
-import TopSupportersSidebar from "./TopSupportersSidebar";
 import BioCard from "./BioCard";
 import VideoSkeletonLoader from "./VideoSkeletonLoader";
 import TheaterGiftDrawer from "./TheaterGiftDrawer";
@@ -30,6 +34,29 @@ function videoFullscreenLabels(locale: ContentLocale): { enter: string; exit: st
     return { enter: "Ecran complet", exit: "Închide ecran complet" };
   }
   return { enter: "Fullscreen", exit: "Exit fullscreen" };
+}
+
+function maskMenuLabels(locale: ContentLocale) {
+  if (locale === "ro") {
+    return {
+      button: "Măști",
+      none: "Fără",
+      anonymous: "Mască anonim",
+      neon: "Ochelari neon",
+      beauty: "Filtru beauty",
+      needCoins: "Ai nevoie de 10 monede",
+      loading: "Se încarcă AR…",
+    };
+  }
+  return {
+    button: "Masks",
+    none: "None",
+    anonymous: "Anonymous mask",
+    neon: "Neon glasses",
+    beauty: "Beauty filter",
+    needCoins: "You need 10 coins",
+    loading: "Loading AR…",
+  };
 }
 
 type Props = {
@@ -111,12 +138,14 @@ type Props = {
   /** Fire/Rocket: full-screen-on-partner gift from peer (Socket.io). */
   partnerVideoGift?: PartnerVideoGiftPayload | null;
   onPartnerVideoGiftComplete?: () => void;
-  /** Bumps Top Supporters SWR refetch after local gift send */
-  topSupportersRefreshKey?: number;
   /** Agora: shared channel id (both peers). When set with a match, real video replaces demo loop. */
   agoraChannelName?: string | null;
   /** Agora: stable key for token UID (e.g. current user id). */
   agoraUserIdKey?: string | null;
+  /** Wallet spend (Neon Glasses mask = 10 coins). */
+  onSpend?: (amount: number, reason?: string) => Promise<boolean>;
+  /** Logged-in: enable Neon Whisper AI wingman (local-only overlay; uses partner video + your mic transcript). */
+  neonWhisperEnabled?: boolean;
 };
 
 export default function VideoBridge({
@@ -169,12 +198,14 @@ export default function VideoBridge({
   onTheaterGift,
   partnerVideoGift = null,
   onPartnerVideoGiftComplete,
-  topSupportersRefreshKey = 0,
   agoraChannelName = null,
   agoraUserIdKey = null,
+  onSpend,
+  neonWhisperEnabled = false,
 }: Props) {
   const t = getContentT(locale);
   const fsLabels = videoFullscreenLabels(locale);
+  const maskL = maskMenuLabels(locale);
   const splitContainerRef = useRef<HTMLDivElement>(null);
   const agoraLocalRef = useRef<HTMLDivElement>(null);
   const agoraRemoteRef = useRef<HTMLDivElement>(null);
@@ -182,16 +213,76 @@ export default function VideoBridge({
   const [localPreviewStream, setLocalPreviewStream] = useState<MediaStream | null>(null);
   const [localPreviewError, setLocalPreviewError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [faceMask, setFaceMask] = useState<FaceMaskId>("none");
+  const [masksMenuOpen, setMasksMenuOpen] = useState(false);
+  const masksMenuRef = useRef<HTMLDivElement>(null);
 
   const agoraEnabled =
     Boolean(agoraChannelName?.trim()) && !searching;
+  const [replacePublishTrack, setReplacePublishTrack] =
+    useState<MediaStreamTrack | null>(null);
+
   const agora = useAgoraTheater({
     channelName: agoraChannelName?.trim() ?? null,
     enabled: agoraEnabled,
     userIdKey: agoraUserIdKey ?? "",
     localContainerRef: agoraLocalRef,
     remoteContainerRef: agoraRemoteRef,
+    replaceVideoWithTrack: replacePublishTrack,
   });
+
+  const maskPipelineEnabled = agoraEnabled && !ghostMode && agora.joined;
+  const jeeliz = useJeelizMaskPipeline(
+    agora.cameraMediaTrack,
+    faceMask,
+    maskPipelineEnabled
+  );
+
+  useEffect(() => {
+    const next =
+      faceMask !== "none" && jeeliz.ready && jeeliz.outputVideoTrack
+        ? jeeliz.outputVideoTrack
+        : null;
+    setReplacePublishTrack((prev) => (prev === next ? prev : next));
+  }, [faceMask, jeeliz.ready, jeeliz.outputVideoTrack]);
+
+  useEffect(() => {
+    if (!agoraEnabled) {
+      setReplacePublishTrack(null);
+      setFaceMask("none");
+      setMasksMenuOpen(false);
+    }
+  }, [agoraEnabled]);
+
+  useEffect(() => {
+    if (!masksMenuOpen) return;
+    const onDown = (e: MouseEvent) => {
+      const el = masksMenuRef.current;
+      if (el && !el.contains(e.target as Node)) setMasksMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [masksMenuOpen]);
+
+  const handleSelectFaceMask = useCallback(
+    async (id: FaceMaskId) => {
+      if (id === "neon_glasses" && faceMask !== "neon_glasses") {
+        if (onSpend) {
+          const ok = await onSpend(NEON_GLASSES_COST, "neon_glasses");
+          if (!ok) {
+            onOpenShop?.();
+            return;
+          }
+        } else if (theaterGiftCoins < NEON_GLASSES_COST) {
+          onOpenShop?.();
+          return;
+        }
+      }
+      setFaceMask(id);
+      setMasksMenuOpen(false);
+    },
+    [faceMask, theaterGiftCoins, onSpend, onOpenShop]
+  );
 
   /** Local camera/mic when not on Agora (no duplicate device access). */
   useEffect(() => {
@@ -299,18 +390,14 @@ export default function VideoBridge({
           : undefined;
 
   return (
-    <div className="flex w-full flex-col gap-3 overflow-visible xl:flex-row xl:items-stretch xl:gap-2">
+    <div className="h-full w-full min-h-0 overflow-visible">
       <div
-        className={`video-player-wrap video-glow relative min-w-0 flex-1 overflow-hidden rounded-2xl bg-black ${rankGlowClass}`}
+        className={`video-player-wrap video-glow relative h-full min-h-0 min-w-0 w-full overflow-hidden rounded-2xl bg-black ${rankGlowClass}`}
       >
       <div
         ref={splitContainerRef}
-        className={`relative w-full overflow-hidden bg-black ${
-          searching
-            ? "aspect-video"
-            : `max-lg:flex max-lg:flex-col max-lg:aspect-auto lg:aspect-video ${
-                isFullscreen ? "max-lg:min-h-[100dvh]" : "max-lg:min-h-[82dvh]"
-              }`
+        className={`relative h-full min-h-0 w-full overflow-hidden bg-black ${
+          searching ? "aspect-video" : "max-lg:flex max-lg:flex-col max-lg:aspect-auto lg:aspect-video"
         }`}
       >
         {!searching && (
@@ -364,7 +451,7 @@ export default function VideoBridge({
           className={`relative w-full overflow-hidden transition-[filter] duration-500 ${
             searching
               ? "absolute inset-0 h-full min-h-0"
-              : "max-lg:flex-1 max-lg:basis-0 max-lg:min-h-[32dvh] lg:absolute lg:inset-0 lg:h-full lg:min-h-0 lg:flex-none"
+              : "max-lg:flex-1 max-lg:basis-0 max-lg:min-h-0 lg:absolute lg:inset-0 lg:h-full lg:min-h-0 lg:flex-none"
           } ${showVipBorder ? "vip-border-glow" : ""}`}
           style={partnerFilterStyle}
         >
@@ -471,10 +558,19 @@ export default function VideoBridge({
             gift={partnerVideoGift}
             onComplete={onPartnerVideoGiftComplete ?? (() => {})}
           />
+          {neonWhisperEnabled && agoraEnabled && (
+            <NeonWhisperOverlay
+              locale={locale}
+              tip={neonWhisper.tip}
+              loading={neonWhisper.loading}
+              error={neonWhisper.error}
+              onDismiss={neonWhisper.dismissTip}
+            />
+          )}
         </div>
         {/* Self-view — bottom half on mobile when connected; PiP on desktop */}
         <div
-          className={`relative z-[15] overflow-hidden bg-black max-lg:flex-1 max-lg:basis-0 max-lg:min-h-[32dvh] max-lg:rounded-none max-lg:border-t-2 max-lg:border-white/20 lg:absolute lg:bottom-3 lg:right-3 lg:h-[9.1rem] lg:w-[11.7rem] lg:shrink-0 lg:rounded-lg ${
+          className={`relative z-[15] overflow-hidden bg-black max-lg:flex-1 max-lg:basis-0 max-lg:min-h-[22dvh] max-lg:rounded-none max-lg:border-t-2 max-lg:border-white/20 lg:absolute lg:bottom-3 lg:right-3 lg:h-[8.3rem] lg:w-[10.8rem] lg:shrink-0 lg:rounded-lg ${
             isWhale
               ? "border-amber-400/90 shadow-[0_0_12px_rgba(251,191,36,0.6)] lg:border-2"
               : "border-amber-500/50 lg:border-2"
@@ -600,12 +696,81 @@ export default function VideoBridge({
                 </svg>
               )}
             </button>
+            {!ghostMode && (
+              <div className="relative" ref={masksMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setMasksMenuOpen((o) => !o)}
+                  className={`flex h-11 min-w-[4.5rem] items-center justify-center gap-1 rounded-full border border-white/20 bg-black/60 px-3 text-xs font-semibold text-white shadow-[0_0_14px_rgba(34,211,238,0.2)] backdrop-blur-md transition hover:border-cyan-400/50 ${
+                    faceMask !== "none" ? "border-cyan-400/40 text-cyan-200" : ""
+                  }`}
+                  title={maskL.button}
+                  aria-expanded={masksMenuOpen}
+                  aria-haspopup="menu"
+                >
+                  <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span className="max-w-[4rem] truncate">{maskL.button}</span>
+                </button>
+                {masksMenuOpen && (
+                  <div
+                    className="absolute bottom-full left-1/2 z-[80] mb-2 w-[11.5rem] -translate-x-1/2 rounded-xl border border-white/15 bg-black/90 p-1.5 text-left shadow-xl backdrop-blur-md"
+                    role="menu"
+                  >
+                    {(
+                      [
+                        ["none", maskL.none] as const,
+                        ["anonymous", maskL.anonymous] as const,
+                        ["neon_glasses", maskL.neon] as const,
+                        ["beauty", maskL.beauty] as const,
+                      ] as const
+                    ).map(([id, label]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        role="menuitem"
+                        onClick={() => void handleSelectFaceMask(id)}
+                        className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs font-medium transition hover:bg-white/10 ${
+                          faceMask === id ? "bg-cyan-500/20 text-cyan-200" : "text-white/90"
+                        }`}
+                      >
+                        <span>{label}</span>
+                        {id === "neon_glasses" && (
+                          <span className="text-[10px] text-amber-300/90">{NEON_GLASSES_COST}🪙</span>
+                        )}
+                      </button>
+                    ))}
+                    {faceMask !== "none" && !jeeliz.ready && !jeeliz.error && (
+                      <p className="px-2.5 pb-1 text-[10px] text-white/55">{maskL.loading}</p>
+                    )}
+                    {jeeliz.error && (
+                      <p className="px-2.5 pb-1 text-[10px] text-red-300/95">{jeeliz.error}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
         {searching && <SearchingSpinner label={t.searching} />}
         <LiveSubtitles
           locale={locale}
           enabled={liveTranslationEnabled && !searching}
+          listenOnly={
+            neonWhisperEnabled &&
+            agoraEnabled &&
+            !liveTranslationEnabled &&
+            !searching
+          }
+          onTranscriptFinal={
+            neonWhisperEnabled && agoraEnabled ? pushTranscript : undefined
+          }
           onInsufficientBalance={onLiveTranslationInsufficientBalance}
         />
         <ReactionOverlay
@@ -637,11 +802,6 @@ export default function VideoBridge({
         </div>
       )}
       </div>
-      <TopSupportersSidebar
-        locale={locale}
-        refreshKey={topSupportersRefreshKey}
-        className="mt-3 w-full shrink-0 xl:mt-0 xl:w-[12.5rem]"
-      />
     </div>
   );
 }

@@ -25,7 +25,7 @@ export async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Se
   }
 
   const coinsAmountRaw = parseInt(
-    String(meta.coinsAmount ?? meta.coinAmount ?? meta.coinsToBuy ?? "0"),
+    String(meta.coinsAmount ?? meta.coinAmount ?? meta.coinsToBuy ?? meta.coins ?? "0"),
     10
   );
   if (meta.checkout_kind === "billing_pack" && (!Number.isFinite(coinsAmountRaw) || coinsAmountRaw <= 0)) {
@@ -68,7 +68,7 @@ export async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Se
     });
 
     const paidCoins = parseInt(
-      String(meta.coinAmount ?? meta.coinsAmount ?? meta.coinsToBuy ?? "0"),
+      String(meta.coinAmount ?? meta.coinsAmount ?? meta.coinsToBuy ?? meta.coins ?? "0"),
       10
     );
     console.log(
@@ -96,7 +96,7 @@ async function fulfillBillingPack(
   const expectedCents = meta.amount_cents ? parseInt(meta.amount_cents, 10) : NaN;
   const coinsFromMetadata = Math.max(
     0,
-    parseInt(String(meta.coinsAmount ?? meta.coinAmount ?? meta.coinsToBuy ?? "0"), 10) || 0
+    parseInt(String(meta.coinsAmount ?? meta.coinAmount ?? meta.coinsToBuy ?? meta.coins ?? "0"), 10) || 0
   );
 
   if (!pack || pack.coins !== coinsFromMetadata || pack.amountCents !== expectedCents) {
@@ -138,7 +138,7 @@ async function fulfillBillingPack(
         xp: newXp,
         currentLevel: newLevel,
         ...(customerId ? { stripeCustomerId: customerId } : {}),
-        ...(pack.id === "whale" && pack.priceUsd >= 18.99 ? { isVip: true } : {}),
+        ...(pack.id === "whale" ? { isVip: true } : {}),
       },
     });
 
@@ -164,8 +164,8 @@ async function fulfillBillingPack(
 
   await optionalPaymentLog(session, userId, sessionId, coinsToBuy, pack.id);
 
-  // Global Pulse: $18.99 Whale Pack → NEON LEGEND (see LegendPurchaseListener + Socket.io)
-  if (pack.id === "whale" && pack.priceUsd === 18.99) {
+  // Global Pulse: Whale Pack → NEON LEGEND (see LegendPurchaseListener + Socket.io)
+  if (pack.id === "whale") {
     const u = await prisma.user.findUnique({
       where: { id: userId },
       select: { name: true, email: true },

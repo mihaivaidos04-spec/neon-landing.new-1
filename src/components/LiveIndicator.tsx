@@ -22,6 +22,8 @@ export default function LiveIndicator() {
     return () => clearInterval(id);
   }, []);
 
+  const displayOnline = String(new Intl.NumberFormat("en-US").format(online)).replace(/[^\d,.-]/g, "");
+
   return (
     <div className="flex items-center gap-2">
       <span
@@ -37,8 +39,8 @@ export default function LiveIndicator() {
       <span className="text-xs font-semibold uppercase tracking-wider text-white/90">
         LIVE
       </span>
-      <span className="text-xs text-white/70">
-        {online} online
+      <span className="number-plain text-xs text-white/70">
+        {displayOnline} online
       </span>
     </div>
   );

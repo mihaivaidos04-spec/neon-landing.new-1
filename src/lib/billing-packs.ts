@@ -28,8 +28,8 @@ export const BILLING_PACKS: BillingPack[] = [
     baseCoins: 100,
     bonusCoins: 0,
     coins: 100,
-    priceUsd: 0.99,
-    amountCents: 99,
+    priceUsd: 2.99,
+    amountCents: 299,
   },
   {
     id: "popular",
@@ -37,8 +37,8 @@ export const BILLING_PACKS: BillingPack[] = [
     baseCoins: 500,
     bonusCoins: 50,
     coins: 550,
-    priceUsd: 4.99,
-    amountCents: 499,
+    priceUsd: 5.0,
+    amountCents: 500,
     popular: true,
   },
   {
@@ -47,8 +47,8 @@ export const BILLING_PACKS: BillingPack[] = [
     baseCoins: 2000,
     bonusCoins: 300,
     coins: 2300,
-    priceUsd: 18.99,
-    amountCents: 1899,
+    priceUsd: 6.99,
+    amountCents: 699,
   },
 ];
 

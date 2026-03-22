@@ -20,7 +20,6 @@ export type TickerEventType =
   | "gender_filter"
   | "full_pass"
   | "diamond_gift"
-  | "mystery_box"
   | "battery_recharge";
 
 type TickerTemplate = (user: string) => string;
@@ -32,7 +31,6 @@ const TICKER_TEMPLATES: Record<ContentLocale, Record<TickerEventType, TickerTemp
     gender_filter: (u) => `${u} a activat Filtrul de Gen.`,
     full_pass: (u) => `${u} tocmai a cumpărat Full Pass!`,
     diamond_gift: (u) => `${u} a trimis un Diamant!`,
-    mystery_box: (u) => `${u} a deschis Mystery Box!`,
     battery_recharge: (u) => `${u} a reîncărcat bateria.`,
   },
   en: {
@@ -41,7 +39,6 @@ const TICKER_TEMPLATES: Record<ContentLocale, Record<TickerEventType, TickerTemp
     gender_filter: (u) => `${u} activated Gender Filter.`,
     full_pass: (u) => `${u} just purchased Full Pass!`,
     diamond_gift: (u) => `${u} sent a Diamond!`,
-    mystery_box: (u) => `${u} opened Mystery Box!`,
     battery_recharge: (u) => `${u} recharged their battery.`,
   },
   de: {
@@ -50,7 +47,6 @@ const TICKER_TEMPLATES: Record<ContentLocale, Record<TickerEventType, TickerTemp
     gender_filter: (u) => `${u} hat den Geschlechtsfilter aktiviert.`,
     full_pass: (u) => `${u} hat gerade Full Pass gekauft!`,
     diamond_gift: (u) => `${u} hat einen Diamanten gesendet!`,
-    mystery_box: (u) => `${u} hat Mystery Box geöffnet!`,
     battery_recharge: (u) => `${u} hat den Akku aufgeladen.`,
   },
   it: {
@@ -59,7 +55,6 @@ const TICKER_TEMPLATES: Record<ContentLocale, Record<TickerEventType, TickerTemp
     gender_filter: (u) => `${u} ha attivato il Filtro Genere.`,
     full_pass: (u) => `${u} ha appena acquistato Full Pass!`,
     diamond_gift: (u) => `${u} ha inviato un Diamante!`,
-    mystery_box: (u) => `${u} ha aperto Mystery Box!`,
     battery_recharge: (u) => `${u} ha ricaricato la batteria.`,
   },
   es: {
@@ -68,7 +63,6 @@ const TICKER_TEMPLATES: Record<ContentLocale, Record<TickerEventType, TickerTemp
     gender_filter: (u) => `${u} activó el Filtro Género.`,
     full_pass: (u) => `${u} acaba de comprar Full Pass!`,
     diamond_gift: (u) => `${u} envió un Diamante!`,
-    mystery_box: (u) => `${u} abrió Mystery Box!`,
     battery_recharge: (u) => `${u} recargó la batería.`,
   },
   fr: {
@@ -77,7 +71,6 @@ const TICKER_TEMPLATES: Record<ContentLocale, Record<TickerEventType, TickerTemp
     gender_filter: (u) => `${u} a activé le Filtre Genre.`,
     full_pass: (u) => `${u} vient d'acheter Full Pass!`,
     diamond_gift: (u) => `${u} a envoyé un Diamant!`,
-    mystery_box: (u) => `${u} a ouvert Mystery Box!`,
     battery_recharge: (u) => `${u} a rechargé la batterie.`,
   },
   pt: {
@@ -86,7 +79,6 @@ const TICKER_TEMPLATES: Record<ContentLocale, Record<TickerEventType, TickerTemp
     gender_filter: (u) => `${u} ativou o Filtro Género.`,
     full_pass: (u) => `${u} acabou de comprar Full Pass!`,
     diamond_gift: (u) => `${u} enviou um Diamante!`,
-    mystery_box: (u) => `${u} abriu Mystery Box!`,
     battery_recharge: (u) => `${u} recarregou a bateria.`,
   },
   nl: {
@@ -95,7 +87,6 @@ const TICKER_TEMPLATES: Record<ContentLocale, Record<TickerEventType, TickerTemp
     gender_filter: (u) => `${u} heeft Geslachtsfilter geactiveerd.`,
     full_pass: (u) => `${u} heeft net Full Pass gekocht!`,
     diamond_gift: (u) => `${u} heeft een Diamant gestuurd!`,
-    mystery_box: (u) => `${u} heeft Mystery Box geopend!`,
     battery_recharge: (u) => `${u} heeft de batterij opgeladen.`,
   },
   pl: {
@@ -104,7 +95,6 @@ const TICKER_TEMPLATES: Record<ContentLocale, Record<TickerEventType, TickerTemp
     gender_filter: (u) => `${u} aktywował filtr Płci.`,
     full_pass: (u) => `${u} właśnie kupił Full Pass!`,
     diamond_gift: (u) => `${u} wysłał Diament!`,
-    mystery_box: (u) => `${u} otworzył Mystery Box!`,
     battery_recharge: (u) => `${u} naładował baterię.`,
   },
   tr: {
@@ -113,7 +103,6 @@ const TICKER_TEMPLATES: Record<ContentLocale, Record<TickerEventType, TickerTemp
     gender_filter: (u) => `${u} Cinsiyet Filtresini etkinleştirdi.`,
     full_pass: (u) => `${u} az önce Full Pass satın aldı!`,
     diamond_gift: (u) => `${u} Elmas gönderdi!`,
-    mystery_box: (u) => `${u} Mystery Box açtı!`,
     battery_recharge: (u) => `${u} pili şarj etti.`,
   },
 };
@@ -124,7 +113,6 @@ const EVENT_TYPES: TickerEventType[] = [
   "gender_filter",
   "full_pass",
   "diamond_gift",
-  "mystery_box",
   "battery_recharge",
 ];
 

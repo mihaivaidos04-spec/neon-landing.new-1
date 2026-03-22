@@ -7,7 +7,7 @@ export type LegendPurchasePayload = {
 };
 
 /**
- * Global notification: $18.99 Whale Pack (NEON LEGEND) confirmed via Stripe.
+ * Global notification: Whale Pack (NEON LEGEND) confirmed via Stripe.
  * `io.emit` → every connected client shows the top banner; buyer gets extra confetti.
  * Custom Node server only; without `globalThis.__neonSocketIo`, this is a no-op.
  */

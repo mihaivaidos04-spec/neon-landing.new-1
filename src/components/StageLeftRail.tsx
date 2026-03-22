@@ -4,20 +4,15 @@ import { useState, useCallback } from "react";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
 import { DAILY_GOAL } from "./DailyQuestPanel";
+import TopSupportersSidebar from "./TopSupportersSidebar";
+import TheaterToolboxGiftStrip from "./TheaterToolboxGiftStrip";
+import FuturisticGiftIcon from "./FuturisticGiftIcon";
 
-type Props = {
-  locale: ContentLocale;
-  /** Quest progress (0–DAILY_GOAL) */
-  questCurrent: number;
-  questCompleted: boolean;
-  hasRewards: boolean;
-  questPanel: React.ReactNode;
-  rewardsPanel: React.ReactNode | null;
-  /** Gifts & video effects — shown below daily quest when expanded */
-  giftShopPanel?: React.ReactNode | null;
-};
-
-/** Glowing joystick — future Neon Arcade (non-interactive placeholder). */
+/**
+ * Legacy arcade placeholder — defined so a stale dev bundle that still references this name cannot crash.
+ * Safe to remove after `rm -rf .next` if nothing imports it.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for HMR / cache resilience
 function JoystickComingSoonIcon({ className = "" }: { className?: string }) {
   return (
     <svg
@@ -45,6 +40,20 @@ function JoystickComingSoonIcon({ className = "" }: { className?: string }) {
   );
 }
 
+type Props = {
+  locale: ContentLocale;
+  /** Quest progress (0–DAILY_GOAL) */
+  questCurrent: number;
+  questCompleted: boolean;
+  hasRewards: boolean;
+  questPanel: React.ReactNode;
+  rewardsPanel: React.ReactNode | null;
+  /** Gifts & video effects — shown below daily quest when expanded */
+  giftShopPanel?: React.ReactNode | null;
+  /** Refetch top supporters after sending a theater gift */
+  topSupportersRefreshKey?: number;
+};
+
 /**
  * Slim collapsible stage rail: icon-only when collapsed, expands for Daily Quest + rewards.
  */
@@ -56,6 +65,7 @@ export default function StageLeftRail({
   questPanel,
   rewardsPanel,
   giftShopPanel,
+  topSupportersRefreshKey = 0,
 }: Props) {
   const t = getContentT(locale);
   const [expanded, setExpanded] = useState(false);
@@ -71,7 +81,7 @@ export default function StageLeftRail({
         <button
           type="button"
           onClick={toggle}
-          className="flex min-h-11 min-w-11 shrink-0 flex-col items-center justify-center rounded-lg border border-violet-500/35 bg-violet-950/40 text-[10px] font-bold text-violet-200"
+          className="flex min-h-11 min-w-[2.75rem] shrink-0 flex-col items-center justify-center rounded-lg border border-violet-500/35 bg-violet-950/40 text-[10px] font-bold text-violet-200"
           title={t.dailyQuestTitle}
           aria-expanded={expanded}
           aria-label={t.dailyQuestTitle}
@@ -94,25 +104,20 @@ export default function StageLeftRail({
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="flex min-h-11 min-w-11 shrink-0 flex-col items-center justify-center rounded-lg border-2 border-fuchsia-500/50 bg-gradient-to-br from-fuchsia-950/70 to-violet-950/50 text-lg shadow-[0_0_16px_rgba(236,72,153,0.35)]"
+            className="flex min-h-11 min-w-[2.75rem] shrink-0 flex-col items-center justify-center rounded-lg border-2 border-fuchsia-500/50 bg-gradient-to-br from-fuchsia-950/70 to-violet-950/50 text-lg shadow-[0_0_16px_rgba(236,72,153,0.35)]"
             title="Gifts & effects"
             aria-label="Gift shop"
           >
-            🎁
+            <FuturisticGiftIcon size={20} />
           </button>
         )}
-        <div
-          className="flex min-h-11 shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-cyan-500/35 bg-black/40 px-2 py-1"
-          title={t.gamesComingSoon}
-          aria-label={`Games — ${t.gamesComingSoon}`}
-          role="status"
-        >
-          <span className="arcade-joystick-glow flex h-9 w-9 items-center justify-center rounded-md border border-cyan-400/45 bg-gradient-to-br from-cyan-950/80 to-fuchsia-950/50">
-            <JoystickComingSoonIcon className="h-[1.35rem] w-[1.35rem] text-cyan-200 drop-shadow-[0_0_8px_rgba(34,211,238,0.9)]" />
-          </span>
-          <span className="max-w-[4.5rem] text-center text-[8px] font-bold uppercase leading-tight tracking-wide text-cyan-200/90">
-            {t.gamesComingSoon}
-          </span>
+        <div className="min-w-[8.5rem] max-w-[42vw] shrink-0">
+          <TopSupportersSidebar
+            locale={locale}
+            variant="toolbox"
+            refreshKey={topSupportersRefreshKey}
+            className="!shadow-none"
+          />
         </div>
         {hasRewards && rewardsPanel && (
           <button
@@ -128,6 +133,10 @@ export default function StageLeftRail({
         <span className="text-[10px] text-white/40">{t.dailyQuestTitle}</span>
       </div>
 
+      <div className="mt-2 w-full xl:hidden">
+        <TheaterToolboxGiftStrip locale={locale} />
+      </div>
+
       {expanded && (
         <div className="space-y-3 rounded-xl border border-violet-500/20 bg-[#07070c]/95 p-3 shadow-xl backdrop-blur-xl xl:hidden">
           {questPanel}
@@ -139,13 +148,13 @@ export default function StageLeftRail({
       {/* Desktop: vertical slim rail */}
       <aside
         className="relative z-20 hidden shrink-0 flex-col xl:flex"
-        style={{ width: expanded ? "15rem" : "3.5rem" }}
+        style={{ width: expanded ? "15rem" : "6.75rem" }}
       >
-        <div className="flex h-full min-h-[120px] flex-col gap-2 rounded-xl border border-white/10 bg-black/45 py-2 pl-1 pr-1 backdrop-blur-md">
+        <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto overflow-x-hidden rounded-xl border border-white/10 bg-black/45 py-2 pl-1 pr-1 backdrop-blur-md">
           <button
             type="button"
             onClick={toggle}
-            className="mx-auto flex min-h-11 w-11 flex-col items-center justify-center rounded-lg border border-violet-500/35 bg-violet-950/35 text-violet-200 transition-colors hover:bg-violet-900/40"
+            className="mx-auto flex min-h-11 w-full max-w-[5.85rem] flex-col items-center justify-center rounded-lg border border-violet-500/35 bg-violet-950/35 text-violet-200 transition-colors hover:bg-violet-900/40"
             title={expanded ? "Collapse" : t.dailyQuestTitle}
             aria-expanded={expanded}
             aria-label={t.dailyQuestTitle}
@@ -171,33 +180,29 @@ export default function StageLeftRail({
             <button
               type="button"
               onClick={() => setExpanded(true)}
-              className="mx-auto flex h-11 w-11 items-center justify-center rounded-lg border-2 border-fuchsia-500/45 bg-gradient-to-br from-fuchsia-950/60 to-violet-950/40 text-base shadow-[0_0_14px_rgba(236,72,153,0.3)] transition-colors hover:border-fuchsia-400/60"
+              className="mx-auto flex h-11 w-full max-w-[5.85rem] items-center justify-center rounded-lg border-2 border-fuchsia-500/45 bg-gradient-to-br from-fuchsia-950/60 to-violet-950/40 text-base shadow-[0_0_14px_rgba(236,72,153,0.3)] transition-colors hover:border-fuchsia-400/60"
               title="Gifts & effects"
               aria-label="Gift shop"
             >
-              🎁
+              <FuturisticGiftIcon size={20} />
             </button>
           )}
-          <div
-            className="mx-auto flex w-11 flex-col items-center gap-1 py-0.5"
-            title={t.gamesComingSoon}
-            aria-label={`Games — ${t.gamesComingSoon}`}
-            role="status"
-          >
-            <span className="arcade-joystick-glow flex h-11 w-11 items-center justify-center rounded-lg border border-cyan-400/50 bg-gradient-to-br from-cyan-950/75 to-violet-950/45">
-              <JoystickComingSoonIcon className="h-5 w-5 text-cyan-200 drop-shadow-[0_0_10px_rgba(34,211,238,0.85)]" />
-            </span>
-            {expanded && (
-              <span className="text-center text-[7px] font-bold uppercase leading-tight tracking-wider text-cyan-200/85">
-                {t.gamesComingSoon}
-              </span>
-            )}
+          <div className="mx-auto w-full max-w-[6.15rem]">
+            <TopSupportersSidebar
+              locale={locale}
+              variant="toolbox"
+              refreshKey={topSupportersRefreshKey}
+              className="!shadow-none"
+            />
+          </div>
+          <div className="mx-auto w-full max-w-[6.15rem]">
+            <TheaterToolboxGiftStrip locale={locale} />
           </div>
           {hasRewards && rewardsPanel && (
             <button
               type="button"
               onClick={() => setExpanded(true)}
-              className="mx-auto flex h-11 w-11 items-center justify-center rounded-lg border border-amber-500/25 bg-amber-950/25 text-base transition-colors hover:bg-amber-900/35"
+              className="mx-auto flex h-11 w-full max-w-[5.85rem] items-center justify-center rounded-lg border border-amber-500/25 bg-amber-950/25 text-base transition-colors hover:bg-amber-900/35"
               title="Rewards"
               aria-label="Daily rewards"
             >

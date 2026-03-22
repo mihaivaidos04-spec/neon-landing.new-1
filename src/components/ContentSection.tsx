@@ -23,7 +23,9 @@ import VideoBridge from "./VideoBridge";
 import MobileVideoSwipeStart from "./MobileVideoSwipeStart";
 import VideoAdOverlay from "./VideoAdOverlay";
 import GenderFilterCTA from "./GenderFilterCTA";
+import UpgradeNeonVipModal from "./UpgradeNeonVipModal";
 import MatchFilterBar, { type MatchFilter } from "./MatchFilterBar";
+import MatchTargetCountryBar from "./MatchTargetCountryBar";
 import QueuePreview from "./QueuePreview";
 import PrivateInviteModal from "./PrivateInviteModal";
 import { useSocketContext } from "../contexts/SocketContext";
@@ -85,6 +87,7 @@ type Props = {
   /** Guest: sensitive interactions open login instead of acting */
   isGuest?: boolean;
   onRequireAuth?: () => void;
+  onGuestPaywallTrigger?: (source: "chat" | "gift" | "next_limit") => void;
   /** Shown on gift overlay (e.g. session name) */
   viewerDisplayName?: string | null;
   /** Push battery % / loading to parent header (toolbar next to coins) */
@@ -131,6 +134,7 @@ export default function ContentSection({
   viewerCountryCode = null,
   isGuest = false,
   onRequireAuth,
+  onGuestPaywallTrigger,
   viewerDisplayName = null,
   onBatteryDisplayChange,
 }: Props) {
@@ -187,11 +191,16 @@ export default function ContentSection({
   const [partnerVideoCountdown, setPartnerVideoCountdown] = useState<number | null>(null);
   const [battery, setBattery] = useState(100);
   const [isVipSubscriber, setIsVipSubscriber] = useState(false);
+  /** User.isVip (Whale Pack) — gender preference matching */
+  const [isNeonVipUser, setIsNeonVipUser] = useState(false);
+  const [showNeonVipGenderModal, setShowNeonVipGenderModal] = useState(false);
   const [batteryDepletedModalVisible, setBatteryDepletedModalVisible] = useState(false);
   const [batteryChargeLoading, setBatteryChargeLoading] = useState(false);
   const [batteryLoading, setBatteryLoading] = useState(!!userId);
   const [zeroDrainUntil, setZeroDrainUntil] = useState<number>(0);
   const [matchFilter, setMatchFilter] = useState<MatchFilter>("everyone");
+  /** ISO2 target for peer's User.country (IP/profile); null = no filter */
+  const [matchTargetCountry, setMatchTargetCountry] = useState<string | null>(null);
   const [partnerIsPremium, setPartnerIsPremium] = useState(false);
   const [showBioCard, setShowBioCard] = useState(true);
   const [ghostModeChargedAt, setGhostModeChargedAt] = useState<number>(0);
@@ -200,6 +209,7 @@ export default function ContentSection({
   const [commonInterestFlash, setCommonInterestFlash] = useState<string | null>(null);
   const [showPartnerSkeleton, setShowPartnerSkeleton] = useState(false);
   const [partnerCountryCode, setPartnerCountryCode] = useState<string | null>(null);
+  const [quickChatDraft, setQuickChatDraft] = useState("");
   const prevPartnerIdRef = useRef<string | null>(null);
   const [shadowBanned, setShadowBanned] = useState(false);
   const [moderationViolationVisible, setModerationViolationVisible] = useState(false);
@@ -220,6 +230,7 @@ export default function ContentSection({
   coinsRef.current = coins;
   const hasNoAdsPass = false; // TODO: verifica din backend – Gender Pass, Full Pass sau Full Month (orice pass fără reclame)
   const countdownSentRef = useRef<Set<number>>(new Set());
+  const guestNextClicksRef = useRef(0);
   const nextSoundRef = useRef<HTMLAudioElement | null>(null);
   const undoBackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const connectionStartedAtRef = useRef<number>(0);
@@ -306,7 +317,13 @@ export default function ContentSection({
   }, [t.needCoinsMessage, onOpenShop]);
 
   const handleStartOrNext = useCallback(async () => {
-    if (requireAuth()) return;
+    if (isGuest) {
+      guestNextClicksRef.current += 1;
+      if (guestNextClicksRef.current > 3) {
+        onGuestPaywallTrigger?.("next_limit");
+        return;
+      }
+    }
     feedbackClick();
     playWhooshSound();
     nextSoundRef.current?.play().catch(() => {});
@@ -374,12 +391,25 @@ export default function ContentSection({
         const res = await fetch("/api/match/join", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filter: matchFilter }),
+          body: JSON.stringify({
+            filter: matchFilter,
+            ...(matchTargetCountry ? { targetCountryCode: matchTargetCountry } : {}),
+          }),
         });
         const data = await res.json().catch(() => ({}));
         if (res.status === 403) {
           setSearching(false);
+          if (data?.code === "NEON_VIP_REQUIRED") {
+            setShowNeonVipGenderModal(true);
+            return;
+          }
           toast.error(data?.error ?? "Your account is temporarily restricted. Please try again later.");
+          return;
+        }
+        if (res.status === 400 && data?.code === "INSUFFICIENT_COINS_COUNTRY_MATCH") {
+          setSearching(false);
+          toast.error(data?.error ?? t.insufficientCoinsCountryMatch);
+          onOpenShop();
           return;
         }
         if (res.status === 429) {
@@ -391,6 +421,7 @@ export default function ContentSection({
           setSearching(false);
           setConnected(true);
           if (data.partnerId) setPartnerId(data.partnerId);
+          void onWalletRefetch?.();
           return;
         }
         const start = Date.now();
@@ -406,6 +437,7 @@ export default function ContentSection({
             setSearching(false);
             setConnected(true);
             if (d.partnerId) setPartnerId(d.partnerId);
+            void onWalletRefetch?.();
             return;
           }
           setTimeout(poll, MATCH_POLL_MS);
@@ -420,7 +452,26 @@ export default function ContentSection({
       setConnected(true);
     }, 2000 + Math.random() * 2000);
     return () => clearTimeout(timeout);
-  }, [connected, nextCount, dailyQuestCompleted, dailyQuestCount, setCoins, onAddCoins, ensureFilterAccess, premiumSecondsLeft, onMissionIncrement, useRealMatching, partnerId, matchFilter, requireAuth]);
+  }, [
+    connected,
+    nextCount,
+    dailyQuestCompleted,
+    dailyQuestCount,
+    setCoins,
+    onAddCoins,
+    ensureFilterAccess,
+    premiumSecondsLeft,
+    onMissionIncrement,
+    useRealMatching,
+    partnerId,
+    matchFilter,
+    matchTargetCountry,
+    isGuest,
+    onGuestPaywallTrigger,
+    onWalletRefetch,
+    onOpenShop,
+    t.insufficientCoinsCountryMatch,
+  ]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -553,7 +604,6 @@ export default function ContentSection({
 
   const handleSendReaction = useCallback(
     async (reactionId: ReactionId) => {
-      if (requireAuth()) return;
       const cost = getReactionCost(reactionId);
       if (coinsRef.current < cost && !onSpend) {
         toast(t.needCoinsMessage, { icon: "💎" });
@@ -578,7 +628,7 @@ export default function ContentSection({
         feedbackSuccess();
       }
     },
-    [partnerId, userId, onSpend, setCoins, onWalletRefetch, t.needCoinsMessage, onOpenShop, requireAuth]
+    [partnerId, userId, onSpend, setCoins, onWalletRefetch, t.needCoinsMessage, onOpenShop]
   );
 
   const handleReactionOverlayComplete = useCallback(() => {
@@ -710,6 +760,16 @@ export default function ContentSection({
     }
   }, [useRealMatching]);
 
+  const handleQuickChatSend = useCallback(() => {
+    if (!quickChatDraft.trim()) return;
+    if (isGuest) {
+      onGuestPaywallTrigger?.("chat");
+      return;
+    }
+    toast("Use the Pulse chat panel to send messages.");
+    setQuickChatDraft("");
+  }, [quickChatDraft, isGuest, onGuestPaywallTrigger]);
+
   const handleModerationViolation = useCallback(() => {
     setModerationViolationVisible(true);
     setConnected(false);
@@ -723,7 +783,10 @@ export default function ContentSection({
 
   const handleSendGift = useCallback(
     async (giftId: TheaterGiftId) => {
-      if (requireAuth()) return;
+      if (isGuest) {
+        onGuestPaywallTrigger?.("gift");
+        return;
+      }
       const cost = getTheaterGiftCost(giftId);
       if (!canAffordTheaterGift(coins, giftId)) {
         toast(t.needCoinsMessage, { icon: "💎" });
@@ -784,7 +847,8 @@ export default function ContentSection({
       onOpenShop,
       onSpend,
       locale,
-      requireAuth,
+      isGuest,
+      onGuestPaywallTrigger,
       viewerDisplayName,
       partnerId,
       socket,
@@ -893,12 +957,14 @@ export default function ContentSection({
         .then((data) => {
           if (data?.battery != null) setBattery(Math.max(0, Math.min(100, data.battery)));
           if (data?.isVip != null) setIsVipSubscriber(data.isVip);
+          if (data?.isNeonVip != null) setIsNeonVipUser(!!data.isNeonVip);
         })
         .catch(() => {})
         .finally(() => setBatteryLoading(false));
     } else {
       setBattery(getStoredGuestBattery());
       setIsVipSubscriber(false);
+      setIsNeonVipUser(false);
       setBatteryLoading(false);
     }
   }, [userId]);
@@ -906,27 +972,6 @@ export default function ContentSection({
   useEffect(() => {
     onBatteryDisplayChange?.({ percent: battery, loading: batteryLoading });
   }, [battery, batteryLoading, onBatteryDisplayChange]);
-
-  // Mystery Box: battery bonus & zero-drain from custom events
-  useEffect(() => {
-    const onBattery = (e: Event) => {
-      const { amount } = (e as CustomEvent<{ amount: number }>).detail ?? {};
-      if (amount) {
-        setBattery((prev) => Math.min(100, prev + amount));
-        if (userId) fetch("/api/battery").then((r) => r.json()).then((d) => d?.battery != null && setBattery(d.battery)).catch(() => {});
-      }
-    };
-    const onZeroDrain = (e: Event) => {
-      const { minutes } = (e as CustomEvent<{ minutes: number }>).detail ?? {};
-      if (minutes) setZeroDrainUntil(Date.now() + minutes * 60 * 1000);
-    };
-    window.addEventListener("mystery-box-battery", onBattery);
-    window.addEventListener("mystery-box-zero-drain", onZeroDrain);
-    return () => {
-      window.removeEventListener("mystery-box-battery", onBattery);
-      window.removeEventListener("mystery-box-zero-drain", onZeroDrain);
-    };
-  }, [userId]);
 
   // Daily reward: claim on mount (first login of day = +5% battery)
   const hasClaimedDailyRef = useRef(false);
@@ -1111,13 +1156,26 @@ export default function ContentSection({
       const res = await fetch("/api/match/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filter: matchFilter }),
+        body: JSON.stringify({
+          filter: matchFilter,
+          ...(matchTargetCountry ? { targetCountryCode: matchTargetCountry } : {}),
+        }),
       });
       if (cancelled) return;
       const data = await res.json().catch(() => ({}));
       if (res.status === 403) {
         setSearching(false);
+        if (data?.code === "NEON_VIP_REQUIRED") {
+          setShowNeonVipGenderModal(true);
+          return;
+        }
         toast.error(data?.error ?? "Your account is temporarily restricted. Please try again later.");
+        return;
+      }
+      if (res.status === 400 && data?.code === "INSUFFICIENT_COINS_COUNTRY_MATCH") {
+        setSearching(false);
+        toast.error(data?.error ?? t.insufficientCoinsCountryMatch);
+        onOpenShop();
         return;
       }
       if (res.status === 429) {
@@ -1129,6 +1187,7 @@ export default function ContentSection({
         setSearching(false);
         setConnected(true);
         if (data.partnerId) setPartnerId(data.partnerId);
+        void onWalletRefetch?.();
         return;
       }
       const start = Date.now();
@@ -1146,6 +1205,7 @@ export default function ContentSection({
           setSearching(false);
           setConnected(true);
           if (d.partnerId) setPartnerId(d.partnerId);
+          void onWalletRefetch?.();
           return;
         }
         setTimeout(poll, MATCH_POLL_MS);
@@ -1157,7 +1217,7 @@ export default function ContentSection({
       cancelled = true;
       if (useRealMatching) fetch("/api/match/leave", { method: "POST" }).catch(() => {});
     };
-  }, [useRealMatching, matchFilter]);
+  }, [useRealMatching, matchFilter, matchTargetCountry, onWalletRefetch, onOpenShop, t.insufficientCoinsCountryMatch]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1280,16 +1340,17 @@ export default function ContentSection({
     coins,
     onSendReaction: handleSendReaction,
     onSendGift: handleSendGift,
-    onBeforeInteraction: requireAuth,
+    onBeforeInteraction: isGuest ? undefined : requireAuth,
   };
 
   return (
-    <section className="mt-0 w-full max-w-full overflow-x-hidden xl:overflow-x-visible">
-      <div className="relative flex w-full max-w-full flex-col gap-3 xl:flex-row xl:items-start xl:gap-3 xl:overflow-visible">
+    <section className="mt-0 flex h-full min-h-0 w-full max-w-full flex-col overflow-hidden">
+      <div className="relative flex h-full min-h-0 w-full max-w-full flex-col gap-2 xl:flex-row xl:items-stretch xl:gap-3">
         {/* Slim left rail — icon row below video on mobile, vertical rail on xl */}
-        <div className="order-2 w-full shrink-0 xl:order-1 xl:w-auto xl:overflow-visible">
+        <div className="order-2 hidden w-full shrink-0 xl:order-1 xl:block xl:w-auto xl:overflow-visible">
           <StageLeftRail
             locale={locale}
+            topSupportersRefreshKey={topSupportersRefreshKey}
             questCurrent={questCurrent}
             questCompleted={questCompleted}
             hasRewards={!!userId}
@@ -1321,14 +1382,14 @@ export default function ContentSection({
         </div>
 
         {/* Theater column: video-first on mobile, ~65–70vw stage on xl */}
-        <div className="order-1 flex min-w-0 w-full flex-1 flex-col gap-3 xl:order-2 xl:min-w-0">
-          <div className="theater-stage theater-ambient-glow relative z-[1] mt-0 w-full min-w-0 rounded-2xl xl:mx-0 xl:mt-0">
+        <div className="order-1 flex h-full min-h-0 min-w-0 w-full flex-1 flex-col gap-2 xl:order-2 xl:min-w-0">
+          <div className="theater-stage theater-ambient-glow relative z-[1] mt-0 min-h-0 w-full min-w-0 flex-1 rounded-2xl xl:mx-0 xl:mt-0">
               <MobileVideoSwipeStart
                 locale={locale}
                 disabled={battery === 0}
                 onCommit={() => void handleStartOrNext()}
               >
-              <div className="theater-video-shell relative overflow-hidden rounded-2xl">
+              <div className="theater-video-shell relative h-full overflow-hidden rounded-2xl">
               <VideoBridge
                 locale={locale}
                 searching={searching}
@@ -1377,21 +1438,36 @@ export default function ContentSection({
                 theaterGiftsEnabled={connected && !searching && !!partnerId}
                 theaterGiftCoins={coins}
                 onTheaterGift={handleSendGift}
-                topSupportersRefreshKey={topSupportersRefreshKey}
                 agoraChannelName={agoraChannelName}
                 agoraUserIdKey={userId}
                 partnerVideoGift={partnerVideoGift}
                 onPartnerVideoGiftComplete={handlePartnerVideoGiftComplete}
+                onSpend={onSpend}
+                neonWhisperEnabled={Boolean(
+                  userId && connected && !searching && useRealMatching
+                )}
               />
               </div>
               </MobileVideoSwipeStart>
               {searching && useRealMatching && (
-                <div className="absolute left-3 top-3 z-20">
+                <div className="absolute left-3 top-3 z-20 flex max-w-[min(calc(100vw-1.5rem),17rem)] flex-col gap-2 rounded-xl border border-white/10 bg-black/55 p-2 shadow-lg backdrop-blur-md">
                   <MatchFilterBar
                     filter={matchFilter}
                     onFilterChange={(f) => {
                       if (requireAuth()) return;
                       setMatchFilter(f);
+                    }}
+                    isNeonVip={isNeonVipUser}
+                    onOpenUpgradeVip={() => setShowNeonVipGenderModal(true)}
+                    vipHint={t.matchFilterGenderVipHint}
+                    disabled={false}
+                  />
+                  <MatchTargetCountryBar
+                    locale={locale}
+                    value={matchTargetCountry}
+                    onChange={(code) => {
+                      if (requireAuth()) return;
+                      setMatchTargetCountry(code);
                     }}
                     coins={coins}
                     onOpenShop={onOpenShop}
@@ -1423,16 +1499,22 @@ export default function ContentSection({
             onSelectGenderFilter={() => onOpenGenderFilter?.() ?? onOpenShop()}
             locale={locale}
           />
-          <p className="mt-2 text-center text-xs text-white/70 sm:text-sm">
+          <UpgradeNeonVipModal
+            visible={showNeonVipGenderModal}
+            onClose={() => setShowNeonVipGenderModal(false)}
+            locale={locale}
+          />
+          <p className="single-screen-compact mt-1 text-center text-xs text-white/65 sm:text-sm">
             {t.subPlayerText}
           </p>
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="action-bar sticky bottom-0 z-20 mt-1 rounded-2xl border border-white/10 bg-black/55 px-2 py-2 backdrop-blur-xl">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={handleStartOrNext}
                 disabled={battery === 0}
-                className={`relative min-h-[52px] min-w-[120px] rounded-full px-8 py-3.5 text-base font-semibold text-white transition-all active:scale-[0.98] sm:min-h-[56px] sm:min-w-[140px] sm:px-10 sm:py-4 ${
+                className={`relative min-h-[46px] min-w-[110px] rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-all active:scale-[0.98] sm:min-h-[50px] sm:min-w-[132px] sm:px-8 sm:py-3 ${
                   battery === 0
                     ? "cursor-not-allowed bg-zinc-600 opacity-60"
                     : "btn-gradient-neon hover:opacity-95"
@@ -1453,7 +1535,7 @@ export default function ContentSection({
                 <button
                   type="button"
                   onClick={handleStop}
-                  className="min-h-[52px] min-w-[100px] rounded-full border border-white/25 px-6 py-3.5 font-semibold text-white/80 transition-all hover:bg-white/10 active:scale-[0.98] sm:min-h-[56px] sm:min-w-[120px] sm:px-8 sm:py-4"
+                  className="min-h-[46px] min-w-[92px] rounded-full border border-white/25 px-5 py-2.5 text-sm font-semibold text-white/80 transition-all hover:bg-white/10 active:scale-[0.98] sm:min-h-[50px] sm:min-w-[110px] sm:px-6 sm:py-3"
                 >
                   {t.stopBtn}
                 </button>
@@ -1470,6 +1552,13 @@ export default function ContentSection({
               )}
             </div>
             <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onOpenShop}
+                className="min-h-[44px] min-w-[78px] rounded-full border border-fuchsia-400/40 bg-fuchsia-950/30 px-3 py-2 text-xs font-semibold text-fuchsia-100 transition-all hover:bg-fuchsia-900/35 sm:min-h-[48px]"
+              >
+                Gifts
+              </button>
               {connected && partnerId && useRealMatching && (
                 <button
                   type="button"
@@ -1494,6 +1583,43 @@ export default function ContentSection({
                 {t.blockBtn}
               </button>
             </div>
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              type="text"
+              value={quickChatDraft}
+              onChange={(e) => setQuickChatDraft(e.target.value)}
+              onFocus={() => {
+                if (isGuest) onGuestPaywallTrigger?.("chat");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleQuickChatSend();
+                }
+              }}
+              placeholder={isGuest ? "Login to start chatting..." : "Open Pulse chat to type..."}
+              className="min-h-[42px] flex-1 rounded-xl border border-white/15 bg-black/45 px-3 text-sm text-white/85 placeholder:text-white/40 focus:border-violet-400/60 focus:outline-none"
+            />
+            {!isGuest && (
+              <button
+                type="button"
+                onClick={handleQuickChatSend}
+                className="inline-flex min-h-[42px] items-center gap-1.5 rounded-xl border border-violet-400/50 bg-violet-900/40 px-4 text-xs font-semibold text-violet-100"
+              >
+                <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path
+                    d="M21.5 3.8 10.2 15.1M21.5 3.8l-7.2 16.4-4.1-7.7-7.7-4.1L21.5 3.8Z"
+                    stroke="currentColor"
+                    strokeWidth="1.9"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span>Send</span>
+              </button>
+            )}
+          </div>
           </div>
         </div>
         {commonInterestFlash && (

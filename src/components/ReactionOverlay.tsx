@@ -25,7 +25,7 @@ function Particle({ emoji, delay }: { emoji: string; delay: number }) {
 
   return (
     <motion.div
-      className="pointer-events-none absolute text-4xl sm:text-5xl"
+      className="emoji-ios pointer-events-none absolute text-4xl sm:text-5xl"
       initial={{ opacity: 0, scale: 0, x: "50%", y: "50%" }}
       animate={{
         opacity: [0, 1, 0],
@@ -75,7 +75,7 @@ export default function ReactionOverlay({ reaction, onComplete }: Props) {
             <Particle key={i} emoji={emoji} delay={i * 0.03} />
           ))}
           <motion.div
-            className="absolute text-6xl sm:text-8xl"
+            className="emoji-ios absolute text-6xl sm:text-8xl"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1.5, opacity: 0.9 }}
             transition={{ type: "spring", stiffness: 200, damping: 15 }}

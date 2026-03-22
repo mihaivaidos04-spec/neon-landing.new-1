@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { sanitizeForDisplay } from "../lib/text-moderation";
 import type { ContentLocale } from "../lib/content-i18n";
+import { getContentT } from "../lib/content-i18n";
 import UserNameWithFlag from "./UserNameWithFlag";
 
 type Props = {
@@ -14,6 +15,10 @@ type Props = {
   totalGiftsReceived?: number;
   visible: boolean;
   onDismiss?: () => void;
+  /** When set with handlers, show Report / Block on the profile card */
+  partnerUserId?: string | null;
+  onReport?: () => void;
+  onBlock?: () => void;
 };
 
 const DEFAULT_INTERESTS = ["Music", "Travel", "Photography", "Coffee", "Movies"];
@@ -26,8 +31,12 @@ export default function BioCard({
   totalGiftsReceived = 0,
   visible,
   onDismiss,
+  partnerUserId = null,
+  onReport,
+  onBlock,
 }: Props) {
   const [dismissed, setDismissed] = useState(false);
+  const t = getContentT(locale);
 
   useEffect(() => {
     if (visible && !dismissed) {
@@ -67,6 +76,30 @@ export default function BioCard({
             <p className="mt-1.5 text-[10px] text-amber-400/90">
               {totalGiftsReceived} gifts received
             </p>
+            {partnerUserId && onReport && onBlock && (
+              <div className="mt-2 flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onReport();
+                  }}
+                  className="rounded-md border border-red-500/35 bg-red-950/40 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-red-200/90 hover:bg-red-900/50"
+                >
+                  {t.reportBtn}
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onBlock();
+                  }}
+                  className="rounded-md border border-white/20 bg-white/5 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-white/75 hover:bg-white/10"
+                >
+                  {t.blockBtn}
+                </button>
+              </div>
+            )}
           </div>
           <button
             type="button"

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { Syne, Geist_Mono, Cormorant_Garamond, Great_Vibes } from "next/font/google";
+import { Syne, Orbitron, Inter, Geist_Mono, Cormorant_Garamond, Great_Vibes } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { getPublicSiteOrigin } from "@/src/lib/public-site-url";
 import AuthProvider from "@/src/components/AuthProvider";
@@ -17,6 +17,20 @@ const syne = Syne({
   variable: "--font-syne",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+});
+
+const orbitron = Orbitron({
+  variable: "--font-orbitron",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+  display: "swap",
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
   display: "swap",
 });
 
@@ -100,7 +114,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
       </head>
       <body
-        className={`${syne.variable} ${geistMono.variable} ${cormorant.variable} ${neonLiveMark.variable} bg-[#050508] text-[#faf5eb] antialiased`}
+        className={`${syne.variable} ${orbitron.variable} ${inter.variable} ${geistMono.variable} ${cormorant.variable} ${neonLiveMark.variable} bg-[#050508] text-[#faf5eb] antialiased`}
       >
         {/* Violet + neon green ambient glow */}
         <div

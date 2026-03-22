@@ -4,8 +4,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useSession, signOut } from "next-auth/react";
-import { isVerificationValid } from "../lib/verification-storage";
-import { readAgeVerifiedFromDocument, setAgeVerifiedCookie } from "../lib/age-verification-cookie";
+import {
+  readAgeVerifiedFromDocument,
+  readAgeVerifiedFromLocalStorage,
+  setAgeVerifiedCookie,
+  setAgeVerifiedLocalStorage,
+} from "../lib/age-verification-cookie";
+import { getOrCreateGuestAlias } from "../lib/guest-identity";
 import { getBrowserLocale, getContentT } from "../lib/content-i18n";
 import { getRankFromCoinsSpent } from "../lib/ranks";
 import RankBadge from "../components/RankBadge";
@@ -22,6 +27,7 @@ import {
 } from "../lib/guest-storage";
 import { getStoredAttribution, clearStoredAttribution } from "../lib/utm-storage";
 import { feedbackSuccess, playSuccessSound } from "../lib/feedback";
+import { formatNumber } from "../lib/format-intl";
 import { useWallet } from "../hooks/useWallet";
 import { useRewards } from "../hooks/useRewards";
 import { useSessionSpending } from "../hooks/useSessionSpending";
@@ -31,29 +37,25 @@ import { useEffectiveViewerCountryCode } from "../hooks/useEffectiveViewerCountr
 import MobileBottomNav from "@/src/components/mobile/MobileBottomNav";
 import LandingMobileSheet from "@/src/components/mobile/LandingMobileSheet";
 
-const UserAvatar = dynamic(() => import("../components/UserAvatar"), { ssr: false });
-const GhostModeToggle = dynamic(() => import("../components/GhostModeToggle"), { ssr: false });
+const UserAvatar = dynamic(() => import("@/src/components/UserAvatar"), { ssr: false });
+const GhostModeToggle = dynamic(() => import("@/src/components/GhostModeToggle"), { ssr: false });
 const FirstPurchaseBonusTimer = dynamic(
-  () => import("../components/FirstPurchaseBonusTimer"),
+  () => import("@/src/components/FirstPurchaseBonusTimer"),
   { ssr: false }
 );
-const LiveUsersInfinite = dynamic(() => import("../components/LiveUsersInfinite"), { ssr: false });
-const MicroAd = dynamic(() => import("../components/MicroAd"), { ssr: false });
-const LiveIndicator = dynamic(() => import("../components/LiveIndicator"), { ssr: false });
-const HeaderInviteShare = dynamic(() => import("../components/HeaderInviteShare"), { ssr: false });
-const FaqSection = dynamic(() => import("../components/FaqSection"), { ssr: true });
-const ComingSoonLevel50 = dynamic(() => import("../components/ComingSoonLevel50"), { ssr: true });
+const LiveIndicator = dynamic(() => import("@/src/components/LiveIndicator"), { ssr: false });
+const HeaderInviteShare = dynamic(() => import("@/src/components/HeaderInviteShare"), { ssr: false });
 const SocialProofPopup = dynamic(
-  () => import("../components/SocialProofPopup"),
+  () => import("@/src/components/SocialProofPopup"),
   { ssr: false }
 );
 const WelcomeToast = dynamic(
-  () => import("../components/WelcomeToast"),
+  () => import("@/src/components/WelcomeToast"),
   { ssr: false }
 );
-const BatteryIndicator = dynamic(() => import("../components/BatteryIndicator"), { ssr: false });
+const BatteryIndicator = dynamic(() => import("@/src/components/BatteryIndicator"), { ssr: false });
 const ContentSection = dynamic(
-  () => import("../components/ContentSection"),
+  () => import("@/src/components/ContentSection"),
   {
     ssr: true,
     loading: () => (
@@ -63,33 +65,20 @@ const ContentSection = dynamic(
     ),
   }
 );
-const LoginWall = dynamic(() => import("../components/LoginWall"), { ssr: false });
-const VerificationOverlay = dynamic(
-  () => import("../components/VerificationOverlay"),
-  { ssr: false }
-);
 const AgeVerificationModal = dynamic(
-  () => import("../components/AgeVerificationModal"),
+  () => import("@/src/components/AgeVerificationModal"),
   { ssr: false }
 );
 const BonusMultiplierPopup = dynamic(
-  () => import("../components/BonusMultiplierPopup"),
+  () => import("@/src/components/BonusMultiplierPopup"),
   { ssr: false }
 );
 const GlobalNotificationToast = dynamic(
-  () => import("../components/GlobalNotificationToast"),
-  { ssr: false }
-);
-const LiveTicker = dynamic(
-  () => import("../components/LiveTicker"),
-  { ssr: false }
-);
-const MysteryBoxModal = dynamic(
-  () => import("../components/MysteryBoxModal"),
+  () => import("@/src/components/GlobalNotificationToast"),
   { ssr: false }
 );
 const DecryptRewardModal = dynamic(
-  () => import("../components/DecryptRewardModal"),
+  () => import("@/src/components/DecryptRewardModal"),
   { ssr: false }
 );
 const ShopModal = dynamic(() => import("@/src/components/ShopModal"), { ssr: false });
@@ -98,14 +87,13 @@ const NeonParticleField = dynamic(() => import("@/src/components/NeonParticleFie
   ssr: false,
   loading: () => null,
 });
-const TimeOfDayGreeting = dynamic(() => import("@/src/components/TimeOfDayGreeting"), { ssr: false });
 const NeonLiveLogo = dynamic(() => import("@/src/components/NeonLiveLogo"), { ssr: false });
-const WelcomeBackMoment = dynamic(() => import("@/src/components/WelcomeBackMoment"), { ssr: false });
 const UserNameWithFlag = dynamic(() => import("@/src/components/UserNameWithFlag"), { ssr: false });
 const GlobalPulseChat = dynamic(() => import("@/src/components/GlobalPulseChat"), { ssr: false });
 const GlobalPulseGuestPanel = dynamic(() => import("@/src/components/GlobalPulseGuestPanel"), {
   ssr: false,
 });
+const LoginWall = dynamic(() => import("@/src/components/LoginWall"), { ssr: false });
 
 /** Custom fields from NextAuth JWT/callbacks */
 type AppSession = NonNullable<ReturnType<typeof useSession>["data"]> & {
@@ -128,19 +116,18 @@ export default function NeonLanding() {
   const wallet = useWallet(status === "authenticated");
   const rewards = useRewards(status === "authenticated");
   const mission = useMission(status === "authenticated");
-  const [verified, setVerified] = useState(false);
-  /** 18+ cookie gate — must pass before VerificationOverlay */
+  /** 18+ gate only; guest enters directly after confirmation */
   const [ageGateResolved, setAgeGateResolved] = useState(false);
   const [ageGateOk, setAgeGateOk] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [coins, setCoins] = useState(INITIAL_COINS);
-  const [loginWallOpen, setLoginWallOpen] = useState(false);
+  const [guestAlias, setGuestAlias] = useState("Guest");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showWelcomeToast, setShowWelcomeToast] = useState(false);
   const [showBonusMultiplierPopup, setShowBonusMultiplierPopup] = useState(false);
-  const [showMysteryBox, setShowMysteryBox] = useState(false);
   const [showDecryptReward, setShowDecryptReward] = useState(false);
   const [showShopModal, setShowShopModal] = useState(false);
+  const [showLoginWall, setShowLoginWall] = useState(false);
   const [hasEverPurchased, setHasEverPurchased] = useState(true);
   const [loginAt, setLoginAt] = useState(0);
   const router = useRouter();
@@ -156,10 +143,22 @@ export default function NeonLanding() {
 
   useEffect(() => {
     setMounted(true);
-    if (isVerificationValid()) setVerified(true);
-    setAgeGateOk(readAgeVerifiedFromDocument());
+    setAgeGateOk(readAgeVerifiedFromDocument() || readAgeVerifiedFromLocalStorage());
     setAgeGateResolved(true);
   }, []);
+
+  useEffect(() => {
+    if (!mounted || status !== "unauthenticated") return;
+    setGuestAlias(getOrCreateGuestAlias());
+  }, [mounted, status]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    document.body.classList.add("single-screen-home");
+    return () => {
+      document.body.classList.remove("single-screen-home");
+    };
+  }, [mounted]);
 
   /** One-shot: infer country from IP / edge headers when User.country is still empty */
   useEffect(() => {
@@ -174,6 +173,7 @@ export default function NeonLanding() {
 
   const handleAgeVerified = useCallback(() => {
     setAgeVerifiedCookie();
+    setAgeVerifiedLocalStorage();
     setAgeGateOk(true);
   }, []);
 
@@ -277,17 +277,23 @@ export default function NeonLanding() {
       .catch(() => {});
   }, [status, mounted]);
 
-  const handleVerified = () => setVerified(true);
+  const signInWithDiscord = useCallback(() => {
+    setShowLoginWall(true);
+  }, []);
+
+  const openGuestLoginPrompt = useCallback(() => {
+    setShowLoginWall(true);
+  }, []);
 
   const handleOpenShop = () => setShowShopModal(true);
-  /** Guests: coins control opens login (save progress / real wallet). Logged-in: shop modal. */
+  /** Guests: open unified login chooser. Logged-in: shop modal. */
   const handleCoinsPress = useCallback(() => {
     if (status === "unauthenticated") {
-      setLoginWallOpen(true);
+      signInWithDiscord();
       return;
     }
     setShowShopModal(true);
-  }, [status]);
+  }, [status, signInWithDiscord]);
 
   const handleOpenCheckout = () => router.push("/checkout");
   const handleRechargeWithPayment = () => router.push("/checkout?bundle=starter");
@@ -351,9 +357,11 @@ export default function NeonLanding() {
   const locale = mounted ? getBrowserLocale() : "en";
   const t = getContentT(locale);
   const viewerCountryCode = useEffectiveViewerCountryCode(status, session?.countryCode);
+  const showAgeGate = mounted && ageGateResolved && !ageGateOk;
+  const canShowLanding = mounted && !showAgeGate;
 
   return (
-    <div className="min-h-screen max-w-[100vw] overflow-x-clip bg-[#000000] text-white antialiased">
+    <div className="h-[100dvh] max-h-[100dvh] max-w-[100vw] overflow-hidden bg-[#000000] text-white antialiased">
       <NeonParticleField />
       <div
         className="pointer-events-none fixed inset-0 z-0"
@@ -363,7 +371,7 @@ export default function NeonLanding() {
         }}
       />
       {/* Header: Titlu + Conectare / Profile */}
-      {verified && mounted && (
+      {canShowLanding && (
         <header className="relative z-20 max-w-[100vw] px-3 py-2 sm:px-6 sm:py-3">
           <div className="mx-auto flex max-w-6xl min-w-0 items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2 sm:gap-3">
@@ -399,15 +407,6 @@ export default function NeonLanding() {
                   )}
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => setShowMysteryBox(true)}
-                className="flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-violet-500/50 bg-violet-950/60 px-3 py-2 text-sm font-medium text-violet-300 transition-all hover:bg-violet-900/50 hover:border-violet-500/70"
-                title={t.mysteryBoxTitle}
-              >
-                <span>📦</span>
-                <span className="hidden sm:inline">{t.mysteryBoxTitle}</span>
-              </button>
               {status === "authenticated" && (
                 <GhostModeToggle
                   locale={locale}
@@ -446,7 +445,7 @@ export default function NeonLanding() {
                     {walletLoading ? (
                       <WalletSkeleton />
                     ) : (
-                      <span>{displayCoins}</span>
+                      <span className="premium-number-glow number-plain">{formatNumber(displayCoins)}</span>
                     )}
                     <span className="text-white/90">{t.coinsLabel}</span>
                   </button>
@@ -491,8 +490,8 @@ export default function NeonLanding() {
               ) : (
                 <button
                   type="button"
-                  onClick={() => setLoginWallOpen(true)}
-                  className="min-h-12 rounded-full px-6 py-3 text-sm font-bold text-white ring-2 ring-violet-300/95 ring-offset-2 ring-offset-black transition-all hover:scale-[1.02] hover:shadow-[0_0_36px_rgba(196,181,253,0.55)] active:scale-[0.98]"
+                  onClick={signInWithDiscord}
+                  className="min-h-12 rounded-full px-6 py-3 text-sm font-bold text-white ring-2 ring-violet-300/95 ring-offset-2 ring-offset-black transition-all hover:scale-[1.02] hover:shadow-[0_0_36px_rgba(196,181,253,0.55)] active:scale-[0.98] animate-[pulse-soft_2.8s_ease-in-out_infinite]"
                   style={{
                     background: "linear-gradient(135deg, #7c3aed 0%, #a78bfa 55%, #c084fc 100%)",
                     boxShadow: "0 0 28px rgba(167, 139, 250, 0.45)",
@@ -518,12 +517,12 @@ export default function NeonLanding() {
                     type="button"
                     onClick={handleOpenShop}
                     className="flex min-h-11 min-w-11 flex-col items-center justify-center rounded-xl border border-violet-500/40 bg-violet-950/70 px-2 py-1 text-xs font-bold leading-tight text-white shadow-[0_0_16px_rgba(139,92,246,0.25)]"
-                    aria-label={`${t.coinsLabel}: ${displayCoins}`}
+                    aria-label={`${t.coinsLabel}: ${displayCoins.toLocaleString("en-US")}`}
                   >
                     {walletLoading ? (
                       <span className="h-4 w-8 animate-pulse rounded bg-white/20" />
                     ) : (
-                      <span className="tabular-nums">{displayCoins}</span>
+                      <span className="premium-number-glow number-plain tabular-nums">{formatNumber(displayCoins)}</span>
                     )}
                     <span className="text-[9px] font-medium text-violet-200/80">{t.coinsLabel}</span>
                   </button>
@@ -549,8 +548,8 @@ export default function NeonLanding() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setLoginWallOpen(true)}
-                    className="min-h-11 min-w-0 shrink rounded-full px-4 py-2.5 text-xs font-bold text-white ring-2 ring-violet-300/90 ring-offset-2 ring-offset-black shadow-[0_0_24px_rgba(167,139,250,0.5)] transition active:scale-[0.98] sm:min-h-12 sm:px-5 sm:py-3 sm:text-sm"
+                    onClick={signInWithDiscord}
+                    className="min-h-11 min-w-0 shrink rounded-full px-4 py-2.5 text-xs font-bold text-white ring-2 ring-violet-300/90 ring-offset-2 ring-offset-black shadow-[0_0_24px_rgba(167,139,250,0.5)] transition active:scale-[0.98] sm:min-h-12 sm:px-5 sm:py-3 sm:text-sm animate-[pulse-soft_2.8s_ease-in-out_infinite]"
                     style={{ background: "linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)" }}
                   >
                     {t.connectAccount}
@@ -561,38 +560,17 @@ export default function NeonLanding() {
           </div>
         </header>
       )}
-      {verified && mounted && (
-        <>
-          <div className="max-w-[100vw] overflow-x-hidden">
-            <LiveTicker locale={locale} />
-          </div>
-          <TimeOfDayGreeting />
-          <WelcomeBackMoment />
-        </>
-      )}
-      {/* Guest banner: link account to save progress */}
-      {verified && mounted && status === "unauthenticated" && coins > 0 && (
-        <div className="relative z-20 mx-auto mt-2 flex max-w-6xl items-center justify-center gap-2 rounded-xl border border-violet-500/20 bg-violet-950/30 px-4 py-2.5 text-center text-sm text-[#faf5eb]/90 sm:mx-6">
-          <span>{t.linkAccountToSaveProgress}</span>
-          <button
-            type="button"
-            onClick={() => setLoginWallOpen(true)}
-            className="font-semibold text-violet-300 underline hover:text-violet-200"
-          >
-            {t.connectAccount}
-          </button>
-        </div>
-      )}
-      <main className="relative z-10 mx-auto w-full max-w-[100vw] overflow-x-clip px-2 pt-4 pb-28 sm:px-4 sm:pt-6 sm:pb-14 md:pb-20 lg:pb-14 xl:px-5">
-        {verified && (
+      <main className="relative z-10 mx-auto flex min-h-0 w-full max-w-[100vw] flex-1 overflow-hidden px-2 pb-2 pt-2 sm:px-3 sm:pt-3 xl:px-4">
+        {canShowLanding && (
           <>
             {/* Theater row: wide video stage + narrow Global Pulse (mobile: stacked, scrollable) */}
-            <div className="mt-2 flex w-full flex-col gap-4 sm:mt-4 xl:flex-row xl:items-start xl:justify-start xl:gap-3 2xl:gap-4">
+            <div className="flex h-full min-h-0 w-full flex-col gap-2 xl:flex-row xl:items-stretch xl:justify-start xl:gap-3 2xl:gap-4">
               <div
                 id="neon-stage"
-                className="min-w-0 w-full flex-1 scroll-mt-4"
+                className="min-h-0 min-w-0 w-full flex-1"
               >
-                <ContentSection
+                {canShowLanding && (
+                  <ContentSection
                   locale={locale}
                   coins={displayCoins}
                   setCoins={setCoins}
@@ -614,41 +592,37 @@ export default function NeonLanding() {
                   sessionSpent={sessionSpent}
                   viewerCountryCode={viewerCountryCode}
                   isGuest={status === "unauthenticated"}
-                  onRequireAuth={() => setLoginWallOpen(true)}
+                  onRequireAuth={openGuestLoginPrompt}
+                  onGuestPaywallTrigger={() => openGuestLoginPrompt()}
                   viewerDisplayName={
                     status === "authenticated"
                       ? (session?.user?.name ?? session?.user?.email ?? "You")
-                      : "Guest"
+                      : guestAlias
                   }
                   onBatteryDisplayChange={handleBatteryDisplayChange}
                 />
+                )}
               </div>
               <div
                 id="global-pulse"
-                className="global-pulse-column relative z-[12] w-full min-w-0 shrink-0 scroll-mt-4 xl:sticky xl:top-[4.5rem] xl:w-52 xl:max-w-[13.5rem] xl:self-start"
+                className="global-pulse-column relative z-[12] hidden min-h-0 w-full min-w-0 shrink-0 xl:block xl:h-full xl:w-52 xl:max-w-[13.5rem]"
               >
-                {status === "authenticated" ? (
+                {canShowLanding && status === "authenticated" ? (
                   <GlobalPulseChat locale={locale} />
-                ) : (
-                  <GlobalPulseGuestPanel locale={locale} onOpenLogin={() => setLoginWallOpen(true)} />
-                )}
+                ) : canShowLanding ? (
+                  <GlobalPulseGuestPanel
+                    locale={locale}
+                    onOpenLogin={openGuestLoginPrompt}
+                    onAttemptChat={openGuestLoginPrompt}
+                  />
+                ) : null}
               </div>
             </div>
-            <div className="mx-auto mt-12 flex max-w-6xl justify-center px-4">
-              <div className="w-full max-w-sm">
-                <LiveUsersInfinite />
-              </div>
-            </div>
-            <div className="mx-auto mt-8 flex max-w-6xl justify-center px-4">
-              <MicroAd format="horizontal" />
-            </div>
-            <FaqSection locale={locale} />
-            <ComingSoonLevel50 locale={locale} />
           </>
         )}
       </main>
-      {verified && <SocialProofPopup locale={locale} />}
-      {verified && mounted && (
+      {canShowLanding && <SocialProofPopup locale={locale} />}
+      {canShowLanding && (
         <GlobalNotificationToast locale={locale} />
       )}
       {status === "authenticated" && loginAt > 0 && (
@@ -673,29 +647,11 @@ export default function NeonLanding() {
           locale={locale}
         />
       )}
-      {verified && (
-        <LoginWall
-          open={loginWallOpen}
-          onClose={() => setLoginWallOpen(false)}
-          locale={locale}
-        />
-      )}
       {status === "authenticated" && (
         <DecryptRewardModal
           visible={showDecryptReward}
           onClose={() => setShowDecryptReward(false)}
           onDecrypted={() => rewards.refetch()}
-        />
-      )}
-      {verified && mounted && (
-        <MysteryBoxModal
-          visible={showMysteryBox}
-          onClose={() => setShowMysteryBox(false)}
-          coins={displayCoins}
-          onSpend={status === "authenticated" ? handleSpend : undefined}
-          setCoins={status === "authenticated" ? undefined : setCoins}
-          onOpenShop={handleOpenShop}
-          onWalletRefetch={status === "authenticated" ? wallet.refetch : undefined}
         />
       )}
       {showShopModal && (
@@ -711,20 +667,18 @@ export default function NeonLanding() {
           locale="en"
         />
       )}
-      {mounted && ageGateResolved && !ageGateOk && (
+      {showAgeGate && (
         <AgeVerificationModal onAccept={handleAgeVerified} />
       )}
-      {mounted && ageGateResolved && ageGateOk && !verified && (
-        <VerificationOverlay locale={locale} onVerified={handleVerified} />
-      )}
+      <LoginWall open={showLoginWall} onClose={() => setShowLoginWall(false)} locale={locale} />
 
-      {verified && mounted && (
+      {canShowLanding && (
         <>
           <MobileBottomNav
-            visible
+            visible={false}
             authenticated={status === "authenticated"}
             onOpenShop={handleCoinsPress}
-            onOpenLogin={() => setLoginWallOpen(true)}
+            onOpenLogin={signInWithDiscord}
             onOpenMenu={() => setMobileMenuOpen(true)}
           />
           <LandingMobileSheet open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)}>
@@ -762,16 +716,6 @@ export default function NeonLanding() {
                     {rewards.pendingCount > 1 ? ` (${rewards.pendingCount})` : ""}
                   </button>
                 )}
-                <button
-                  type="button"
-                  className="min-h-12 w-full rounded-xl border border-violet-500/40 bg-violet-950/40 py-3 text-left text-sm font-medium text-violet-200"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    setShowMysteryBox(true);
-                  }}
-                >
-                  📦 {t.mysteryBoxTitle}
-                </button>
                 <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
                   <GhostModeToggle
                     locale={locale}
@@ -791,7 +735,10 @@ export default function NeonLanding() {
                     handleOpenShop();
                   }}
                 >
-                  {displayCoins} {t.coinsLabel} · Open shop
+                  <span className="premium-number-glow number-plain">
+                    {formatNumber(displayCoins)} {t.coinsLabel}
+                  </span>{" "}
+                  · Open shop
                 </button>
                 <button
                   type="button"
@@ -831,7 +778,7 @@ export default function NeonLanding() {
                   className="min-h-12 w-full rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 py-3 text-sm font-semibold text-white"
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    setLoginWallOpen(true);
+                    signInWithDiscord();
                   }}
                 >
                   {t.connectAccount}

@@ -3,44 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { countryCodeToFlagEmoji } from "../lib/country-flags";
-
-const COMMON_COUNTRIES: { code: string; name: string }[] = [
-  { code: "SA", name: "Saudi Arabia" },
-  { code: "AE", name: "UAE" },
-  { code: "QA", name: "Qatar" },
-  { code: "KW", name: "Kuwait" },
-  { code: "BH", name: "Bahrain" },
-  { code: "EG", name: "Egypt" },
-  { code: "JO", name: "Jordan" },
-  { code: "PK", name: "Pakistan" },
-  { code: "IN", name: "India" },
-  { code: "ID", name: "Indonesia" },
-  { code: "MY", name: "Malaysia" },
-  { code: "SG", name: "Singapore" },
-  { code: "TH", name: "Thailand" },
-  { code: "VN", name: "Vietnam" },
-  { code: "PH", name: "Philippines" },
-  { code: "JP", name: "Japan" },
-  { code: "KR", name: "South Korea" },
-  { code: "CN", name: "China" },
-  { code: "RO", name: "Romania" },
-  { code: "GB", name: "UK" },
-  { code: "DE", name: "Germany" },
-  { code: "FR", name: "France" },
-  { code: "IT", name: "Italy" },
-  { code: "ES", name: "Spain" },
-  { code: "US", name: "USA" },
-  { code: "BR", name: "Brazil" },
-  { code: "MX", name: "Mexico" },
-  { code: "TR", name: "Turkey" },
-  { code: "NL", name: "Netherlands" },
-  { code: "PL", name: "Poland" },
-  { code: "PT", name: "Portugal" },
-  { code: "AU", name: "Australia" },
-  { code: "CA", name: "Canada" },
-  { code: "RU", name: "Russia" },
-  { code: "UA", name: "Ukraine" },
-];
+import { COMMON_COUNTRIES } from "../lib/common-countries";
 
 type Props = {
   userId: string | null;

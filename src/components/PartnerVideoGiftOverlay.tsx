@@ -9,6 +9,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import Lottie from "lottie-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { TheaterOverlayGiftType } from "@/src/lib/theater-gifts";
+import GiftAssetIcon from "./GiftAssetIcon";
 
 const DURATION_MS = 4500;
 
@@ -67,7 +68,7 @@ export default function PartnerVideoGiftOverlay({ gift, onComplete }: Props) {
       cancelled = true;
       clearT();
     };
-  }, [gift?.giftType, gift?.receivedAt, onComplete, clearT]);
+  }, [gift, onComplete, clearT]);
 
   const handleLottieComplete = useCallback(() => {
     clearT();
@@ -76,7 +77,7 @@ export default function PartnerVideoGiftOverlay({ gift, onComplete }: Props) {
 
   if (!gift) return null;
 
-  const emoji = gift.giftType === "fire" ? "🔥" : "🚀";
+  const iconId = gift.giftType === "fire" ? "fire" : "rocket";
   const overlayText =
     gift.senderLabel && gift.giftLabel
       ? `${gift.senderLabel} — ${gift.giftLabel}!`
@@ -97,7 +98,7 @@ export default function PartnerVideoGiftOverlay({ gift, onComplete }: Props) {
       aria-hidden
     >
       <div
-        className={`absolute inset-0 bg-gradient-to-t ${tintClass} mix-blend-screen`}
+        className={`absolute inset-0 bg-gradient-to-t ${tintClass} mix-blend-screen opacity-80`}
       />
       <AnimatePresence mode="wait">
         {data ? (
@@ -137,11 +138,8 @@ export default function PartnerVideoGiftOverlay({ gift, onComplete }: Props) {
               repeatType: "reverse",
             }}
           >
-            <span
-              className="text-[clamp(4rem,18vw,8rem)] drop-shadow-[0_0_32px_rgba(236,72,153,0.9)]"
-              aria-hidden
-            >
-              {emoji}
+            <span className="gift-emoji-future-wrap gift-emoji-future-wrap--lg" aria-hidden>
+              <GiftAssetIcon id={iconId} size={112} />
             </span>
           </motion.div>
         )}
@@ -151,10 +149,10 @@ export default function PartnerVideoGiftOverlay({ gift, onComplete }: Props) {
         animate={{ opacity: 1, y: 0 }}
         className="absolute bottom-4 left-1/2 z-[26] max-w-[92%] -translate-x-1/2 rounded-2xl border border-fuchsia-400/50 bg-black/80 px-4 py-2 text-center shadow-[0_0_40px_rgba(251,146,60,0.35)] backdrop-blur-md"
       >
-        <span className="text-lg drop-shadow-[0_0_12px_rgba(251,191,36,0.8)]">
-          {emoji}
+        <span className="gift-emoji-future-wrap shrink-0">
+          <GiftAssetIcon id={iconId} size={20} />
         </span>
-        <p className="mt-1 text-sm font-bold tracking-wide text-fuchsia-50">
+        <p className="premium-number-glow mt-1 text-sm font-bold tracking-wide text-fuchsia-50">
           {overlayText}
         </p>
       </motion.div>

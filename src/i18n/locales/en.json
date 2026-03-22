@@ -88,6 +88,7 @@
     "noGiftsYet": "No gifts received yet — your trophy room lights up as people send love.",
     "buyCoins": "Buy Coins",
     "buyCoinsLoading": "Opening checkout…",
+    "paymentSuccessToast": "Payment successful! Your coins should appear in a few seconds.",
     "aboutMe": "About Me",
     "aboutPlaceholder": "Your catchphrase (max 150 characters)",
     "charsLeft": "{n} left",

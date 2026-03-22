@@ -10,13 +10,14 @@ type Props = {
 
 export default function Footer({ locale = "ro" }: Props) {
   const t = getContentT(locale);
+  const currentYear = new Date().getFullYear();
   /**
    * Fixed padding on all routes so SSR === first client paint (no usePathname).
    * pb-28 clears the fixed mobile bottom nav on `/`; lg:pb-12 tightens on desktop.
    */
   return (
     <footer className="mt-20 max-w-[100vw] overflow-x-clip border-t border-white/10 px-4 pt-12 pb-28 lg:pb-12">
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-center gap-6">
+      <div className="mx-auto flex max-w-6xl flex-col items-center justify-center gap-5 sm:gap-6">
         <div className="flex flex-col items-center gap-1">
           <NeonLiveLogo variant="footer" className="justify-center opacity-95" as="div" />
           <span className="text-[10px] font-medium uppercase tracking-[0.35em] text-violet-400/70">
@@ -32,7 +33,7 @@ export default function Footer({ locale = "ro" }: Props) {
         </p>
         <nav
           aria-label="Legal and policies"
-          className="flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-violet-500/25 bg-violet-950/30 px-4 py-3 sm:gap-3"
+          className="flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-violet-500/25 bg-violet-950/30 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3"
         >
           <Link
             href="/terms"
@@ -53,8 +54,8 @@ export default function Footer({ locale = "ro" }: Props) {
             Refunds
           </Link>
         </nav>
-        <p className="text-center text-xs text-white/40">
-          © 2026 NEON Interactive. Toate drepturile rezervate.
+        <p className="number-plain text-center text-xs text-white/40">
+          {"\u00A9"} {currentYear} NEON Interactive. Toate drepturile rezervate.
         </p>
       </div>
     </footer>

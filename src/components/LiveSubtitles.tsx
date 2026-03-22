@@ -32,19 +32,27 @@ const LOCALE_TO_TRANSLATE: Record<ContentLocale, string> = {
 
 type Props = {
   locale: ContentLocale;
+  /** Show subtitles UI + listen to mic */
   enabled: boolean;
+  /** Listen for speech without showing subtitle bar (e.g. Neon Whisper transcript buffer) */
+  listenOnly?: boolean;
   onInsufficientBalance?: () => void;
+  /** Final speech segments from the local mic (raw, before translation). */
+  onTranscriptFinal?: (text: string) => void;
 };
 
 export default function LiveSubtitles({
   locale,
   enabled,
+  listenOnly = false,
   onInsufficientBalance,
+  onTranscriptFinal,
 }: Props) {
   const [subtitle, setSubtitle] = useState("");
-  const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<{ stop: () => void } | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onTranscriptFinalRef = useRef(onTranscriptFinal);
+  onTranscriptFinalRef.current = onTranscriptFinal;
 
   const translate = useCallback(
     async (text: string, sourceLang: string): Promise<string> => {
@@ -65,13 +73,16 @@ export default function LiveSubtitles({
     [locale]
   );
 
+  const shouldListen = enabled || listenOnly;
+
   useEffect(() => {
-    if (!enabled || typeof window === "undefined") return;
+    if (!shouldListen || typeof window === "undefined") return;
 
     const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionInstance }).SpeechRecognition ||
+      (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionInstance }).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setSubtitle("(Speech recognition not supported)");
+      if (enabled) setSubtitle("(Speech recognition not supported)");
       return;
     }
 
@@ -81,7 +92,7 @@ export default function LiveSubtitles({
     recognition.lang = LOCALE_TO_LANG[locale];
     recognitionRef.current = recognition;
 
-    recognition.onresult = (event: { resultIndex: number; results: { length: number; [i: number]: { isFinal: boolean; 0: { transcript: string } } } }) => {
+    recognition.onresult = (event: SpeechRecognitionEventLike) => {
       let final = "";
       let interim = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -96,35 +107,43 @@ export default function LiveSubtitles({
       const text = (final || interim).trim();
       if (text) {
         if (final) {
-          translate(text, recognition.lang).then((t) => setSubtitle(t));
-        } else {
+          const rawFinal = final.trim();
+          if (rawFinal) onTranscriptFinalRef.current?.(rawFinal);
+          if (enabled) {
+            translate(text, recognition.lang).then((t) => setSubtitle(t));
+          }
+        } else if (enabled) {
           setSubtitle(text);
         }
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(() => setSubtitle(""), 4000);
+        if (enabled) {
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+          timeoutRef.current = setTimeout(() => setSubtitle(""), 4000);
+        }
       }
     };
 
     recognition.onerror = (e: { error?: string }) => {
       setIsListening(false);
       if (e.error === "not-allowed") {
-        setSubtitle(getContentT(locale).liveTranslationMicDenied);
+        if (enabled) {
+          setSubtitle(getContentT(locale).liveTranslationMicDenied);
+        }
       }
     };
 
     recognition.start();
-    setIsListening(true);
 
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       try {
         recognition.stop();
-      } catch {}
+      } catch {
+        /* ignore */
+      }
       recognitionRef.current = null;
-      setIsListening(false);
       setSubtitle("");
     };
-  }, [enabled, locale, translate]);
+  }, [enabled, listenOnly, shouldListen, locale, translate]);
 
   if (!enabled || !subtitle) return null;
 
@@ -144,3 +163,21 @@ export default function LiveSubtitles({
     </div>
   );
 }
+
+type SpeechRecognitionEventLike = {
+  resultIndex: number;
+  results: {
+    length: number;
+    [i: number]: { isFinal: boolean; 0: { transcript: string } };
+  };
+};
+
+type SpeechRecognitionInstance = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start: () => void;
+  stop: () => void;
+  onresult: ((e: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((e: { error?: string }) => void) | null;
+};

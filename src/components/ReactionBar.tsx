@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion";
 import type { ContentLocale } from "../lib/content-i18n";
-import { getContentT } from "../lib/content-i18n";
 import { REACTIONS } from "../lib/reactions";
 import type { ReactionId } from "../lib/reactions";
 import { getReactionCost } from "../lib/coins";
@@ -15,13 +14,11 @@ type Props = {
 };
 
 export default function ReactionBar({
-  locale,
+  locale: _locale,
   coins,
   onSendReaction,
   disabled = false,
 }: Props) {
-  const t = getContentT(locale);
-
   return (
     <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
       {REACTIONS.map((r) => {
@@ -37,8 +34,8 @@ export default function ReactionBar({
             whileHover={canAfford && !disabled ? { scale: 1.08 } : {}}
             whileTap={canAfford && !disabled ? { scale: 0.95 } : {}}
           >
-            <span className="text-xl">{r.emoji}</span>
-            <span className="text-[9px] font-medium">{cost}</span>
+            <span className="emoji-ios text-xl">{r.emoji}</span>
+            <span className="premium-number-glow number-plain text-[9px] font-medium">{cost.toLocaleString("en-US")}</span>
           </motion.button>
         );
       })}

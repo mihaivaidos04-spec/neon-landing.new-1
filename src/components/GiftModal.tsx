@@ -4,11 +4,13 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 import { sendGift, type GiftType } from "@/src/app/actions/gift";
+import { formatNumber } from "../lib/format-intl";
+import GiftAssetIcon from "./GiftAssetIcon";
 
-const GIFTS: { id: GiftType; label: string; cost: number; icon: string }[] = [
-  { id: "heart", label: "Heart", cost: 5, icon: "❤️" },
-  { id: "fire", label: "Fire", cost: 50, icon: "🔥" },
-  { id: "rocket", label: "Rocket", cost: 500, icon: "🚀" },
+const GIFTS: { id: GiftType; label: string; cost: number }[] = [
+  { id: "heart", label: "Heart", cost: 5 },
+  { id: "fire", label: "Fire", cost: 50 },
+  { id: "rocket", label: "Rocket", cost: 500 },
 ];
 
 type Props = {
@@ -95,7 +97,12 @@ export default function GiftModal({
             ×
           </button>
         </div>
-        <p className="mb-4 text-sm text-white/60">Your balance: {coins} coins</p>
+        <p className="mb-4 text-sm text-white/60">
+          Your balance:{" "}
+          <span className="premium-number-glow number-plain">
+            {formatNumber(coins)} coins
+          </span>
+        </p>
         <div className="flex flex-col gap-3">
           {GIFTS.map((g) => {
             const canAfford = coins >= g.cost;
@@ -108,10 +115,12 @@ export default function GiftModal({
                 onClick={() => handleSend(g.id)}
                 className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left transition-all hover:border-violet-500/40 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <span className="flex items-center gap-3">
-                  <span className="text-2xl">{g.icon}</span>
+                <span className="flex min-w-0 flex-1 items-center gap-3">
+                  <span className="gift-emoji-future-wrap shrink-0">
+                    <GiftAssetIcon id={g.id} size={28} />
+                  </span>
                   <span className="font-medium text-white">{g.label}</span>
-                  <span className="text-sm text-white/60">{g.cost} coins</span>
+                  <span className="gift-price-text text-sm text-white/50">{g.cost.toLocaleString("en-US")} coins</span>
                 </span>
                 {loading === g.id ? (
                   <span className="text-xs text-violet-400">Sending...</span>

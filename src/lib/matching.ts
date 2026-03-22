@@ -12,9 +12,12 @@
 
 import { getSupabase } from "./supabase";
 import { hasActivePass } from "./user-profiles";
-import { getWalletBalance } from "./wallet";
+import { getWalletBalance, spendCoinsAndRecordTotal, addCoins } from "./wallet";
 import { getBatteryLevel } from "./battery";
 import { prisma } from "./prisma";
+import { pairingAllowed } from "./user-blocks";
+import { TARGET_COUNTRY_MATCH_COST } from "./coins";
+import { isPlausibleCountryCode } from "./valid-country-code";
 
 const PRIORITY_COIN_THRESHOLD = 500;
 const FAST_MATCH_MS = 2000;
@@ -55,6 +58,85 @@ export async function computePriorityScore(userId: string): Promise<PriorityInfo
   return { priority, isSlowQueue };
 }
 
+/** profileGender must equal filter when filter is "female" | "male" */
+function profileMatchesGenderFilter(
+  profileGender: string | null | undefined,
+  filter: string | undefined
+): boolean {
+  if (filter !== "female" && filter !== "male") return true;
+  return profileGender === filter;
+}
+
+async function fetchUserCountriesMap(userIds: string[]): Promise<Map<string, string | null>> {
+  const map = new Map<string, string | null>();
+  if (userIds.length === 0) return map;
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, country: true },
+  });
+  for (const u of users) {
+    map.set(u.id, u.country ? String(u.country).toUpperCase().slice(0, 2) : null);
+  }
+  return map;
+}
+
+function partnerCountryMatchesTarget(
+  partnerCountry: string | null | undefined,
+  target?: string
+): boolean {
+  if (!target) return true;
+  const p = (partnerCountry ?? "").toUpperCase().slice(0, 2);
+  return p === target.toUpperCase();
+}
+
+/**
+ * Charge the payer (seeker with target, or waiting user who had target stored) then pair; refund if pair fails.
+ */
+async function createPairWithOptionalCountryCharge(
+  joiningUserId: string,
+  partnerId: string,
+  payerUserId: string | null
+): Promise<MatchResult | null> {
+  if (payerUserId) {
+    const spend = await spendCoinsAndRecordTotal(
+      payerUserId,
+      TARGET_COUNTRY_MATCH_COST,
+      "match_target_country"
+    );
+    if (!spend.success) return null;
+    const pairResult = await createPair(joiningUserId, partnerId);
+    if (!pairResult) {
+      const ext = `refund_country_${payerUserId}_${Date.now()}`;
+      await addCoins(payerUserId, TARGET_COUNTRY_MATCH_COST, {
+        externalId: ext,
+        reason: "refund_match_pair_failed",
+      });
+      return null;
+    }
+    return {
+      status: "matched",
+      partnerId,
+      newBalance: spend.newBalance,
+    };
+  }
+  return createPair(joiningUserId, partnerId);
+}
+
+async function fetchProfileGendersMap(
+  userIds: string[]
+): Promise<Map<string, string | null>> {
+  const map = new Map<string, string | null>();
+  if (userIds.length === 0) return map;
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, profileGender: true },
+  });
+  for (const u of users) {
+    map.set(u.id, u.profileGender ?? null);
+  }
+  return map;
+}
+
 /** Higher = more “active / popular” for VIP match preference */
 async function fetchPartnerPopularityScores(
   userIds: string[]
@@ -78,16 +160,28 @@ async function fetchPartnerPopularityScores(
 
 export type MatchResult =
   | { status: "waiting" }
-  | { status: "matched"; partnerId: string }
+  | { status: "matched"; partnerId: string; newBalance?: number }
   | { status: "error"; error: string };
+
+export type JoinMatchPoolOptions = {
+  /**
+   * ISO 3166-1 alpha-2. Only pair with peers whose `User.country` matches (set from IP / geo headers or profile sync).
+   * Charges {@link TARGET_COUNTRY_MATCH_COST} coins when a match is formed (joining user pays).
+   */
+  targetCountryCode?: string | null;
+};
 
 /**
  * Join the matching pool and run matching logic.
  * Priority users go to front; Fast Match can steal from non-priority pairs.
  * Stores priority_score and is_slow_queue for refined matching.
- * @param filter - "everyone" | "female" | "male" | "verified" (client must check 5 coins for gender filters)
+ * @param filter - "everyone" | "female" | "male" | "verified" (API requires Neon VIP / User.isVip for female|male)
  */
-export async function joinMatchPool(userId: string, filter?: string | null): Promise<MatchResult> {
+export async function joinMatchPool(
+  userId: string,
+  filter?: string | null,
+  options?: JoinMatchPoolOptions
+): Promise<MatchResult> {
   const supabase = getSupabase();
   const [isPriority, { priority, isSlowQueue }, vipRow] = await Promise.all([
     computeIsPriority(userId),
@@ -95,6 +189,14 @@ export async function joinMatchPool(userId: string, filter?: string | null): Pro
     prisma.user.findUnique({ where: { id: userId }, select: { isVip: true } }),
   ]);
   const joiningIsNeonVip = vipRow?.isVip === true;
+
+  const rawTarget = options?.targetCountryCode;
+  const targetCountryCode =
+    typeof rawTarget === "string" &&
+    rawTarget.trim().length >= 2 &&
+    isPlausibleCountryCode(rawTarget.trim().toUpperCase())
+      ? rawTarget.trim().toUpperCase().slice(0, 2)
+      : undefined;
 
   // Remove any existing row (re-join)
   await supabase.from("active_users").delete().eq("user_id", userId);
@@ -108,6 +210,7 @@ export async function joinMatchPool(userId: string, filter?: string | null): Pro
     status: "waiting",
     joined_at: now,
     updated_at: now,
+    match_target_country: targetCountryCode ?? null,
   });
   if (insertErr) {
     console.error("[matching join]", insertErr);
@@ -115,7 +218,17 @@ export async function joinMatchPool(userId: string, filter?: string | null): Pro
   }
 
   // Run matching: try to pair this user (prioritize high priority_score partners)
-  return runMatching(userId, isPriority, isSlowQueue, joiningIsNeonVip, filter ?? undefined);
+  const matchFilter =
+    !filter || filter === "everyone" ? undefined : filter;
+
+  return runMatching(
+    userId,
+    isPriority,
+    isSlowQueue,
+    joiningIsNeonVip,
+    matchFilter,
+    targetCountryCode
+  );
 }
 
 /**
@@ -128,20 +241,35 @@ async function runMatching(
   joiningIsPriority: boolean,
   joiningIsSlowQueue: boolean,
   joiningIsNeonVip: boolean,
-  filter?: string
+  filter?: string,
+  targetCountryCode?: string
 ): Promise<MatchResult> {
   const supabase = getSupabase();
 
+  const joiningProfile = await prisma.user.findUnique({
+    where: { id: joiningUserId },
+    select: { country: true },
+  });
+  const joiningUserCountry = joiningProfile?.country
+    ? String(joiningProfile.country).toUpperCase().slice(0, 2)
+    : null;
+
   // 1. If joining user is priority: try to steal first (Fast Match)
   if (joiningIsPriority) {
-    const stealResult = await tryStealForPriority(joiningUserId);
+    const stealResult = await tryStealForPriority(
+      joiningUserId,
+      filter,
+      targetCountryCode
+    );
     if (stealResult) return stealResult;
   }
 
   // 2. Find waiting users: boosted first, then !is_slow_queue (Quick Charge), then by priority_score desc, then FIFO
   const query = supabase
     .from("active_users")
-    .select("user_id, boosted_at, is_priority, is_slow_queue, priority_score, joined_at")
+    .select(
+      "user_id, boosted_at, is_priority, is_slow_queue, priority_score, joined_at, match_target_country"
+    )
     .eq("status", "waiting")
     .neq("user_id", joiningUserId);
 
@@ -149,6 +277,13 @@ async function runMatching(
 
   const ids = (waiting ?? []).map((r) => r.user_id as string);
   const popMap = joiningIsNeonVip ? await fetchPartnerPopularityScores(ids) : new Map<string, number>();
+  const genderMap =
+    filter === "female" || filter === "male"
+      ? await fetchProfileGendersMap(ids)
+      : null;
+  const countryMap = targetCountryCode
+    ? await fetchUserCountriesMap(ids)
+    : null;
 
   const sorted = (waiting ?? []).sort((a, b) => {
     const aBoosted = isBoosted(a.boosted_at as string | null);
@@ -159,7 +294,7 @@ async function runMatching(
     const aSlow = a.is_slow_queue ?? false;
     const bSlow = b.is_slow_queue ?? false;
     if (aSlow !== bSlow) return aSlow ? 1 : -1;
-    // Neon VIP ($18.99): prefer active / high-level partners first
+    // Neon VIP (Whale pack): prefer active / high-level partners first
     if (joiningIsNeonVip) {
       const pa = popMap.get(a.user_id as string) ?? 0;
       const pb = popMap.get(b.user_id as string) ?? 0;
@@ -172,9 +307,39 @@ async function runMatching(
     if (a.is_priority !== b.is_priority) return a.is_priority ? -1 : 1;
     return new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime();
   });
-  const partner = sorted[0];
-  if (partner) {
-    const pairResult = await createPair(joiningUserId, partner.user_id);
+  for (const partner of sorted) {
+    const pid = partner.user_id as string;
+    const partnerWantsCountry =
+      typeof partner.match_target_country === "string" &&
+      partner.match_target_country.length >= 2
+        ? partner.match_target_country.toUpperCase().slice(0, 2)
+        : null;
+
+    if (genderMap && !profileMatchesGenderFilter(genderMap.get(pid) ?? null, filter)) continue;
+    if (
+      countryMap &&
+      !partnerCountryMatchesTarget(countryMap.get(pid) ?? null, targetCountryCode)
+    )
+      continue;
+    if (
+      partnerWantsCountry &&
+      !partnerCountryMatchesTarget(joiningUserCountry, partnerWantsCountry)
+    )
+      continue;
+
+    if (!(await pairingAllowed(joiningUserId, pid))) continue;
+
+    const payerUserId = targetCountryCode
+      ? joiningUserId
+      : partnerWantsCountry
+        ? pid
+        : null;
+
+    const pairResult = await createPairWithOptionalCountryCharge(
+      joiningUserId,
+      pid,
+      payerUserId
+    );
     if (pairResult) return pairResult;
   }
 
@@ -209,7 +374,9 @@ export async function reRunMatchingForUser(userId: string): Promise<MatchResult>
  * Only steal if the non-priority pair has been matched for less than FAST_MATCH_MS.
  */
 async function tryStealForPriority(
-  priorityUserId: string
+  priorityUserId: string,
+  genderFilter?: string,
+  targetCountryCode?: string
 ): Promise<MatchResult | null> {
   const supabase = getSupabase();
   const cutoff = new Date(Date.now() - FAST_MATCH_MS).toISOString();
@@ -242,6 +409,32 @@ async function tryStealForPriority(
     )
       continue;
 
+    if (genderFilter === "female" || genderFilter === "male") {
+      const partnerUser = await prisma.user.findUnique({
+        where: { id: partnerId },
+        select: { profileGender: true, country: true },
+      });
+      if (!profileMatchesGenderFilter(partnerUser?.profileGender ?? null, genderFilter)) continue;
+      if (
+        targetCountryCode &&
+        !partnerCountryMatchesTarget(partnerUser?.country ?? null, targetCountryCode)
+      )
+        continue;
+    } else if (targetCountryCode) {
+      const partnerUser = await prisma.user.findUnique({
+        where: { id: partnerId },
+        select: { country: true },
+      });
+      if (!partnerCountryMatchesTarget(partnerUser?.country ?? null, targetCountryCode)) continue;
+    }
+
+    if (!(await pairingAllowed(priorityUserId, partnerId))) continue;
+
+    if (targetCountryCode) {
+      const bal = await getWalletBalance(priorityUserId);
+      if ((bal ?? 0) < TARGET_COUNTRY_MATCH_COST) continue;
+    }
+
     // Break the pair: put partner back to waiting, match them with priority user
     await supabase
       .from("active_users")
@@ -263,9 +456,13 @@ async function tryStealForPriority(
       })
       .eq("user_id", partnerId);
 
-    // Create new pair: priority user + stolen partner
-    await createPair(priorityUserId, partnerId);
-    return { status: "matched", partnerId };
+    const payerUserId = targetCountryCode ? priorityUserId : null;
+    const pairResult = await createPairWithOptionalCountryCharge(
+      priorityUserId,
+      partnerId,
+      payerUserId
+    );
+    if (pairResult) return pairResult;
   }
   return null;
 }
@@ -274,6 +471,7 @@ async function createPair(
   userA: string,
   userB: string
 ): Promise<MatchResult | null> {
+  if (!(await pairingAllowed(userA, userB))) return null;
   const supabase = getSupabase();
   const now = new Date().toISOString();
 
@@ -338,7 +536,9 @@ export async function getQueuePreview(
   const supabase = getSupabase();
   const { data } = await supabase
     .from("active_users")
-    .select("user_id, boosted_at, is_priority, is_slow_queue, priority_score, joined_at")
+    .select(
+      "user_id, boosted_at, is_priority, is_slow_queue, priority_score, joined_at, match_target_country"
+    )
     .eq("status", "waiting")
     .neq("user_id", currentUserId);
 

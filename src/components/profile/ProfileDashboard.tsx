@@ -2,9 +2,9 @@
 
 import type { CSSProperties } from "react";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import UserNameWithFlag from "@/src/components/UserNameWithFlag";
@@ -15,6 +15,7 @@ import { avatarGlowColors } from "@/src/lib/level-progress";
 import { BILLING_PACKS } from "@/src/lib/billing-packs";
 import { SHOP_ITEMS, type ShopItem } from "@/src/lib/shop-items";
 import CharacterGallerySection from "@/src/components/profile/CharacterGallerySection";
+import FuturisticGiftIcon from "@/src/components/FuturisticGiftIcon";
 import ProfilePresenceBadge from "@/src/components/profile/ProfilePresenceBadge";
 import ProfileFriendsTab from "@/src/components/profile/ProfileFriendsTab";
 import { neonVipGlowVariant } from "@/src/lib/neon-vip-style";
@@ -23,6 +24,18 @@ const ShopModal = dynamic(() => import("@/src/components/ShopModal"), { ssr: fal
 
 function inter(tpl: string, v: Record<string, string | number>) {
   return tpl.replace(/\{(\w+)\}/g, (_, k) => (v[k] != null ? String(v[k]) : ""));
+}
+
+function StripeCheckoutSpinnerLabel({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center justify-center gap-2">
+      <span
+        className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-fuchsia-400/35 border-t-pink-300 shadow-[0_0_10px_rgba(244,114,182,0.45)]"
+        aria-hidden
+      />
+      {label}
+    </span>
+  );
 }
 
 type DayStat = {
@@ -213,6 +226,7 @@ function SocialNeonIcon({
 export default function ProfileDashboard() {
   const { data: session, status, update: updateSession } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [locale, setLocale] = useState<I18nLocale>("en");
   const [me, setMe] = useState<MeResponse | null>(null);
   const [activity, setActivity] = useState<Record<string, number>>({});
@@ -238,6 +252,7 @@ export default function ProfileDashboard() {
   const [gifDraft, setGifDraft] = useState("");
   const [animatedBannerDraft, setAnimatedBannerDraft] = useState("");
   const [effectDraft, setEffectDraft] = useState<string>("");
+  const paymentSuccessHandledRef = useRef(false);
 
   const t = useMemo(() => getT(locale), [locale]);
   const rtl = isRtl(locale);
@@ -287,6 +302,16 @@ export default function ProfileDashboard() {
       })
       .catch(() => setLoadErr(true));
   }, [t]);
+
+  useEffect(() => {
+    if (searchParams.get("payment") !== "success") return;
+    if (paymentSuccessHandledRef.current) return;
+    paymentSuccessHandledRef.current = true;
+    toast.success(t("profile.paymentSuccessToast"), { icon: "✨", duration: 5500 });
+    void updateSession?.();
+    void loadMe();
+    router.replace("/profile", { scroll: false });
+  }, [searchParams, router, loadMe, updateSession, t]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -1086,7 +1111,11 @@ export default function ProfileDashboard() {
                 disabled={buyLoading}
                 className="min-h-11 w-full rounded-full border border-amber-400/50 bg-gradient-to-r from-amber-500/25 to-yellow-500/20 px-4 py-2.5 text-sm font-bold uppercase tracking-wide text-amber-100 shadow-[0_0_22px_rgba(251,191,36,0.35)] transition hover:border-amber-300/60 hover:shadow-[0_0_28px_rgba(251,191,36,0.5)] disabled:opacity-50"
               >
-                {buyLoading ? t("profile.buyCoinsLoading") : t("profile.addCoinsCta")}
+                {buyLoading ? (
+                  <StripeCheckoutSpinnerLabel label={t("profile.buyCoinsLoading")} />
+                ) : (
+                  t("profile.addCoinsCta")
+                )}
               </button>
               <button
                 type="button"
@@ -1108,18 +1137,20 @@ export default function ProfileDashboard() {
                   {t("profile.currentCoins")}
                 </span>
               </div>
-              <p className="mt-1 text-2xl font-bold tabular-nums text-amber-100">{me.coins}</p>
+              <p className="premium-number-glow mt-1 text-2xl font-bold tabular-nums text-amber-100">
+                {me.coins.toLocaleString("en-US")}
+              </p>
             </div>
             <div className="rounded-xl border border-fuchsia-500/20 bg-black/25 p-4 backdrop-blur-md">
               <div className="flex items-center gap-2 text-fuchsia-200/90">
-                <span className="text-xl" aria-hidden>
-                  🎁
-                </span>
+                <FuturisticGiftIcon size={24} animate={false} />
                 <span className="text-[10px] font-bold uppercase tracking-wider text-fuchsia-100/80">
                   {t("profile.totalGiftsReceived")}
                 </span>
               </div>
-              <p className="mt-1 text-2xl font-bold tabular-nums text-fuchsia-100">{me.totalGiftsReceived}</p>
+              <p className="premium-number-glow mt-1 text-2xl font-bold tabular-nums text-fuchsia-100">
+                {me.totalGiftsReceived.toLocaleString("en-US")}
+              </p>
               <p className="mt-2 text-[11px] leading-relaxed text-white/45">{t("profile.inventoryHint")}</p>
             </div>
           </div>
@@ -1248,7 +1279,11 @@ export default function ProfileDashboard() {
             disabled={buyLoading}
             className="min-h-11 w-full max-w-md rounded-full border border-amber-400/50 bg-gradient-to-r from-amber-500/30 to-yellow-500/25 px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-amber-50 shadow-[0_0_24px_rgba(251,191,36,0.4)] disabled:opacity-50"
           >
-            {buyLoading ? t("profile.buyCoinsLoading") : t("profile.addCoinsCta")}
+            {buyLoading ? (
+              <StripeCheckoutSpinnerLabel label={t("profile.buyCoinsLoading")} />
+            ) : (
+              t("profile.addCoinsCta")
+            )}
           </button>
         </div>
 

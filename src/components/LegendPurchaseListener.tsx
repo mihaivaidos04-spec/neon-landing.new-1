@@ -83,7 +83,7 @@ function fireNeonLegendBossConfetti() {
 const BANNER_MS = 5000;
 
 /**
- * Global NEON LEGEND alert ($18.99 Stripe Whale Pack): 5s top banner for all online users;
+ * Global NEON LEGEND alert (Stripe Whale Pack): 5s top banner for all online users;
  * canvas-confetti boss burst for the buyer only.
  */
 export default function LegendPurchaseListener() {

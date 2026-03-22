@@ -70,6 +70,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: prismaAuthAdapter,
   secret: resolveAuthSecret(),
   providers: [
+    /** Discord — PrismaAdapter creates `User` + `Account` on first OAuth; we sync profile fields in `signIn`. */
+    ...(DISCORD_ID && DISCORD_SECRET
+      ? [
+          Discord({
+            clientId: DISCORD_ID,
+            clientSecret: DISCORD_SECRET,
+            allowDangerousEmailAccountLinking: true,
+            authorization: { params: { scope: "identify email" } },
+          }),
+        ]
+      : []),
     ...(GOOGLE_ID && GOOGLE_SECRET
       ? [
           Google({
@@ -88,15 +99,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }),
         ]
       : []),
-    ...(DISCORD_ID && DISCORD_SECRET
-      ? [
-          Discord({
-            clientId: DISCORD_ID,
-            clientSecret: DISCORD_SECRET,
-            allowDangerousEmailAccountLinking: true,
-          }),
-        ]
-      : []),
     EmailProvider({
       server: (process.env.EMAIL_SERVER as unknown as Record<string, unknown>) ?? {},
       from: process.env.EMAIL_FROM ?? "noreply@neon.app",
@@ -109,9 +111,38 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: "/login",
   },
   callbacks: {
-    async signIn({ user }) {
+    async signIn({ user, account, profile }) {
       if (user?.id && typeof user.id === "string") {
         addLoginXp(user.id).catch(() => {});
+
+        if (account?.provider === "discord") {
+          const p = profile as Record<string, unknown> | null | undefined;
+          const discordName =
+            (typeof p?.global_name === "string" && p.global_name.trim()) ||
+            (typeof p?.username === "string" && p.username.trim()) ||
+            (typeof user.name === "string" && user.name.trim()) ||
+            undefined;
+          const email =
+            (typeof p?.email === "string" && p.email.trim()) ||
+            (typeof user.email === "string" && user.email.trim()) ||
+            undefined;
+          const image =
+            (typeof user.image === "string" && user.image.trim()) ||
+            (typeof p?.image_url === "string" && p.image_url.trim()) ||
+            undefined;
+
+          await prisma.user
+            .update({
+              where: { id: user.id },
+              data: {
+                ...(discordName ? { name: discordName } : {}),
+                ...(email ? { email } : {}),
+                ...(image ? { image } : {}),
+                lastLogin: new Date(),
+              },
+            })
+            .catch((e) => console.error("[auth] Discord profile sync", e));
+        }
       }
       return true;
     },

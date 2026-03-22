@@ -31,11 +31,12 @@ export default function MicroAd({ slotId, format = "horizontal", className = "" 
   const slot = slotId || process.env.NEXT_PUBLIC_ADSENSE_SLOT;
   const hasAdSense = Boolean(client && slot);
 
-  const sizeMap = {
-    horizontal: "320x50",
-    rectangle: "300x250",
-    auto: "auto",
-  };
+  const sizeLabel =
+    format === "horizontal"
+      ? `${(320).toLocaleString("en-US")}x${(50).toLocaleString("en-US")}`
+      : format === "rectangle"
+        ? `${(300).toLocaleString("en-US")}x${(250).toLocaleString("en-US")}`
+        : "auto";
 
   if (hasAdSense) {
     return (
@@ -58,8 +59,8 @@ export default function MicroAd({ slotId, format = "horizontal", className = "" 
     <div
       className={`micro-ad-placeholder flex items-center justify-center rounded-lg border border-white/10 bg-white/[0.02] ${size} ${className}`}
     >
-      <span className="text-[10px] text-white/30">
-        {sizeMap[format]} · Ad
+      <span className="number-plain text-[10px] text-white/30">
+        {sizeLabel} · Ad
       </span>
     </div>
   );

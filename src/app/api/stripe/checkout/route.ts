@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/src/auth";
 import { stripe } from "@/lib/stripe";
 import { findBillingPackByAmountAndCoins } from "@/src/lib/billing-packs";
-import { getPublicSiteOrigin } from "@/src/lib/public-site-url";
+import {
+  getStripeCheckoutCancelUrl,
+  getStripeCheckoutSuccessUrl,
+} from "@/src/lib/stripe-checkout-urls";
 import {
   stripeCheckoutAutomaticPaymentMethods,
   stripeCheckoutComplianceParams,
@@ -16,7 +19,7 @@ export const runtime = "nodejs";
  *
  * - `unit_amount` for Stripe is **integer cents**: `Math.round(amount * 100)` (e.g. $0.69 → 69)
  * - Currency: `usd`
- * - Metadata: `userId`, `coinsAmount`, plus `packId`, `amount_cents`, `coinsToBuy` for webhook validation
+ * - Metadata: `userId`, `coins` / `coinsAmount` / `coinsToBuy`, `packId`, `amount_cents` (webhook validation)
  * - Product name: e.g. "100 Neon Coins"
  */
 export async function POST(req: NextRequest) {
@@ -58,8 +61,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Amount rounding mismatch" }, { status: 400 });
     }
 
-    const origin = getPublicSiteOrigin();
-
     const userEmail = (session?.user as { email?: string })?.email;
 
     const productName = `${coinsAmount} Neon Coins`;
@@ -80,10 +81,12 @@ export async function POST(req: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${origin}/dashboard?payment=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/billing?canceled=1`,
+      success_url: getStripeCheckoutSuccessUrl(),
+      cancel_url: getStripeCheckoutCancelUrl(),
       metadata: {
         userId,
+        /** Gemini-style alias — webhook also reads `coinsAmount` / `coinsToBuy` */
+        coins: String(pack.coins),
         coinsAmount: String(coinsAmount),
         coinAmount: String(pack.coins),
         coinsToBuy: String(pack.coins),

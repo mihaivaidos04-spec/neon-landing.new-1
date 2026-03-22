@@ -10,6 +10,7 @@ import type { ReactionId } from "../lib/reactions";
 import { getReactionCost, getGiftCost } from "../lib/coins";
 import { GIFTS } from "./GiftsBar";
 import type { TheaterGiftId } from "../lib/theater-gifts";
+import FuturisticGiftIcon from "./FuturisticGiftIcon";
 
 const GIFT_DRAWER_TITLE: Partial<Record<ContentLocale, string>> = {
   en: "Gifts & video effects",
@@ -46,6 +47,18 @@ const FILTER_OPTIONS: { id: VideoFilterId; labelKey: keyof ReturnType<typeof get
   { id: "noir", labelKey: "videoFilterNoir" },
   { id: "neon_glow", labelKey: "videoFilterNeonGlow" },
 ];
+
+const GIFT_EMOJI: Record<string, string> = {
+  heart: "❤️",
+  rose: "🌹",
+  coffee: "☕",
+  diamond: "💎",
+  fire: "🔥",
+  rocket: "🚀",
+  like: "👍",
+  sparkle: "✨",
+  fireworks: "🎆",
+};
 
 function GiftShopPanelContent({
   locale,
@@ -175,8 +188,10 @@ function GiftShopPanelContent({
                   whileHover={canAfford && !effectsDisabled ? { scale: 1.05 } : {}}
                   whileTap={canAfford && !effectsDisabled ? { scale: 0.94 } : {}}
                 >
-                  <span className="text-lg leading-none">{r.emoji}</span>
-                  <span className="text-[9px] font-medium opacity-80">{cost}</span>
+                  <span className="emoji-ios text-lg leading-none">{r.emoji}</span>
+                  <span className="premium-number-glow number-plain text-[9px] font-medium opacity-80">
+                    {cost.toLocaleString("en-US")}
+                  </span>
                 </motion.button>
               );
             })}
@@ -205,13 +220,11 @@ function GiftShopPanelContent({
                       : "border-white/15 bg-black/40 hover:bg-white/10"
                   }`}
                 >
-                  <span
-                    className={`text-xl leading-none ${isDiamond ? "drop-shadow-[0_0_8px_rgba(236,72,153,0.9)]" : ""}`}
-                  >
-                    {g.emoji}
+                  <span className="gift-emoji-future-wrap shrink-0">
+                    <span className="emoji-ios text-xl leading-none">{GIFT_EMOJI[g.id] ?? "🎁"}</span>
                   </span>
-                  <span className="text-[9px] font-medium text-white/70">
-                    {cost} {t.coinsLabel}
+                  <span className="gift-price-text number-plain text-[9px] text-white/55">
+                    {cost.toLocaleString("en-US")} {t.coinsLabel}
                   </span>
                 </button>
               );
@@ -236,8 +249,10 @@ export function GiftShopQuestStack(props: BaseProps) {
       aria-label="Gift shop and video effects"
     >
       <div className="mb-2 flex shrink-0 items-center gap-2 border-b border-fuchsia-500/35 pb-2.5">
-        <span className="mystery-gift-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-600/40 to-violet-600/30 text-xl shadow-[0_0_20px_rgba(236,72,153,0.5)]">
-          🎁
+        <span className="gift-shop-stack-icon flex h-10 w-10 shrink-0 items-center justify-center">
+          <span className="gift-emoji-future-wrap">
+            <FuturisticGiftIcon size={22} animate={false} />
+          </span>
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-fuchsia-200">Gift shop</p>
@@ -280,9 +295,7 @@ export function GiftShopMobileDrawer(props: BaseProps) {
         aria-expanded={open}
       >
         <span className="flex items-center gap-2">
-          <span className="text-lg" aria-hidden>
-            🎁
-          </span>
+          <FuturisticGiftIcon size={22} />
           {drawerTitle}
         </span>
         <span className="text-white/50">{open ? "▲" : "▼"}</span>

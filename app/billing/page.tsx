@@ -175,6 +175,7 @@ function BillingPageInner() {
           {BILLING_PACKS.map((pack) => (
             <div
               key={pack.id}
+              id={pack.id === "whale" ? "billing-pack-whale" : undefined}
               className={`relative flex flex-col rounded-2xl border p-6 transition-all ${
                 pack.popular
                   ? "border-fuchsia-500/55 bg-gradient-to-b from-fuchsia-950/35 via-violet-950/80 to-zinc-950/95 shadow-[0_0_48px_rgba(236,72,153,0.22)]"
@@ -221,7 +222,17 @@ function BillingPageInner() {
                 onClick={() => buyPack(pack.priceUsd, pack.coins, pack.id)}
                 className="mt-6 min-h-[48px] w-full rounded-xl border border-fuchsia-500/30 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_0_24px_rgba(192,38,211,0.35)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {loadingPack === pack.id ? "Redirecting…" : "Buy"}
+                {loadingPack === pack.id ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <span
+                      className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-fuchsia-400/40 border-t-pink-300"
+                      aria-hidden
+                    />
+                    Redirecting…
+                  </span>
+                ) : (
+                  "Buy"
+                )}
               </button>
             </div>
           ))}

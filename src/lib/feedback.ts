@@ -135,58 +135,6 @@ export function triggerPremiumGiftHaptic(): void {
   }
 }
 
-/** Drumroll – Mystery Box anticipation (Web Audio). */
-export function playDrumrollSound(): void {
-  try {
-    const ctx = getClickAudio();
-    if (!ctx) return;
-    const gain = ctx.createGain();
-    gain.connect(ctx.destination);
-    gain.gain.setValueAtTime(0.08, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.02, ctx.currentTime + 2);
-    for (let i = 0; i < 16; i++) {
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.connect(g);
-      g.connect(gain);
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(150 + i * 20, ctx.currentTime);
-      g.gain.setValueAtTime(0, ctx.currentTime);
-      g.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.12);
-      g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.12 + 0.08);
-      osc.start(ctx.currentTime + i * 0.12);
-      osc.stop(ctx.currentTime + i * 0.12 + 0.1);
-    }
-  } catch {
-    // ignore
-  }
-}
-
-/** Explosion / reveal – Mystery Box prize reveal. */
-export function playExplosionSound(): void {
-  try {
-    const ctx = getClickAudio();
-    if (!ctx) return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(4000, ctx.currentTime);
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = "sawtooth";
-    osc.frequency.setValueAtTime(200, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.15);
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.4);
-  } catch {
-    // ignore
-  }
-}
-
 /** Quick whoosh – tranziție Next, schimbare partener. */
 export function playWhooshSound(): void {
   try {

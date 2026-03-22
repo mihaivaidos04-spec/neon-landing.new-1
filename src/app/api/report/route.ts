@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/src/auth";
-import { addReport } from "@/src/lib/report-store";
+import { maybeApplyReportAutoSuspension } from "@/src/lib/report-store";
 import { prisma } from "@/src/lib/prisma";
+
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,11 +25,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Cannot report yourself" }, { status: 400 });
     }
 
-    await addReport(reportedUserId);
-
     await prisma.report.create({
       data: { reporterId, reportedUserId, reason, status: "pending" },
     });
+
+    await maybeApplyReportAutoSuspension(reportedUserId);
 
     return NextResponse.json({ ok: true, message: "Report submitted" });
   } catch (err) {

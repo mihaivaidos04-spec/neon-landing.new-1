@@ -21,7 +21,7 @@ export default function FaqSection({ locale }: Props) {
       <h2 className="mb-6 text-center text-xl font-semibold text-white sm:text-2xl">
         {t.faqTitle}
       </h2>
-      <div className="mx-auto max-w-2xl space-y-2">
+      <div className="mx-auto max-w-3xl space-y-2">
         {items.map(({ id, q, a }) => (
           <div
             key={id}
@@ -38,7 +38,7 @@ export default function FaqSection({ locale }: Props) {
               </span>
             </button>
             {openId === id && (
-              <div className="border-t border-white/10 px-4 py-3 text-sm text-white/75 sm:px-5 sm:py-4">
+              <div className="border-t border-white/10 px-4 py-3 text-sm leading-relaxed text-white/80 sm:px-5 sm:py-4 sm:text-[15px]">
                 {a}
               </div>
             )}

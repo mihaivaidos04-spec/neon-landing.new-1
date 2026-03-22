@@ -6,6 +6,7 @@ import { getContentT } from "../lib/content-i18n";
 import type { ChatMessage } from "../lib/chat-messages-data";
 import { moderateText } from "../lib/text-moderation";
 import { truncateChatDisplayUsername } from "../lib/chat-display-username-limit";
+import { formatNumber } from "../lib/format-intl";
 import LazyUserFlag from "./LazyUserFlag";
 
 export type { ChatMessage } from "../lib/chat-messages-data";
@@ -102,11 +103,13 @@ export default function ChatPanel({
     >
       <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
         <span className="text-xs font-medium text-white/80">
-          💰 {(coins ?? 0) > 0 ? (
-            <span className="text-white">{coins ?? 0} {t.coinsLabel}</span>
+          Balance: {(coins ?? 0) > 0 ? (
+            <span className="premium-number-glow number-plain text-white">
+              {formatNumber(coins ?? 0)} {t.coinsLabel}
+            </span>
           ) : (
             <>
-              <span className="text-white/70">0 {t.coinsLabel}</span>
+              <span className="premium-number-glow text-white/70">0 {t.coinsLabel}</span>
               <button
                 type="button"
                 onClick={onRecharge}

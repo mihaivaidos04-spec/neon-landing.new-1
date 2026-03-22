@@ -1,18 +1,56 @@
 import env from "@next/env";
 import fs from "node:fs";
+import net from "node:net";
 import path from "node:path";
 import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
 import { allowGlobalPulseServerMessage } from "./global-pulse-server-filter.mjs";
-import { MAX_GLOBAL_PULSE_USERNAME_LEN } from "./global-pulse-constants.mjs";
+import {
+  MAX_GLOBAL_PULSE_USERNAME_LEN,
+  GLOBAL_PULSE_HISTORY_LIMIT,
+} from "./global-pulse-constants.mjs";
 import { getPrisma } from "./server-prisma.mjs";
 
 env.loadEnvConfig(process.cwd(), process.env.NODE_ENV !== "production");
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = process.env.HOSTNAME || "localhost";
-const port = parseInt(process.env.PORT || "3000", 10);
+const preferredPort = parseInt(process.env.PORT || "3000", 10);
+
+/**
+ * If default port is busy (e.g. old `node server.js` still running), pick the next free one in dev.
+ * Set PORT_STRICT=1 to fail instead of auto-bumping.
+ */
+function probePortFree(p) {
+  return new Promise((resolve) => {
+    const srv = net.createServer();
+    srv.once("error", () => resolve(false));
+    srv.once("listening", () => {
+      srv.close(() => resolve(true));
+    });
+    srv.listen(p, "0.0.0.0");
+  });
+}
+
+async function resolveListenPort() {
+  if (!dev || process.env.PORT_STRICT === "1") return preferredPort;
+  const max = preferredPort + 25;
+  for (let p = preferredPort; p < max; p++) {
+    // eslint-disable-next-line no-await-in-loop
+    if (await probePortFree(p)) {
+      if (p !== preferredPort) {
+        console.warn(
+          `[dev] Port ${preferredPort} is in use — starting on http://localhost:${p} instead (close the other process or set PORT=${preferredPort}).`
+        );
+      }
+      return p;
+    }
+  }
+  return preferredPort;
+}
+
+const port = await resolveListenPort();
 
 // Clear stale Turbopack/Next dev lock (crash or duplicate run leaves it behind)
 if (dev) {
@@ -90,6 +128,31 @@ app.prepare().then(() => {
   /** Exposed for Stripe webhook → global Whale Pack celebration (see `broadcast-legend-purchase.ts`) */
   globalThis.__neonSocketIo = io;
 
+  /** Global Pulse floating emoji — must match `GLOBAL_PULSE_FLOATING_REACTION_EMOJIS` in src/lib/global-pulse-floating-reactions.ts */
+  const FLOATING_REACTION_EMOJI = new Set([
+    "❤️",
+    "🔥",
+    "😂",
+    "😍",
+    "😮",
+    "👏",
+    "🎉",
+    "✨",
+  ]);
+  const FLOATING_REACTION_WINDOW_MS = 2500;
+  const FLOATING_REACTION_MAX_PER_WINDOW = 14;
+  const floatingReactionTimestamps = new Map();
+
+  function allowFloatingReactionBurst(userId) {
+    const now = Date.now();
+    const arr = floatingReactionTimestamps.get(userId) ?? [];
+    const recent = arr.filter((t) => now - t < FLOATING_REACTION_WINDOW_MS);
+    if (recent.length >= FLOATING_REACTION_MAX_PER_WINDOW) return false;
+    recent.push(now);
+    floatingReactionTimestamps.set(userId, recent);
+    return true;
+  }
+
   // userId -> socketId mapping for peer signaling
   const userSockets = new Map();
 
@@ -144,7 +207,7 @@ app.prepare().then(() => {
       try {
         const rows = await prisma.chatMessage.findMany({
           orderBy: { createdAt: "desc" },
-          take: 80,
+          take: GLOBAL_PULSE_HISTORY_LIMIT,
         });
         const chronological = rows.reverse().map(chatRowToWire);
         socket.emit("global_pulse_history", chronological);
@@ -185,6 +248,35 @@ app.prepare().then(() => {
       } catch (err) {
         console.error("[global_pulse_send]", err);
       }
+    });
+
+    /** TikTok-style floating emoji burst for everyone in Global Pulse */
+    socket.on("global_pulse_floating_reaction", (payload) => {
+      const uid = socket.userId;
+      if (!uid || !payload || typeof payload !== "object") return;
+      const raw = typeof payload.emoji === "string" ? payload.emoji.trim() : "";
+      if (!FLOATING_REACTION_EMOJI.has(raw)) return;
+      if (!allowFloatingReactionBurst(uid)) return;
+      io.to("global_pulse").emit("global_pulse_floating_reaction", {
+        emoji: raw,
+        fromUserId: uid,
+        ts: Date.now(),
+      });
+    });
+
+    /** Typing indicator — relay to others in Pulse (excludes sender). */
+    socket.on("global_pulse_typing", (payload) => {
+      const uid = socket.userId;
+      if (!uid || !payload || typeof payload !== "object") return;
+      const active = payload.active === true;
+      const rawName = typeof payload.userName === "string" ? payload.userName.trim() : "";
+      const userName = [...rawName].slice(0, 40).join("") || "Someone";
+      socket.to("global_pulse").emit("global_pulse_typing_update", {
+        userId: uid,
+        userName,
+        active,
+        ts: Date.now(),
+      });
     });
 
     socket.on("private_invite", ({ toUserId, roomId }) => {

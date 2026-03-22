@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import { auth } from "@/src/auth";
 import { prisma } from "@/src/lib/prisma";
 import { joinMatchPool } from "@/src/lib/matching";
-import { getWalletBalance } from "@/src/lib/wallet";
 import { getBatteryLevel } from "@/src/lib/battery";
-import { isUserShadowBanned, isUserMatchingSuspended } from "@/src/lib/report-store";
+import { getWalletBalance } from "@/src/lib/wallet";
+import { TARGET_COUNTRY_MATCH_COST } from "@/src/lib/coins";
+import { isPlausibleCountryCode } from "@/src/lib/valid-country-code";
+import { isUserMatchingSuspended } from "@/src/lib/report-store";
 import { checkMatchRateLimit } from "@/src/lib/rate-limit";
-
-const GENDER_FILTER_MIN_COINS = 5;
 
 export async function POST(req: Request) {
   try {
@@ -33,37 +33,67 @@ export async function POST(req: Request) {
       );
     }
 
-    const [shadowBanned, dbSuspended, user] = await Promise.all([
-      Promise.resolve(isUserShadowBanned(userId)),
+    const [dbSuspended, user] = await Promise.all([
       isUserMatchingSuspended(userId),
-      prisma.user.findUnique({ where: { id: userId }, select: { isShadowBanned: true } }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { isShadowBanned: true, systemSuspensionUntil: true, isVip: true },
+      }),
     ]);
-    if (shadowBanned || dbSuspended || user?.isShadowBanned) {
+    if (dbSuspended || user?.isShadowBanned) {
+      const until = user?.systemSuspensionUntil;
+      const untilIso = until && until > new Date() ? until.toISOString() : null;
       return NextResponse.json(
-        { error: "Your account is temporarily restricted due to reports. Please try again in 24 hours." },
+        {
+          error:
+            "Your account is temporarily restricted (reports / moderation). Try again in about 1 hour or contact support.",
+          suspendedUntil: untilIso,
+        },
         { status: 403 }
       );
     }
 
     let filter: string | null = null;
+    let targetCountryCode: string | null = null;
     try {
       const body = await req.json().catch(() => ({}));
       filter = body?.filter ?? null;
+      const raw = body?.targetCountryCode;
+      if (typeof raw === "string" && raw.trim().length >= 2) {
+        const up = raw.trim().toUpperCase().slice(0, 2);
+        if (isPlausibleCountryCode(up)) targetCountryCode = up;
+      }
     } catch {
       // no body
     }
 
+    /** Gender preference matching requires Neon VIP (User.isVip — Whale Pack). */
     if (filter === "female" || filter === "male") {
-      const balance = await getWalletBalance(userId);
-      if ((balance ?? 0) < GENDER_FILTER_MIN_COINS) {
+      if (user?.isVip !== true) {
         return NextResponse.json(
-          { error: `Minimum ${GENDER_FILTER_MIN_COINS} coins required for gender filter` },
+          {
+            error: "Neon VIP is required to match by gender. Upgrade with the Whale Pack.",
+            code: "NEON_VIP_REQUIRED",
+          },
+          { status: 403 }
+        );
+      }
+    }
+
+    if (targetCountryCode) {
+      const balance = await getWalletBalance(userId);
+      if ((balance ?? 0) < TARGET_COUNTRY_MATCH_COST) {
+        return NextResponse.json(
+          {
+            error: `You need at least ${TARGET_COUNTRY_MATCH_COST} coins to match by target country.`,
+            code: "INSUFFICIENT_COINS_COUNTRY_MATCH",
+          },
           { status: 400 }
         );
       }
     }
 
-    const result = await joinMatchPool(userId, filter);
+    const result = await joinMatchPool(userId, filter, { targetCountryCode });
     if (result.status === "error") {
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
@@ -71,6 +101,10 @@ export async function POST(req: Request) {
     return NextResponse.json({
       status: result.status,
       partnerId: result.status === "matched" ? result.partnerId : undefined,
+      newBalance:
+        result.status === "matched" && result.newBalance != null
+          ? result.newBalance
+          : undefined,
     });
   } catch (err) {
     console.error("[api/match/join]", err);
