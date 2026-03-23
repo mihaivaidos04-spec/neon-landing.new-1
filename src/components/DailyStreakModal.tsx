@@ -86,16 +86,14 @@ export default function DailyStreakModal({ open, onClose, payload, locale = "en"
               className="flex min-w-0 flex-1 flex-col items-center gap-1"
               title={cell.dayKey}
             >
-              <div
-                className={`flex h-10 w-full max-w-[2.75rem] items-center justify-center rounded-lg border text-[10px] font-bold sm:h-12 sm:text-xs ${
-                  cell.filled
-                    ? "border-orange-400/60 bg-gradient-to-b from-orange-500/35 to-fuchsia-600/25 text-orange-100 shadow-[0_0_12px_rgba(251,146,60,0.35)]"
-                    : "border-white/10 bg-white/5 text-white/35"
+              <span
+                className={`number-plain w-full max-w-[2.75rem] text-center text-[10px] font-medium sm:text-xs ${
+                  cell.filled ? "text-white/80" : "text-white/35"
                 }`}
               >
                 {cell.weekdayShort}
-              </div>
-              <span className="text-[8px] text-white/40">{cell.dayKey.slice(5)}</span>
+              </span>
+              <span className="number-plain text-[8px] text-white/40 tabular-nums">{cell.dayKey.slice(5)}</span>
             </div>
           ))}
         </div>

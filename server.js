@@ -1,4 +1,5 @@
 import env from "@next/env";
+import { exec } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
@@ -47,6 +48,22 @@ function probePortFree(p) {
     });
     srv.listen(p, "0.0.0.0");
   });
+}
+
+/** Dev: open system default browser (set OPEN_DEV_BROWSER=0 to disable). */
+function openDevBrowser(url) {
+  if (!dev || process.env.OPEN_DEV_BROWSER === "0") return;
+  try {
+    if (process.platform === "win32") {
+      exec(`cmd /c start "" "${url}"`);
+    } else if (process.platform === "darwin") {
+      exec(`open "${url}"`);
+    } else {
+      exec(`xdg-open "${url}"`);
+    }
+  } catch {
+    /* ignore */
+  }
 }
 
 async function resolveListenPort() {
@@ -616,7 +633,10 @@ app.prepare().then(() => {
       process.exit(1);
     })
     .listen(port, "0.0.0.0", () => {
+      const localUrl = `http://127.0.0.1:${port}`;
       console.log(`> Ready on http://0.0.0.0:${port}`);
+      console.log(`> Local:   ${localUrl}  (use this in the browser; port may differ if 3000 was busy)`);
+      openDevBrowser(localUrl);
       void runChatMessagesCleanupOnce();
       setInterval(runChatMessagesCleanupOnce, CHAT_CLEANUP_INTERVAL_MS);
     });

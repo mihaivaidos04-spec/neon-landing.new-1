@@ -13,7 +13,7 @@ type Props = {
 export default function DailyRewardCalendar({
   locale,
   streak,
-  claimedToday,
+  claimedToday: _claimedToday,
   goldBadge,
 }: Props) {
   const t = getContentT(locale);
@@ -28,27 +28,20 @@ export default function DailyRewardCalendar({
           {t.dailyRewardBattery}
         </span>
       </div>
-      <div className="flex items-center gap-1.5 sm:gap-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/70">
         {[1, 2, 3, 4, 5, 6, 7].map((day) => {
           const isClaimed = day <= streak;
           const isLoyalDay = day === 7;
+          const label =
+            isClaimed && isLoyalDay && goldBadge
+              ? "★"
+              : isClaimed
+                ? "✓"
+                : String(day);
           return (
-            <div
+            <span
               key={day}
-              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs sm:h-8 sm:w-8 ${
-                isClaimed
-                  ? isLoyalDay && goldBadge
-                    ? "bg-amber-500/30 ring-1 ring-amber-400/60"
-                    : "bg-emerald-500/20 ring-1 ring-emerald-400/40"
-                  : "bg-white/5 ring-1 ring-white/10"
-              }`}
-              style={
-                isClaimed && !isLoyalDay
-                  ? { boxShadow: "0 0 8px rgba(16, 185, 129, 0.4)" }
-                  : isLoyalDay && goldBadge
-                    ? { boxShadow: "0 0 12px rgba(251, 191, 36, 0.6)" }
-                    : undefined
-              }
+              className="number-plain min-w-[1ch] tabular-nums"
               title={
                 isLoyalDay
                   ? t.dailyRewardGoldBadge
@@ -57,18 +50,8 @@ export default function DailyRewardCalendar({
                     : `${day}/7`
               }
             >
-              {isClaimed ? (
-                isLoyalDay && goldBadge ? (
-                  <span className="text-amber-400">★</span>
-                ) : (
-                  <span className="text-orange-400" style={{ filter: "drop-shadow(0 0 4px rgba(251, 146, 60, 0.8))" }}>
-                    🔥
-                  </span>
-                )
-              ) : (
-                <span className="text-white/30">{day}</span>
-              )}
-            </div>
+              {label}
+            </span>
           );
         })}
       </div>

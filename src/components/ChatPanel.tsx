@@ -113,7 +113,7 @@ export default function ChatPanel({
               <button
                 type="button"
                 onClick={onRecharge}
-                className="ml-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#8b5cf6]/50 bg-[#8b5cf6]/20 text-[10px] font-bold text-[#a78bfa] transition-opacity hover:opacity-90"
+                className="ml-1.5 inline p-0 text-[11px] font-medium text-white/50 underline-offset-2 transition-opacity hover:text-white/75 hover:underline"
                 aria-label={t.seeOptionsLabel}
               >
                 +

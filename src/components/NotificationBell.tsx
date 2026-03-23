@@ -113,10 +113,7 @@ export default function NotificationBell() {
           />
         </svg>
         {unreadCount > 0 && (
-          <span
-            className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white"
-            style={{ boxShadow: "0 0 8px rgba(239, 68, 68, 0.8)" }}
-          >
+          <span className="number-plain absolute -right-1 -top-1 text-[10px] leading-none text-white/55 tabular-nums">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}

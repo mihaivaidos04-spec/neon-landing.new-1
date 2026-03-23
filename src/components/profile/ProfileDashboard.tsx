@@ -158,10 +158,7 @@ function GenderGlyph({ gender }: { gender: string | null | undefined }) {
   }
   if (gender === "other") {
     return (
-      <span
-        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-violet-400/50 bg-violet-500/15 text-sm font-bold text-violet-200 shadow-[0_0_14px_rgba(167,139,250,0.45)]"
-        aria-hidden
-      >
+      <span className="inline-flex shrink-0 text-sm text-white/50" aria-hidden>
         +
       </span>
     );
@@ -771,7 +768,7 @@ export default function ProfileDashboard() {
                 </>
               )}
               {me.isNeonVip && (
-                <span className="inline-flex shrink-0 items-center rounded-md border border-sky-400/50 bg-sky-500/15 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-sky-100 shadow-[0_0_14px_rgba(56,189,248,0.4)]">
+                <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-white/70">
                   {t("profile.neonVipBadge")}
                 </span>
               )}
@@ -1301,10 +1298,8 @@ export default function ProfileDashboard() {
                     {t(`shop.${item.nameKey}`)}
                   </span>
                   <span
-                    className={`mt-1.5 rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums sm:text-sm ${
-                      has
-                        ? "bg-fuchsia-500/30 text-fuchsia-50 ring-1 ring-fuchsia-400/50"
-                        : "bg-black/50 text-white/35"
+                    className={`mt-1.5 text-[11px] tabular-nums sm:text-sm number-plain ${
+                      has ? "text-white/70" : "text-white/35"
                     }`}
                   >
                     ×{count}
@@ -1339,7 +1334,7 @@ export default function ProfileDashboard() {
                   key={s.userId}
                   className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 p-4"
                 >
-                  <span className="text-lg font-bold text-violet-400">#{i + 1}</span>
+                  <span className="number-plain text-lg tabular-nums text-white/55">#{i + 1}</span>
                   {s.image ? (
                     <Image src={s.image} alt="" width={40} height={40} className="rounded-full" />
                   ) : (
@@ -1353,7 +1348,7 @@ export default function ProfileDashboard() {
                       nameClassName="font-medium"
                     />
                   </span>
-                  <span className="text-violet-400">{s.totalSent} coins</span>
+                  <span className="number-plain text-white/60 tabular-nums">{s.totalSent} coins</span>
                 </div>
               ))}
             </div>

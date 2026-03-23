@@ -40,7 +40,7 @@ export default function LiveLeaderboard({ leaderboard, locale = "ro", currentUse
             >
               <span className="w-4">
                 {medals[entry.rank - 1] ?? (
-                  <span className="tabular-nums text-[var(--color-text-secondary)]">#{entry.rank}</span>
+                  <span className="number-plain tabular-nums text-[var(--color-text-secondary)]">#{entry.rank}</span>
                 )}
               </span>
               {entry.countryCode && (
@@ -49,7 +49,7 @@ export default function LiveLeaderboard({ leaderboard, locale = "ro", currentUse
               <span className="min-w-0 truncate font-mono">
                 {formatUserId(entry.userId, isBlurred)}
               </span>
-              <span className="shrink-0 text-[10px] tabular-nums text-[var(--color-text-secondary)]">
+              <span className="number-plain shrink-0 text-[10px] tabular-nums text-[var(--color-text-secondary)]">
                 {entry.totalSpent}
               </span>
               {isCurrentUser && isBlurred && onGoGhost && (

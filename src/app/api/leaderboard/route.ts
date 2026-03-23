@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
-import { getSupabase } from "@/src/lib/supabase";
+import { getSupabaseOrNull } from "@/src/lib/supabase";
 
 export async function GET() {
   try {
-    const supabase = getSupabase();
+    const supabase = getSupabaseOrNull();
+    if (!supabase) {
+      return NextResponse.json({ leaderboard: [] });
+    }
     const { data, error } = await supabase.rpc("get_leaderboard_60min", {
       p_limit: 3,
     });

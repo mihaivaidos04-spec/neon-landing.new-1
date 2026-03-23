@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabase } from "@/src/lib/supabase";
+import { getSupabaseOrNull } from "@/src/lib/supabase";
 import { getWalletBalance, spendCoins } from "@/src/lib/wallet";
 import { PRIVATE_ROOM_COST_PER_MIN } from "@/src/lib/coins";
 
@@ -12,7 +12,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const supabase = getSupabase();
+    const supabase = getSupabaseOrNull();
+    if (!supabase) {
+      return NextResponse.json({ checked: 0, closed: 0, skipped: true });
+    }
     const { data: rooms } = await supabase
       .from("private_rooms")
       .select("id, host_user_id")

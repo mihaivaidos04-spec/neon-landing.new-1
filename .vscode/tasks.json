@@ -8,8 +8,8 @@
       "problemMatcher": {
         "background": {
           "activeOnStart": true,
-          "beginsPattern": "Ready on",
-          "endsPattern": "."
+          "beginsPattern": "> Ready on",
+          "endsPattern": "> Local:"
         }
       },
       "presentation": {

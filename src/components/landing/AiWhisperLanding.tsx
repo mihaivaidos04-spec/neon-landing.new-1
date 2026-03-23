@@ -4,14 +4,15 @@ import Link from "next/link";
 import LiveIndicator from "@/src/components/LiveIndicator";
 import LandingActivityFeed from "@/src/components/landing/LandingActivityFeed";
 
-type Props = {
+const FLAGS_ROW = ["🇧🇷", "🇺🇸", "🇯🇵", "🇰🇷", "🇮🇳", "🇲🇽", "🇫🇷", "🇩🇪", "🇮🇩", "🇵🇭"];
+
+type HeroProps = {
   onStartTalking: () => void;
   onSeePricing: () => void;
 };
 
-const FLAGS_ROW = ["🇧🇷", "🇺🇸", "🇯🇵", "🇰🇷", "🇮🇳", "🇲🇽", "🇫🇷", "🇩🇪", "🇮🇩", "🇵🇭"];
-
-export default function AiWhisperLanding({ onStartTalking, onSeePricing }: Props) {
+/** Compact hero above the video stage — “Start Talking” scrolls / auth handled by parent. */
+export function AiWhisperLandingHero({ onStartTalking, onSeePricing }: HeroProps) {
   return (
     <div className="relative z-[5] w-full shrink-0 border-b border-white/[0.06] bg-gradient-to-b from-[#0c0614] via-[#080510] to-black px-4 py-10 sm:px-6 sm:py-14">
       <div
@@ -77,8 +78,17 @@ export default function AiWhisperLanding({ onStartTalking, onSeePricing }: Props
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
 
-        <section className="mt-16 border-t border-white/[0.06] pt-12">
+/** Marketing sections below the video stage (no duplicate bottom CTA). */
+export function AiWhisperLandingRest() {
+  return (
+    <div className="relative z-[5] w-full shrink-0 border-b border-white/[0.06] bg-gradient-to-b from-black via-[#080510] to-[#0c0614] px-4 py-10 sm:px-6 sm:py-14">
+      <div className="relative mx-auto max-w-5xl">
+        <section className="border-t border-white/[0.06] pt-12">
           <h3 className="text-center text-lg font-semibold text-white sm:text-xl">How it works</h3>
           <div className="mt-8 grid gap-6 sm:grid-cols-3">
             {[
@@ -161,27 +171,6 @@ export default function AiWhisperLanding({ onStartTalking, onSeePricing }: Props
                 {q.quote}
               </blockquote>
             ))}
-          </div>
-        </section>
-
-        <section className="mt-16 rounded-2xl border border-fuchsia-500/30 bg-gradient-to-br from-fuchsia-950/40 to-violet-950/30 p-8 text-center">
-          <h3 className="text-xl font-semibold text-white sm:text-2xl">Break the language barrier.</h3>
-          <p className="mt-2 text-sm text-white/60">Start your first conversation free.</p>
-          <div className="mt-6 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-            <button
-              type="button"
-              onClick={onStartTalking}
-              className="min-h-[48px] rounded-full bg-white px-8 py-3 text-sm font-bold text-violet-950 shadow-lg transition hover:bg-violet-100"
-            >
-              Start Free
-            </button>
-            <button
-              type="button"
-              onClick={onSeePricing}
-              className="min-h-[48px] rounded-full border border-white/30 px-8 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-            >
-              See Pricing
-            </button>
           </div>
         </section>
       </div>

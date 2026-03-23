@@ -99,13 +99,7 @@ export default function TrendingPage() {
                       : "flex items-center gap-3 rounded-2xl border border-fuchsia-500/20 bg-black/40 px-3 py-2.5 shadow-[0_0_16px_rgba(192,38,211,0.08)]"
                   }
                 >
-                  <span
-                    className={
-                      isTop3
-                        ? "number-plain w-7 shrink-0 text-center text-sm font-black tabular-nums text-orange-200"
-                        : "number-plain w-7 shrink-0 text-center text-sm font-bold tabular-nums text-fuchsia-300/80"
-                    }
-                  >
+                  <span className="number-plain w-7 shrink-0 text-center text-sm tabular-nums text-white/55">
                     {u.rank.toLocaleString("en-US")}
                   </span>
                   <LazyUserFlag code={u.countryCode} locale={locale} size="sm" className="shrink-0" />
@@ -130,15 +124,11 @@ export default function TrendingPage() {
                         ?
                       </div>
                     )}
-                    {isTop3 && (
-                      <span
-                        className="trending-flame-badge absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-600 text-[11px] shadow-[0_0_12px_rgba(251,146,60,0.9)]"
-                        title="Top 3"
-                        aria-hidden
-                      >
+                    {isTop3 ? (
+                      <span className="absolute -right-0.5 -top-0.5 text-[11px] leading-none" title="Top 3" aria-hidden>
                         🔥
                       </span>
-                    )}
+                    ) : null}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-white/95">{u.name}</p>

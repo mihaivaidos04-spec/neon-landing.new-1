@@ -96,7 +96,16 @@ const GlobalPulseGuestPanel = dynamic(() => import("@/src/components/GlobalPulse
 });
 const LoginWall = dynamic(() => import("@/src/components/LoginWall"), { ssr: false });
 const NicknameSetupModal = dynamic(() => import("@/src/components/NicknameSetupModal"), { ssr: false });
-const AiWhisperLanding = dynamic(() => import("@/src/components/landing/AiWhisperLanding"), { ssr: false });
+const AiWhisperLandingHero = dynamic(
+  () => import("@/src/components/landing/AiWhisperLanding").then((m) => ({ default: m.AiWhisperLandingHero })),
+  { ssr: false }
+);
+const AiWhisperLandingRest = dynamic(
+  () => import("@/src/components/landing/AiWhisperLanding").then((m) => ({ default: m.AiWhisperLandingRest })),
+  { ssr: false }
+);
+
+const START_VIDEO_INTENT_KEY = "neon-start-video-after-auth";
 const WelcomeBonusModal = dynamic(() => import("@/src/components/WelcomeBonusModal"), { ssr: false });
 const DailyStreakModal = dynamic(() => import("@/src/components/DailyStreakModal"), { ssr: false });
 
@@ -312,6 +321,19 @@ export default function NeonLanding() {
     document.getElementById("neon-stage")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
+  const handleStartTalkingFree = useCallback(() => {
+    if (status === "unauthenticated") {
+      try {
+        sessionStorage.setItem(START_VIDEO_INTENT_KEY, "1");
+      } catch {
+        /* ignore */
+      }
+      setShowLoginWall(true);
+      return;
+    }
+    scrollToVideoStage();
+  }, [status, scrollToVideoStage]);
+
   const handleOpenShop = () => setShowShopModal(true);
   /** Guests: open unified login chooser. Logged-in: shop modal. */
   const handleCoinsPress = useCallback(() => {
@@ -389,6 +411,28 @@ export default function NeonLanding() {
   const authSession = session as AppSession | null | undefined;
   const needsNicknameSetup =
     status === "authenticated" && !authSession?.nickname?.trim();
+
+  useEffect(() => {
+    if (status !== "authenticated" || needsNicknameSetup || typeof window === "undefined") return;
+    let pending = false;
+    try {
+      pending = sessionStorage.getItem(START_VIDEO_INTENT_KEY) === "1";
+      if (pending) sessionStorage.removeItem(START_VIDEO_INTENT_KEY);
+    } catch {
+      /* ignore */
+    }
+    if (!pending) return;
+    requestAnimationFrame(() => scrollToVideoStage());
+  }, [status, needsNicknameSetup, scrollToVideoStage]);
+
+  useEffect(() => {
+    if (showLoginWall || status === "authenticated") return;
+    try {
+      sessionStorage.removeItem(START_VIDEO_INTENT_KEY);
+    } catch {
+      /* ignore */
+    }
+  }, [showLoginWall, status]);
 
   const handleNicknameSetupComplete = useCallback(async () => {
     try {
@@ -646,8 +690,8 @@ export default function NeonLanding() {
       )}
       <main className="relative z-10 mx-auto flex min-h-0 w-full max-w-[100vw] flex-1 flex-col overflow-x-hidden overflow-y-auto px-2 pb-2 pt-2 sm:px-3 sm:pt-3 xl:px-4">
         {canShowLanding && status === "unauthenticated" && (
-          <AiWhisperLanding
-            onStartTalking={scrollToVideoStage}
+          <AiWhisperLandingHero
+            onStartTalking={handleStartTalkingFree}
             onSeePricing={() => router.push("/billing")}
           />
         )}
@@ -710,6 +754,7 @@ export default function NeonLanding() {
                 ) : null}
               </div>
             </div>
+            {canShowLanding && status === "unauthenticated" && <AiWhisperLandingRest />}
           </>
         )}
       </main>
