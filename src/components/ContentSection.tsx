@@ -1440,17 +1440,15 @@ export default function ContentSection({
               : ""
           }`}>
               {searching && (
-                <div className="pointer-events-none absolute inset-x-0 top-2 z-[34] flex justify-center px-3 max-md:top-3 md:hidden">
-                  <div className="flex min-h-[34px] items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 backdrop-blur-md">
-                    <NeonLiveLogo
-                      variant="compact"
-                      as="span"
-                      className="scale-[0.8] opacity-85"
-                    />
-                    <span className="number-plain text-[11px] font-medium tracking-wide text-white/72">
-                      1,660 online
-                    </span>
-                  </div>
+                <div className="pointer-events-none absolute inset-x-0 top-2 z-[34] flex justify-center gap-2 px-3 max-md:top-3 md:hidden">
+                  <NeonLiveLogo
+                    variant="compact"
+                    as="span"
+                    className="scale-[0.8] opacity-85"
+                  />
+                  <span className="number-plain text-[11px] font-medium tracking-wide text-[var(--color-text-secondary)]">
+                    1,660 online
+                  </span>
                 </div>
               )}
               <MobileVideoSwipeStart

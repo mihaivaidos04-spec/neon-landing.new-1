@@ -40,19 +40,19 @@ export default function SessionSummaryModal({
           <div className="space-y-4">
             <div className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3">
               <span className="text-white/80">Talked to new people</span>
-              <span className="text-xl font-bold text-white">
+              <span className="text-xl font-bold tabular-nums text-[var(--color-text-secondary)]">
                 {stats.peopleTalkedTo}
               </span>
             </div>
             <div className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3">
               <span className="text-white/80">Gifts received</span>
-              <span className="text-xl font-bold text-white">
+              <span className="text-xl font-bold tabular-nums text-[var(--color-text-secondary)]">
                 {stats.giftsReceived}
               </span>
             </div>
             <div className="flex items-center justify-between rounded-xl bg-white/5 px-4 py-3">
               <span className="text-white/80">Online for</span>
-              <span className="text-xl font-bold text-white">
+              <span className="text-xl font-bold tabular-nums text-[var(--color-text-secondary)]">
                 {stats.minutesOnline} min
               </span>
             </div>

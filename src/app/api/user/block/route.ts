@@ -17,7 +17,10 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const blockedId = typeof body?.blockedUserId === "string" ? body.blockedUserId.trim() : "";
+    const blockedId =
+      (typeof body?.blockedUserId === "string" ? body.blockedUserId.trim() : "") ||
+      (typeof body?.userId === "string" ? body.userId.trim() : "") ||
+      (typeof body?.blockedId === "string" ? body.blockedId.trim() : "");
     if (!blockedId) {
       return NextResponse.json({ error: "Missing blockedUserId" }, { status: 400 });
     }

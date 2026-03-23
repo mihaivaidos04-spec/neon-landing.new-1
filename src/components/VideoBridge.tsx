@@ -507,7 +507,7 @@ export default function VideoBridge({
           {partnerVideoBlurred && (partnerVideoCountdown != null || onInstantReveal) && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/30">
               {partnerVideoCountdown != null && partnerVideoCountdown > 0 && (
-                <span className="text-4xl font-bold text-white drop-shadow-lg">
+                <span className="text-4xl font-bold tabular-nums text-[var(--color-text-secondary)]">
                   {partnerVideoCountdown}
                 </span>
               )}

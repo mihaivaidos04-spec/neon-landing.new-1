@@ -16,7 +16,6 @@
 export const STRIPE_SERVER_ENV = {
   /** `sk_live_...` / `sk_test_...` — API client in `lib/stripe.ts` */
   secretKey: "STRIPE_SECRET_KEY",
-  secretKeyAlias: "STRIPE_API_KEY",
   /** `whsec_...` — `constructEvent()` in webhook route */
   webhookSecret: "STRIPE_WEBHOOK_SECRET",
 } as const;

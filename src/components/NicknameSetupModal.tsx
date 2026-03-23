@@ -9,9 +9,10 @@ type Props = {
   locale?: ContentLocale;
   /** When true, user cannot dismiss without saving a valid nickname */
   open: boolean;
+  onSuccess?: () => void;
 };
 
-export default function NicknameSetupModal({ locale = "en", open }: Props) {
+export default function NicknameSetupModal({ locale = "en", open, onSuccess }: Props) {
   const { update } = useSession();
   const [value, setValue] = useState("");
   const [saving, setSaving] = useState(false);
@@ -33,12 +34,13 @@ export default function NicknameSetupModal({ locale = "en", open }: Props) {
       }
       await update();
       toast.success(locale === "ro" ? "Poreclă salvată" : "Nickname saved");
+      onSuccess?.();
     } catch {
       setError("Network error");
     } finally {
       setSaving(false);
     }
-  }, [value, update, locale]);
+  }, [value, update, locale, onSuccess]);
 
   if (!open) return null;
 
@@ -84,7 +86,13 @@ export default function NicknameSetupModal({ locale = "en", open }: Props) {
           onClick={() => void save()}
           className="mt-6 w-full rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 py-3 text-sm font-semibold text-white shadow-[0_0_20px_rgba(139,92,246,0.4)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {saving ? (locale === "ro" ? "Se salvează…" : "Saving…") : locale === "ro" ? "Salvează" : "Save"}
+          {saving
+            ? locale === "ro"
+              ? "Se salvează…"
+              : "Saving…"
+            : locale === "ro"
+              ? "Continuă"
+              : "Continue"}
         </button>
       </div>
     </div>

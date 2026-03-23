@@ -157,14 +157,14 @@ export default function ShopModal({
             <p className="mt-1 text-sm text-violet-300/80">{t("shop.subtitle")}</p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="rounded-full bg-violet-500/20 px-3 py-1 text-sm font-semibold text-violet-300">
+            <span className="text-sm font-semibold tabular-nums text-[var(--color-text-secondary)]">
               {coins} {t("common.coins")}
             </span>
             {onGetCoins && (
               <button
                 type="button"
                 onClick={() => { onClose(); onGetCoins(); }}
-                className="rounded-full bg-emerald-500/20 px-3 py-1 text-sm font-semibold text-emerald-400 hover:bg-emerald-500/30"
+                className="rounded-[24px] bg-emerald-500/20 px-6 py-[10px] text-[15px] font-bold text-emerald-400 hover:bg-emerald-500/30"
               >
                 Add balance
               </button>
@@ -200,7 +200,9 @@ export default function ShopModal({
                     >
                       <span className="text-3xl transition-transform group-hover:scale-110">{item.icon}</span>
                       <span className="text-sm font-medium text-white">{t(`shop.${item.nameKey}`)}</span>
-                      <span className="text-xs text-violet-400">{item.cost} {t("common.coins")}</span>
+                      <span className="text-xs tabular-nums text-[var(--color-text-secondary)]">
+                        {item.cost} {t("common.coins")}
+                      </span>
                       {loading === item.id ? (
                         <span className="text-xs text-violet-400">{t("common.loading")}</span>
                       ) : (

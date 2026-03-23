@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  --color-text-secondary: #666;
   /**
    * Emoji stack: Apple Color Emoji = stil iOS pe iPhone / Mac;
    * apoi Segoe UI Emoji (Windows), Noto Color Emoji (Android / Linux).
@@ -63,16 +64,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Premium numbers / coin labels */
+/* Numeric coin / price lines (default body font, muted) */
 .gift-price-text {
-  font-family: var(--font-inter), var(--font-orbitron), var(--font-syne), ui-sans-serif, system-ui, sans-serif;
-  font-weight: 700;
   font-variant-numeric: tabular-nums;
   font-variant-emoji: text;
-  letter-spacing: 0;
-  text-shadow:
-    0 0 10px rgba(168, 85, 247, 0.3),
-    0 0 18px rgba(34, 211, 238, 0.18);
 }
 
 .premium-number-glow {
@@ -86,7 +81,7 @@ body {
     0 0 24px rgba(34, 211, 238, 0.18);
 }
 
-/* Force plain text numerals (avoid keycap-style emoji rendering). */
+/* Tabular numerals; inherits body font — no badge chrome (emoji keycap guard) */
 .number-plain {
   display: inline !important;
   padding: 0 !important;
@@ -95,8 +90,8 @@ body {
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
+  font-variant-numeric: tabular-nums;
   font-variant-emoji: text;
-  font-family: var(--font-inter), var(--font-orbitron), var(--font-syne), ui-sans-serif, system-ui, sans-serif;
   font-feature-settings: "tnum" 1;
   letter-spacing: normal !important;
   line-height: inherit !important;

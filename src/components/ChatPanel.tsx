@@ -104,12 +104,12 @@ export default function ChatPanel({
       <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
         <span className="text-xs font-medium text-white/80">
           Balance: {(coins ?? 0) > 0 ? (
-            <span className="premium-number-glow number-plain text-white">
+            <span className="number-plain tabular-nums text-[var(--color-text-secondary)]">
               {formatNumber(coins ?? 0)} {t.coinsLabel}
             </span>
           ) : (
             <>
-              <span className="premium-number-glow text-white/70">0 {t.coinsLabel}</span>
+              <span className="text-[var(--color-text-secondary)]">0 {t.coinsLabel}</span>
               <button
                 type="button"
                 onClick={onRecharge}

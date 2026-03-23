@@ -9,6 +9,7 @@ import { isPlausibleCountryCode } from "@/src/lib/valid-country-code";
 import { isUserMatchingSuspended } from "@/src/lib/report-store";
 import { checkMatchRateLimit } from "@/src/lib/rate-limit";
 import { getPartnerNickname } from "@/src/lib/partner-nickname";
+import { bannedUserResponseIfAny } from "@/src/lib/banned-user";
 
 export async function POST(req: Request) {
   try {
@@ -17,6 +18,9 @@ export async function POST(req: Request) {
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const banned = await bannedUserResponseIfAny(userId);
+    if (banned) return banned;
 
     const battery = await getBatteryLevel(userId);
     if (battery <= 0) {

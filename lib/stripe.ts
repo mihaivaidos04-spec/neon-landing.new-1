@@ -6,15 +6,12 @@ import Stripe from "stripe";
  */
 export const STRIPE_API_VERSION = "2026-02-25.clover" as const;
 
-/** Server secret: `sk_live_...` / `sk_test_...` — prefer STRIPE_SECRET_KEY; STRIPE_API_KEY is a common alias. */
+/** Server secret: `sk_live_...` / `sk_test_...` — set `STRIPE_SECRET_KEY` in Railway / `.env`. */
 export function getStripeSecretKey(): string {
-  const key =
-    process.env.STRIPE_SECRET_KEY?.trim() ||
-    process.env.STRIPE_API_KEY?.trim();
-  if (!key) {
-    throw new Error("STRIPE_SECRET_KEY (or STRIPE_API_KEY) is not configured");
+  if (!process.env.STRIPE_SECRET_KEY?.trim()) {
+    throw new Error("STRIPE_SECRET_KEY is not set in environment variables");
   }
-  return key;
+  return process.env.STRIPE_SECRET_KEY.trim();
 }
 
 /**
@@ -51,7 +48,7 @@ export function getStripe(): Stripe {
 
 /**
  * Same client as `getStripe()`, as a `const` for drop-in usage: `stripe.checkout.sessions.create(...)`
- * First property access initializes the client and requires `STRIPE_SECRET_KEY` (or `STRIPE_API_KEY`) at runtime.
+ * First property access initializes the client and requires `STRIPE_SECRET_KEY` at runtime.
  */
 export const stripe = new Proxy({} as Stripe, {
   get(_target, prop, receiver) {

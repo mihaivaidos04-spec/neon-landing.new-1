@@ -13,7 +13,7 @@ export default function RankProgressionBar({ coinsSpent }: Props) {
 
   if (!nextInfo || nextInfo.needed <= 0) {
     return (
-      <div className="rounded-lg bg-white/5 px-2 py-1.5 text-[10px] text-white/70">
+      <div className="text-[10px] text-[var(--color-text-secondary)]">
         Max rank: {RANK_LABELS[current]}
       </div>
     );
@@ -26,8 +26,10 @@ export default function RankProgressionBar({ coinsSpent }: Props) {
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between gap-2 text-[10px] text-white/70">
-        <span>{formatNumber(nextInfo.needed)} more coins to reach {RANK_LABELS[nextInfo.next]} Rank</span>
+      <div className="flex items-center justify-between gap-2 text-[10px]">
+        <span className="text-[var(--color-text-secondary)]">
+          {formatNumber(nextInfo.needed)} more coins to reach {RANK_LABELS[nextInfo.next]} Rank
+        </span>
       </div>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
         <div

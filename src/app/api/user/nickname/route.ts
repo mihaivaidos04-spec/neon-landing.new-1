@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/src/auth";
 import { prisma } from "@/src/lib/prisma";
 import { parseNickname } from "@/src/lib/nickname";
+import { bannedUserResponseIfAny } from "@/src/lib/banned-user";
+import { moderateText } from "@/src/lib/moderation";
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -12,10 +14,20 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const banned = await bannedUserResponseIfAny(userId);
+    if (banned) return banned;
+
     const body = await req.json().catch(() => ({}));
     const parsed = parseNickname(body?.nickname);
     if (!parsed.ok) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+
+    if (process.env.ANTHROPIC_API_KEY?.trim()) {
+      const mod = await moderateText(parsed.value, userId, { context: "nickname" });
+      if (!mod.allowed) {
+        return NextResponse.json({ error: "Nickname-ul conține conținut inadecvat" }, { status: 400 });
+      }
     }
 
     try {

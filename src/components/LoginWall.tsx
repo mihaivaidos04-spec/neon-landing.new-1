@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { signIn, getProviders } from "next-auth/react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { signIn, getProviders, getSession } from "next-auth/react";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
 import { getSafeAuthCallbackUrl } from "../lib/auth-callback-url";
 import NeonLiveLogo from "./NeonLiveLogo";
 import NeonPinkSpinner from "./NeonPinkSpinner";
+import NicknameSetupModal from "./NicknameSetupModal";
 
 function normalizeNumericText(input: string): string {
   return input
@@ -70,11 +71,17 @@ export default function LoginWall({ open, onClose, locale }: Props) {
   const [providers, setProviders] = useState<Record<string, { id: string; name: string }> | null>(null);
   const [showOther, setShowOther] = useState(false);
   const [email, setEmail] = useState("");
-  const [emailSent, setEmailSent] = useState(false);
+  const [otpStep, setOtpStep] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [otpError, setOtpError] = useState<string | null>(null);
   const [resendReady, setResendReady] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
+  const [otpExpiresAt, setOtpExpiresAt] = useState<number | null>(null);
+  const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
+  const [tick, setTick] = useState(0);
+  const [showNicknameSetup, setShowNicknameSetup] = useState(false);
   const resendTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     if (open) getProviders().then(setProviders);
@@ -83,18 +90,28 @@ export default function LoginWall({ open, onClose, locale }: Props) {
   useEffect(() => {
     if (!open) {
       setShowOther(false);
-      setEmailSent(false);
+      setOtpStep(false);
       setEmailError(null);
+      setOtpError(null);
       setResendReady(false);
+      setOtpExpiresAt(null);
+      setOtpDigits(["", "", "", "", "", ""]);
+      setShowNicknameSetup(false);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!otpStep || !otpExpiresAt) return;
+    const id = window.setInterval(() => setTick((n) => n + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [otpStep, otpExpiresAt]);
 
   useEffect(() => {
     if (resendTimerRef.current) {
       clearTimeout(resendTimerRef.current);
       resendTimerRef.current = null;
     }
-    if (!open || !emailSent) {
+    if (!open || !otpStep) {
       setResendReady(false);
       return;
     }
@@ -108,7 +125,7 @@ export default function LoginWall({ open, onClose, locale }: Props) {
         resendTimerRef.current = null;
       }
     };
-  }, [open, emailSent]);
+  }, [open, otpStep]);
 
   useEffect(() => {
     if (!open) return;
@@ -142,40 +159,118 @@ export default function LoginWall({ open, onClose, locale }: Props) {
     }
   };
 
-  const handleMagicLink = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const sendOtpToEmail = useCallback(async () => {
     const trimmed = email.trim();
-    if (!trimmed) return;
-    if (!isValidEmail(trimmed)) {
+    if (!trimmed || !isValidEmail(trimmed)) {
       setEmailError("Please enter a valid email address.");
-      return;
+      return false;
     }
     setEmailError(null);
+    setOtpError(null);
     setLoading("email");
     try {
-      await signIn("email", { email: trimmed, callbackUrl: postAuthUrl, redirect: false });
-      setEmailSent(true);
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setEmailError(typeof data?.error === "string" ? data.error : "Could not send code");
+        return false;
+      }
+      setOtpStep(true);
+      setOtpExpiresAt(Date.now() + 5 * 60 * 1000);
+      setOtpDigits(["", "", "", "", "", ""]);
+      setResendReady(false);
+      requestAnimationFrame(() => otpInputRefs.current[0]?.focus());
+      return true;
+    } finally {
+      setLoading(null);
+    }
+  }, [email]);
+
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await sendOtpToEmail();
+  };
+
+  const handleResendOtp = async () => {
+    await sendOtpToEmail();
+  };
+
+  const otpExpired = otpExpiresAt != null && Date.now() >= otpExpiresAt;
+
+  const handleOtpDigitChange = (index: number, raw: string) => {
+    const d = raw.replace(/\D/g, "").slice(-1);
+    setOtpError(null);
+    setOtpDigits((prev) => {
+      const next = [...prev];
+      next[index] = d;
+      return next;
+    });
+    if (d && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!text) return;
+    const chars = text.split("");
+    const next = ["", "", "", "", "", ""];
+    for (let i = 0; i < chars.length; i++) next[i] = chars[i]!;
+    setOtpDigits(next);
+    setOtpError(null);
+    const focusIdx = Math.min(chars.length, 5);
+    otpInputRefs.current[focusIdx]?.focus();
+  };
+
+  const handleVerifyOtp = async () => {
+    const trimmed = email.trim();
+    const code = otpDigits.join("");
+    if (!trimmed || code.length !== 6 || otpExpired) return;
+    setOtpError(null);
+    setLoading("otp-verify");
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: trimmed, code }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setOtpError(typeof data?.error === "string" ? data.error : t.emailOtpWrong);
+        return;
+      }
+      const session = await getSession();
+      const nn = session?.nickname;
+      const needsNickname = nn == null || nn === "";
+      if (needsNickname) {
+        setShowNicknameSetup(true);
+      } else {
+        onClose();
+        window.location.assign(postAuthUrl);
+      }
     } finally {
       setLoading(null);
     }
   };
 
-  const handleResendEmail = async () => {
-    const trimmed = email.trim();
-    if (!trimmed || !isValidEmail(trimmed)) {
-      setEmailError("Please enter a valid email address.");
-      return;
-    }
-    setEmailError(null);
-    setLoading("email-resend");
-    try {
-      await signIn("email", { email: trimmed, callbackUrl: postAuthUrl, redirect: false });
-      setEmailSent(true);
-      setResendReady(false);
-    } finally {
-      setLoading(null);
-    }
-  };
+  const otpRemainingMs =
+    otpExpiresAt != null ? Math.max(0, otpExpiresAt - Date.now()) : 0;
+  void tick;
+  const otpMm = Math.floor(otpRemainingMs / 60000);
+  const otpSs = Math.floor((otpRemainingMs % 60000) / 1000);
+  const otpTimeStr = `${String(otpMm).padStart(2, "0")}:${String(otpSs).padStart(2, "0")}`;
 
   return (
     <>
@@ -289,50 +384,96 @@ export default function LoginWall({ open, onClose, locale }: Props) {
 
             {showOther && (
               <div className="mx-auto mt-5 w-full max-w-md space-y-4 border-t border-fuchsia-500/20 pt-6">
-                <form onSubmit={handleMagicLink} className="flex flex-col gap-3">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      if (emailError) setEmailError(null);
-                    }}
-                    placeholder={t.emailPlaceholder}
-                    className="min-h-[52px] rounded-2xl border border-white/15 bg-black/60 px-4 py-3 text-base text-white placeholder:text-white/35 focus:border-fuchsia-500/50 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/25"
-                  />
-                  {emailError && (
-                    <p className="text-center text-xs text-rose-300/95 sm:text-sm">{emailError}</p>
-                  )}
-                  <p className="text-center text-xs text-white/45 sm:text-sm">{t.emailNoPasswordNeeded}</p>
-                  <button
-                    type="submit"
-                    disabled={!!loading || !email.trim()}
-                    aria-busy={loading === "email"}
-                    className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl py-3.5 text-base font-bold text-white transition-opacity disabled:opacity-45"
-                    style={{ background: "linear-gradient(135deg, #db2777 0%, #a855f7 50%, #c026d3 100%)" }}
-                  >
-                    {loading === "email" ? (
-                      <NeonPinkSpinner label="Sending..." className="text-white" />
-                    ) : emailSent ? (
-                      t.emailLinkSent
-                    ) : (
-                      t.emailProceed
-                    )}
-                  </button>
-                  {emailSent && (
-                    <p className="text-center text-xs text-amber-200/85">
-                      Check your Spam folder if you don&apos;t see the email.
-                    </p>
-                  )}
-                  {emailSent && resendReady && (
-                    <button
-                      type="button"
-                      onClick={() => void handleResendEmail()}
-                      disabled={!!loading}
-                      className="min-h-[48px] rounded-2xl border border-fuchsia-400/40 bg-fuchsia-950/35 px-4 py-2.5 text-sm font-semibold text-fuchsia-100 transition-all hover:bg-fuchsia-900/45 disabled:cursor-not-allowed disabled:opacity-55"
-                    >
-                      {loading === "email-resend" ? "Sending again…" : "Resend Email"}
-                    </button>
+                <form onSubmit={handleSendOtp} className="flex flex-col gap-3">
+                  {!otpStep ? (
+                    <>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          if (emailError) setEmailError(null);
+                        }}
+                        placeholder={t.emailPlaceholder}
+                        className="min-h-[52px] rounded-2xl border border-white/15 bg-black/60 px-4 py-3 text-base text-white placeholder:text-white/35 focus:border-fuchsia-500/50 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/25"
+                      />
+                      {emailError && (
+                        <p className="text-center text-xs text-rose-300/95 sm:text-sm">{emailError}</p>
+                      )}
+                      <p className="text-center text-xs text-white/45 sm:text-sm">{t.emailNoPasswordNeeded}</p>
+                      <button
+                        type="submit"
+                        disabled={!!loading || !email.trim()}
+                        aria-busy={loading === "email"}
+                        className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl py-3.5 text-base font-bold text-white transition-opacity disabled:opacity-45"
+                        style={{ background: "linear-gradient(135deg, #db2777 0%, #a855f7 50%, #c026d3 100%)" }}
+                      >
+                        {loading === "email" ? (
+                          <NeonPinkSpinner label="Sending..." className="text-white" />
+                        ) : (
+                          t.emailSendOtp
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-center text-sm text-fuchsia-100/90">{t.emailOtpSent}</p>
+                      <p className="text-center text-xs text-white/50">
+                        {t.emailOtpExpiresIn}{" "}
+                        <span className="font-mono tabular-nums text-fuchsia-200/90">{otpTimeStr}</span>
+                      </p>
+                      <p className="text-center text-[11px] text-white/40">{t.emailOtpHint}</p>
+                      <div className="flex justify-center gap-2" onPaste={handleOtpPaste}>
+                        {otpDigits.map((digit, index) => (
+                          <input
+                            key={index}
+                            ref={(el) => {
+                              otpInputRefs.current[index] = el;
+                            }}
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            maxLength={1}
+                            value={digit}
+                            onChange={(e) => handleOtpDigitChange(index, e.target.value)}
+                            onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                            disabled={otpExpired}
+                            className="h-12 w-10 rounded-xl border border-white/20 bg-black/50 text-center text-lg font-semibold text-white focus:border-fuchsia-500/50 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/25 disabled:opacity-40"
+                          />
+                        ))}
+                      </div>
+                      {otpError && (
+                        <p className="text-center text-xs font-medium text-rose-400">{otpError}</p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => void handleVerifyOtp()}
+                        disabled={
+                          !!loading || otpDigits.join("").length !== 6 || otpExpired
+                        }
+                        className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl py-3.5 text-base font-bold text-white transition-opacity disabled:opacity-45"
+                        style={{ background: "linear-gradient(135deg, #db2777 0%, #a855f7 50%, #c026d3 100%)" }}
+                      >
+                        {loading === "otp-verify" ? (
+                          <NeonPinkSpinner label="…" className="text-white" />
+                        ) : (
+                          t.emailVerifyOtp
+                        )}
+                      </button>
+                      <p className="text-center text-xs text-amber-200/85">
+                        Check your Spam folder if you don&apos;t see the email.
+                      </p>
+                      {resendReady && (
+                        <button
+                          type="button"
+                          onClick={() => void handleResendOtp()}
+                          disabled={!!loading}
+                          className="min-h-[48px] rounded-2xl border border-fuchsia-400/40 bg-fuchsia-950/35 px-4 py-2.5 text-sm font-semibold text-fuchsia-100 transition-all hover:bg-fuchsia-900/45 disabled:cursor-not-allowed disabled:opacity-55"
+                        >
+                          {loading === "email" ? "Sending again…" : t.emailResendOtp}
+                        </button>
+                      )}
+                    </>
                   )}
                 </form>
 
@@ -355,6 +496,15 @@ export default function LoginWall({ open, onClose, locale }: Props) {
           </div>
         </div>
       </div>
+      <NicknameSetupModal
+        locale={locale}
+        open={showNicknameSetup}
+        onSuccess={() => {
+          setShowNicknameSetup(false);
+          onClose();
+          window.location.assign(postAuthUrl);
+        }}
+      />
     </>
   );
 }

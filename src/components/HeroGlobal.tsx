@@ -95,13 +95,17 @@ export default function HeroGlobal({
         <p className="text-center text-[10px] font-medium uppercase tracking-[0.12em] text-fuchsia-200/80 sm:text-xs sm:tracking-[0.18em]">
           <span className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1 sm:gap-x-4">
             <span>
-              <span className="live-dot mr-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />2,405
-              Users Online
+              <span className="live-dot mr-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              <span className="tabular-nums text-[var(--color-text-secondary)]">2,405</span> Users Online
             </span>
             <span className="hidden text-white/25 sm:inline">|</span>
-            <span>142 Countries</span>
+            <span>
+              <span className="tabular-nums text-[var(--color-text-secondary)]">142</span> Countries
+            </span>
             <span className="hidden text-white/25 sm:inline">|</span>
-            <span>10,000+ Gifts Sent Today</span>
+            <span>
+              <span className="tabular-nums text-[var(--color-text-secondary)]">10,000+</span> Gifts Sent Today
+            </span>
           </span>
         </p>
       </div>

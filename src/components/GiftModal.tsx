@@ -99,7 +99,7 @@ export default function GiftModal({
         </div>
         <p className="mb-4 text-sm text-white/60">
           Your balance:{" "}
-          <span className="premium-number-glow number-plain">
+          <span className="number-plain tabular-nums text-[var(--color-text-secondary)]">
             {formatNumber(coins)} coins
           </span>
         </p>
@@ -120,7 +120,9 @@ export default function GiftModal({
                     <GiftAssetIcon id={g.id} size={28} />
                   </span>
                   <span className="font-medium text-white">{g.label}</span>
-                  <span className="gift-price-text text-sm text-white/50">{g.cost.toLocaleString("en-US")} coins</span>
+                  <span className="gift-price-text text-sm text-[var(--color-text-secondary)]">
+                    {g.cost.toLocaleString("en-US")} coins
+                  </span>
                 </span>
                 {loading === g.id ? (
                   <span className="text-xs text-violet-400">Sending...</span>

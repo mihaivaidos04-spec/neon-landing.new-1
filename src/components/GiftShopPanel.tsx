@@ -189,7 +189,7 @@ function GiftShopPanelContent({
                   whileTap={canAfford && !effectsDisabled ? { scale: 0.94 } : {}}
                 >
                   <span className="emoji-ios text-lg leading-none">{r.emoji}</span>
-                  <span className="premium-number-glow number-plain text-[9px] font-medium opacity-80">
+                  <span className="number-plain text-[9px] font-medium tabular-nums text-[var(--color-text-secondary)]">
                     {cost.toLocaleString("en-US")}
                   </span>
                 </motion.button>
@@ -223,7 +223,7 @@ function GiftShopPanelContent({
                   <span className="gift-emoji-future-wrap shrink-0">
                     <span className="emoji-ios text-xl leading-none">{GIFT_EMOJI[g.id] ?? "🎁"}</span>
                   </span>
-                  <span className="gift-price-text number-plain text-[9px] text-white/55">
+                  <span className="gift-price-text number-plain text-[9px] text-[var(--color-text-secondary)]">
                     {cost.toLocaleString("en-US")} {t.coinsLabel}
                   </span>
                 </button>

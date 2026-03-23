@@ -2,6 +2,7 @@
 
 :root {
   color-scheme: dark;
+  --color-text-secondary: #666;
   --font-emoji-stack:
     "Apple Color Emoji",
     "Segoe UI Emoji",
@@ -214,15 +215,9 @@ body.single-screen-home footer {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Gifts: plain typographic price */
+/* Numeric coin / price lines (default body font, muted) */
 .gift-price-text {
-  font-family: var(--font-orbitron), var(--font-syne), ui-sans-serif, system-ui, sans-serif;
-  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
-  text-shadow:
-    0 0 10px rgba(168, 85, 247, 0.3),
-    0 0 18px rgba(34, 211, 238, 0.18);
 }
 
 .premium-number-glow {
@@ -233,6 +228,23 @@ body.single-screen-home footer {
   text-shadow:
     0 0 12px rgba(192, 132, 252, 0.45),
     0 0 24px rgba(34, 211, 238, 0.18);
+}
+
+/* Tabular numerals; inherits body font — no badge chrome (emoji keycap guard) */
+.number-plain {
+  display: inline !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-variant-numeric: tabular-nums;
+  font-variant-emoji: text;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: normal !important;
+  line-height: inherit !important;
+  vertical-align: baseline !important;
 }
 
 /* Gifts: futuristic emoji capsule + scan + neon glow */

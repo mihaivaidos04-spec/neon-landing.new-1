@@ -126,6 +126,9 @@ export default function AdminDashboardPage() {
             <Link href="/admin/reports" className="text-violet-400 hover:underline">
               Reports
             </Link>
+            <Link href="/admin/moderation" className="text-violet-400 hover:underline">
+              AI Moderation
+            </Link>
             <Link href="/" className="text-white/60 hover:text-white">
               ← Back
             </Link>

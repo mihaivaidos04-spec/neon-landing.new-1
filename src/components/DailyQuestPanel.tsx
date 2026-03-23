@@ -32,7 +32,7 @@ export default function DailyQuestPanel({ locale, current, completed, taskType =
             {goalText}
           </p>
         </div>
-        <span className="shrink-0 rounded-full bg-[#8b5cf6]/20 px-2.5 py-1 text-xs font-bold text-[#a78bfa]">
+        <span className="shrink-0 text-xs font-bold tabular-nums text-[var(--color-text-secondary)]">
           +{DAILY_REWARD_COINS} {t.coinsLabel}
         </span>
       </div>
@@ -43,7 +43,7 @@ export default function DailyQuestPanel({ locale, current, completed, taskType =
             style={{ width: `${(progress / DAILY_GOAL) * 100}%` }}
           />
         </div>
-        <span className="text-xs font-medium text-white/80 tabular-nums">
+        <span className="text-xs font-medium tabular-nums text-[var(--color-text-secondary)]">
           {completed ? "✓" : `${progress}/${DAILY_GOAL}`}
         </span>
       </div>

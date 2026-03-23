@@ -6,7 +6,7 @@ End-to-end flow: **authenticated user** buys coins → **Checkout Session** → 
 
 | Variable | Role |
 |----------|------|
-| `STRIPE_SECRET_KEY` | Server SDK (`sk_live_…` / `sk_test_…`). Alias: `STRIPE_API_KEY`. Loaded in `lib/stripe.ts`. |
+| `STRIPE_SECRET_KEY` | Server SDK (`sk_live_…` / `sk_test_…`). Loaded in `lib/stripe.ts`. |
 | `STRIPE_WEBHOOK_SECRET` | Verifies webhook signatures (`whsec_…`). Required for production webhooks. |
 
 Optional: `NEXT_PUBLIC_STRIPE_PUBLIC_KEY` for client-side Stripe.js; Checkout redirect flow does not require it.

@@ -8,7 +8,7 @@ Add these to `.env` / `.env.local` (never commit secrets):
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `STRIPE_SECRET_KEY` | **Yes** | Secret key from [Stripe Dashboard → API keys](https://dashboard.stripe.com/apikeys) (`sk_live_...` / `sk_test_...`). Alias: `STRIPE_API_KEY`. |
+| `STRIPE_SECRET_KEY` | **Yes** | Secret key from [Stripe Dashboard → API keys](https://dashboard.stripe.com/apikeys) (`sk_live_...` / `sk_test_...`). Use this exact name in Railway / `.env`. |
 | `NEXT_PUBLIC_STRIPE_PUBLIC_KEY` | Optional | Publishable key (`pk_...`) for client-side Stripe.js. Server-only: `STRIPE_PUBLIC_KEY`. |
 | `STRIPE_WEBHOOK_SECRET` | **Yes (production)** | Signing secret for your webhook endpoint (`whsec_...`). |
 | `STRIPE_AUTOMATIC_TAX` | Optional | Default: automatic tax **on** (`automatic_tax.enabled` + billing address). Set `false` if Stripe Tax isn’t enabled in the Dashboard. |

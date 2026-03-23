@@ -47,6 +47,12 @@ model User {
   isShadowBanned   Boolean   @default(false)
   /// Auto: 3 reports in 10 min → 1h matching suspension (cleared after expiry; admin may use isShadowBanned)
   systemSuspensionUntil DateTime?
+  /// AI / auto-mod: temporary account ban (e.g. 24h); checked with tier BANNED on sockets & APIs
+  bannedUntil      DateTime?
+  /// Count of medium-severity AI blocks (global chat)
+  warnings         Int       @default(0)
+  /// Set when AI moderation flags or auto-actions the account
+  autoFlagged      Boolean   @default(false)
   moderationFlags  String?   // JSON: { toxicCount, nsfwCount, lastFlaggedAt }
   stripeCustomerId     String?   @unique
   stripeSubscriptionId String?   @unique
@@ -64,6 +70,8 @@ model User {
   walletCreditTransactions WalletCreditTransaction[]
   /// Optional cover image URL (LinkedIn-style); empty = default gradient
   profileBannerUrl String?
+  /// Custom avatar (Supabase Storage); falls back to `image` (OAuth) when null
+  avatarUrl        String?
   /// Short public bio, max 150 chars (enforced in API)
   bio              String?
   /// Profile display: male | female | other (optional)
@@ -72,7 +80,15 @@ model User {
   profileLanguages String?
   socialInstagram  String?
   socialTiktok     String?
+  /// X / Twitter profile URL
+  socialTwitter    String?
   socialDiscord    String?
+  /// Lifetime completed random matches (incremented when a pair is formed)
+  totalMatches     Int       @default(0)
+  /// Approx. minutes on-site (throttled heartbeat from client)
+  totalOnlineMinutes Int     @default(0)
+  /// Last throttled heartbeat — used to count ~1 online minute per interval
+  profileHeartbeatAt DateTime?
   /// Updated on Socket register/disconnect for “last seen”
   lastSeenAt       DateTime  @default(now())
   createdAt        DateTime  @default(now())
@@ -85,6 +101,8 @@ model User {
   privateMessagesReceived PrivateMessage[]     @relation("DmReceiver")
   blocksOutgoing         UserBlock[]           @relation("UserBlockBlocker")
   blocksIncoming         UserBlock[]           @relation("UserBlockBlocked")
+  badges                 Badge[]
+  moderationLogs         ModerationLog[]
 
   @@index([xp])
   @@index([currentLevel])
@@ -134,8 +152,13 @@ model Report {
   reporterId     String
   reportedUserId String
   reason         String?
+  /// Free-text context from the reporter (profile / in-app report UI)
+  details        String?
   status         String   @default("pending") // pending | reviewed | dismissed | action_taken
   adminNotes     String?
+  resolved       Boolean  @default(false)
+  /// AI triage: low | medium | urgent
+  aiPriority     String?
   createdAt      DateTime @default(now())
   reviewedAt     DateTime?
 
@@ -145,6 +168,24 @@ model Report {
   @@index([reporterId])
   @@index([reportedUserId])
   @@index([status])
+  @@index([createdAt])
+}
+
+/// AI moderation audit trail (global chat, nickname attempts, etc.)
+model ModerationLog {
+  id        String   @id @default(cuid())
+  userId    String
+  content   String   @db.Text
+  reason    String
+  severity  String
+  action    String // blocked | warned | banned
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([severity])
+  @@index([action])
   @@index([createdAt])
 }
 
@@ -352,6 +393,8 @@ model ChatMessage {
   userName    String
   countryCode String?  @db.VarChar(2)
   message     String   @db.VarChar(280)
+  /// text | reaction — one-tap emoji posts in the same feed
+  kind        String   @default("text") @db.VarChar(16)
   /// Snapshot: sender had Neon VIP (whale) at post time — for gold/blue name glow in history
   neonVip     Boolean  @default(false)
   createdAt   DateTime @default(now())
@@ -409,4 +452,31 @@ model PrivateMessage {
   @@index([senderId, receiverId, createdAt])
   @@index([receiverId, createdAt])
   @@map("private_messages")
+}
+
+/// Email OTP for passwordless login (code column stores scrypt hash: "saltHex:keyHex").
+model OtpCode {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
+  @@map("otp_codes")
+}
+
+/// Auto-awarded profile badges (first_match, 100_matches, top_gifter, vip, veteran)
+model Badge {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, type])
+  @@index([userId])
+  @@map("badges")
 }

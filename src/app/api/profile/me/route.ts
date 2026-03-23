@@ -4,6 +4,11 @@ import { prisma } from "@/src/lib/prisma";
 import { getWalletBalance } from "@/src/lib/wallet";
 import { computeProfileBadges } from "@/src/lib/profile-badges";
 import { getSqrtXpProgress } from "@/src/lib/neon-xp-level";
+import { parseNickname } from "@/src/lib/nickname";
+import { syncAutomaticBadges } from "@/src/lib/sync-automatic-badges";
+import { badgeUi } from "@/src/lib/profile-badge-display";
+import { bannedUserResponseIfAny } from "@/src/lib/banned-user";
+import { moderateText } from "@/src/lib/moderation";
 
 const BIO_MAX = 150;
 const URL_MAX = 500;
@@ -72,9 +77,12 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const banned = await bannedUserResponseIfAny(userId);
+    if (banned) return banned;
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
-        select: {
+      select: {
         nickname: true,
         bio: true,
         profileGender: true,
@@ -82,7 +90,12 @@ export async function GET() {
         profileLanguages: true,
         socialInstagram: true,
         socialTiktok: true,
+        socialTwitter: true,
         socialDiscord: true,
+        avatarUrl: true,
+        image: true,
+        totalMatches: true,
+        totalOnlineMinutes: true,
         xp: true,
         currentLevel: true,
         totalCoinsSpent: true,
@@ -147,6 +160,13 @@ export async function GET() {
 
     const coins = (await getWalletBalance(userId)) ?? 0;
 
+    await syncAutomaticBadges(userId);
+    const badgeRows = await prisma.badge.findMany({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      select: { type: true, createdAt: true },
+    });
+
     const galleryRows = await prisma.profileGalleryImage.findMany({
       where: { userId },
       orderBy: { slot: "asc" },
@@ -168,7 +188,17 @@ export async function GET() {
       languages,
       socialInstagram: user.socialInstagram,
       socialTiktok: user.socialTiktok,
+      socialTwitter: user.socialTwitter,
       socialDiscord: user.socialDiscord,
+      avatarUrl: user.avatarUrl ?? null,
+      avatarImageFallback: user.image ?? null,
+      totalMatches: user.totalMatches ?? 0,
+      totalOnlineMinutes: user.totalOnlineMinutes ?? 0,
+      dbBadges: badgeRows.map((b) => ({
+        type: b.type,
+        createdAt: b.createdAt.toISOString(),
+        ...badgeUi(b.type),
+      })),
       coins,
       totalCoinsSpent: user.totalCoinsSpent ?? 0,
       totalSpent: user.totalSpent ?? 0,
@@ -227,7 +257,32 @@ export async function PATCH(req: NextRequest) {
     const ig =
       body?.socialInstagram !== undefined ? sanitizeOptionalUrl(body.socialInstagram) : undefined;
     const tt = body?.socialTiktok !== undefined ? sanitizeOptionalUrl(body.socialTiktok) : undefined;
+    const tw =
+      body?.socialTwitter !== undefined ? sanitizeOptionalUrl(body.socialTwitter) : undefined;
     const dc = body?.socialDiscord !== undefined ? sanitizeOptionalUrl(body.socialDiscord) : undefined;
+
+    let nickname: string | undefined;
+    if (body?.nickname !== undefined) {
+      const parsed = parseNickname(body.nickname);
+      if (!parsed.ok) {
+        return NextResponse.json({ error: parsed.error }, { status: 400 });
+      }
+      if (process.env.ANTHROPIC_API_KEY?.trim()) {
+        const mod = await moderateText(parsed.value, userId, { context: "nickname" });
+        if (!mod.allowed) {
+          return NextResponse.json(
+            { error: "Nickname-ul conține conținut inadecvat" },
+            { status: 400 }
+          );
+        }
+      }
+      nickname = parsed.value;
+    }
+
+    let avatarUrlPatch: string | null | undefined;
+    if (body?.avatarUrl === null) {
+      avatarUrlPatch = null;
+    }
 
     const genderRaw = body?.profileGender;
     let profileGender: string | null | undefined;
@@ -251,6 +306,9 @@ export async function PATCH(req: NextRequest) {
     }
     if (body?.socialDiscord && body.socialDiscord !== "" && dc === null) {
       return NextResponse.json({ error: "Invalid Discord URL" }, { status: 400 });
+    }
+    if (body?.socialTwitter && body.socialTwitter !== "" && tw === null) {
+      return NextResponse.json({ error: "Invalid Twitter / X URL" }, { status: 400 });
     }
 
     let profileGifUrl: string | null | undefined;
@@ -330,10 +388,18 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "No valid fields" }, { status: 400 });
     }
 
-    await prisma.user.update({
-      where: { id: userId },
-      data,
-    });
+    try {
+      await prisma.user.update({
+        where: { id: userId },
+        data,
+      });
+    } catch (e: unknown) {
+      const code = typeof e === "object" && e !== null && "code" in e ? (e as { code?: string }).code : undefined;
+      if (code === "P2002") {
+        return NextResponse.json({ error: "That nickname is already taken" }, { status: 409 });
+      }
+      throw e;
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {

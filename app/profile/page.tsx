@@ -1,18 +1,16 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { Suspense } from "react";
-import ProfileDashboard from "@/src/components/profile/ProfileDashboard";
-
-export default function ProfilePage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-[40vh] items-center justify-center bg-[#030306] text-white/70">
-          <span className="h-8 w-8 animate-spin rounded-full border-2 border-fuchsia-500/30 border-t-fuchsia-400" />
-        </div>
-      }
-    >
-      <ProfileDashboard />
-    </Suspense>
-  );
+/** Canonical editable profile lives at `/profile/me`. Preserves query string (e.g. Stripe success). */
+export default async function ProfileIndexPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(sp)) {
+    if (typeof v === "string") qs.set(k, v);
+  }
+  const tail = qs.toString() ? `?${qs.toString()}` : "";
+  redirect(`/profile/me${tail}`);
 }

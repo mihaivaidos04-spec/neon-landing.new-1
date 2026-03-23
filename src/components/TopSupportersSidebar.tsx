@@ -109,7 +109,7 @@ export default function TopSupportersSidebar({
               }`}
             >
               <span
-                className={`number-plain shrink-0 text-center font-bold tabular-nums text-fuchsia-300/90 ${
+                className={`number-plain shrink-0 text-center font-bold tabular-nums text-[var(--color-text-secondary)] ${
                   isToolbox ? "w-3 text-[9px]" : "w-4 text-[11px]"
                 }`}
               >
@@ -146,7 +146,9 @@ export default function TopSupportersSidebar({
                 >
                   {s.name}
                 </p>
-                <p className={`gift-price-text number-plain text-violet-300/80 ${isToolbox ? "text-[8px] leading-tight" : "text-[10px]"}`}>
+                <p
+                  className={`gift-price-text number-plain text-[var(--color-text-secondary)] ${isToolbox ? "text-[8px] leading-tight" : "text-[10px]"}`}
+                >
                   {safeTotalSpent.toLocaleString("en-US")} {t.coinsLabel}
                 </p>
               </div>

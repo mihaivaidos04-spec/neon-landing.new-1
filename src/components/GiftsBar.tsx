@@ -45,7 +45,7 @@ export default function GiftsBar({ locale, coins, onSendGift }: Props) {
             <span className="gift-emoji-future-wrap shrink-0">
               <span className="emoji-ios text-xl leading-none">{GIFT_EMOJI[g.id]}</span>
             </span>
-            <span className="gift-price-text number-plain text-[10px] text-white/50">
+            <span className="gift-price-text number-plain text-[10px] text-[var(--color-text-secondary)]">
               {cost.toLocaleString("en-US")} {t.coinsLabel}
             </span>
           </button>

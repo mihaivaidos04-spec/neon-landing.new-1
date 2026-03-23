@@ -38,14 +38,18 @@ export default function LiveLeaderboard({ leaderboard, locale = "ro", currentUse
               key={entry.userId}
               className={`flex items-center gap-2 text-xs ${isBlurred ? "opacity-80" : "text-white/90"}`}
             >
-              <span className="w-4">{medals[entry.rank - 1] ?? `#${entry.rank}`}</span>
+              <span className="w-4">
+                {medals[entry.rank - 1] ?? (
+                  <span className="tabular-nums text-[var(--color-text-secondary)]">#{entry.rank}</span>
+                )}
+              </span>
               {entry.countryCode && (
                 <LazyUserFlag code={entry.countryCode} locale={locale} size="sm" className="shrink-0" />
               )}
               <span className="min-w-0 truncate font-mono">
                 {formatUserId(entry.userId, isBlurred)}
               </span>
-              <span className="shrink-0 text-[10px] text-violet-400/90">
+              <span className="shrink-0 text-[10px] tabular-nums text-[var(--color-text-secondary)]">
                 {entry.totalSpent}
               </span>
               {isCurrentUser && isBlurred && onGoGhost && (

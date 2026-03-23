@@ -142,9 +142,9 @@ export default function TrendingPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-white/95">{u.name}</p>
-                    <p className="number-plain text-xs text-violet-300/85">
+                    <p className="number-plain text-xs text-[var(--color-text-secondary)]">
                       {u.coinsReceived.toLocaleString()} {t.coinsLabel}{" "}
-                      <span className="number-plain text-white/35">· {windowHoursLabel}h</span>
+                      <span className="number-plain">· {windowHoursLabel}h</span>
                     </p>
                   </div>
                 </motion.li>
@@ -154,7 +154,7 @@ export default function TrendingPage() {
         )}
 
         {data?.updatedAt ? (
-          <p className="number-plain mt-6 text-center text-[10px] text-white/30">
+          <p className="number-plain mt-6 text-center text-[10px] text-[var(--color-text-secondary)]">
             {new Date(data.updatedAt).toLocaleString("en-US")}
           </p>
         ) : null}

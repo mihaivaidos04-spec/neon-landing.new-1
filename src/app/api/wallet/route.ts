@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/src/auth";
 import { getWalletBalance } from "@/src/lib/wallet";
+import { bannedUserResponseIfAny } from "@/src/lib/banned-user";
 
 export async function GET() {
   try {
@@ -9,6 +10,8 @@ export async function GET() {
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const banned = await bannedUserResponseIfAny(userId);
+    if (banned) return banned;
     const balance = await getWalletBalance(userId);
     return NextResponse.json({
       balance: balance ?? 0,

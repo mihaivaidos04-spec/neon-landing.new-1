@@ -14,6 +14,21 @@ import { getPrisma } from "./server-prisma.mjs";
 
 env.loadEnvConfig(process.cwd(), process.env.NODE_ENV !== "production");
 
+/** Lazy-load TS moderation helpers (requires `node --import tsx` in package.json scripts). */
+let moderationBundlePromise;
+async function getModerationBundle() {
+  if (!moderationBundlePromise) {
+    moderationBundlePromise = (async () => {
+      const [{ moderateText }, { recordModerationLog }] = await Promise.all([
+        import("./src/lib/moderation.ts"),
+        import("./src/lib/moderation-log.ts"),
+      ]);
+      return { moderateText, recordModerationLog };
+    })();
+  }
+  return moderationBundlePromise;
+}
+
 const dev = process.env.NODE_ENV !== "production";
 const hostname = process.env.HOSTNAME || "localhost";
 const preferredPort = parseInt(process.env.PORT || "3000", 10);
@@ -99,6 +114,7 @@ app.prepare().then(() => {
       userName: row.userName,
       countryCode: row.countryCode,
       message: row.message,
+      kind: row.kind === "reaction" ? "reaction" : "text",
       neonVip: row.neonVip === true,
       ts: row.createdAt.getTime(),
     };
@@ -158,19 +174,36 @@ app.prepare().then(() => {
 
   io.on("connection", (socket) => {
     socket.on("register", async (userId) => {
-      if (userId) {
-        userSockets.set(userId, socket.id);
-        socket.userId = userId;
-        socket.join(`user:${userId}`);
-        socket.join("global_pulse");
-        try {
-          await prisma.user.update({
-            where: { id: userId },
-            data: { lastSeenAt: new Date() },
+      if (!userId || typeof userId !== "string") return;
+      try {
+        const u = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { bannedUntil: true, tier: true },
+        });
+        const timedBan = u?.bannedUntil && u.bannedUntil > new Date();
+        if (u?.tier === "BANNED" || timedBan) {
+          socket.emit("banned", {
+            reason: u.tier === "BANNED" ? "Account suspended" : "Temporary ban",
+            until: timedBan ? u.bannedUntil.toISOString() : null,
           });
-        } catch (e) {
-          console.warn("[socket register] lastSeenAt update", e);
+          socket.disconnect();
+          return;
         }
+      } catch (e) {
+        console.warn("[socket register] ban check", e);
+      }
+
+      userSockets.set(userId, socket.id);
+      socket.userId = userId;
+      socket.join(`user:${userId}`);
+      socket.join("global_pulse");
+      try {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { lastSeenAt: new Date() },
+        });
+      } catch (e) {
+        console.warn("[socket register] lastSeenAt update", e);
       }
     });
 
@@ -220,8 +253,67 @@ app.prepare().then(() => {
     socket.on("global_pulse_send", async (payload) => {
       const uid = socket.userId;
       if (!uid || !payload || typeof payload !== "object") return;
+      const isReaction = payload.type === "reaction";
       const raw = typeof payload.message === "string" ? payload.message.trim() : "";
-      if (!allowGlobalPulseServerMessage(raw)) return;
+      if (isReaction) {
+        if (!FLOATING_REACTION_EMOJI.has(raw)) return;
+      } else if (!allowGlobalPulseServerMessage(raw)) {
+        return;
+      }
+
+      if (!isReaction && process.env.ANTHROPIC_API_KEY?.trim()) {
+        try {
+          const bundle = await getModerationBundle();
+          const mod = await bundle.moderateText(raw, uid, { context: "global_chat" });
+          if (!mod.allowed) {
+            const severity = mod.severity ?? "medium";
+            const reason = typeof mod.reason === "string" ? mod.reason : "Policy violation";
+            if (severity === "high") {
+              const until = new Date(Date.now() + 24 * 60 * 60 * 1000);
+              await prisma.user.update({
+                where: { id: uid },
+                data: { bannedUntil: until, autoFlagged: true },
+              });
+              await bundle.recordModerationLog(prisma, {
+                userId: uid,
+                content: raw.slice(0, 500),
+                reason,
+                severity,
+                action: "banned",
+              });
+              socket.emit("banned", { reason, until: until.toISOString() });
+              socket.disconnect();
+              return;
+            }
+            if (severity === "medium") {
+              await prisma.user.update({
+                where: { id: uid },
+                data: { warnings: { increment: 1 }, autoFlagged: true },
+              });
+              await bundle.recordModerationLog(prisma, {
+                userId: uid,
+                content: raw.slice(0, 500),
+                reason,
+                severity,
+                action: "warned",
+              });
+              socket.emit("message-blocked", { reason });
+              return;
+            }
+            await bundle.recordModerationLog(prisma, {
+              userId: uid,
+              content: raw.slice(0, 500),
+              reason,
+              severity,
+              action: "blocked",
+            });
+            return;
+          }
+        } catch (e) {
+          console.error("[global_pulse_send] AI moderation", e);
+        }
+      }
+
       const userName =
         typeof payload.userName === "string"
           ? [...payload.userName.trim()].slice(0, MAX_GLOBAL_PULSE_USERNAME_LEN).join("")
@@ -240,6 +332,7 @@ app.prepare().then(() => {
             userName: userName || "User",
             countryCode,
             message: raw.slice(0, 280),
+            kind: isReaction ? "reaction" : "text",
             neonVip: sender?.isVip === true,
           },
         });

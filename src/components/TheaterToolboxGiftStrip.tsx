@@ -74,7 +74,7 @@ export default function TheaterToolboxGiftStrip({ locale, className = "" }: Prop
             >
               <span className="emoji-ios text-[1.6rem] leading-none">{g.emoji}</span>
             </motion.span>
-            <span className="gift-price-text number-plain mt-0.5 text-center text-[8px] leading-tight text-white/62 xl:text-[8px]">
+            <span className="gift-price-text number-plain mt-0.5 text-center text-[8px] leading-tight text-[var(--color-text-secondary)] xl:text-[8px]">
               {g.coins.toLocaleString("en-US")} {t.coinsLabel}
             </span>
           </motion.div>

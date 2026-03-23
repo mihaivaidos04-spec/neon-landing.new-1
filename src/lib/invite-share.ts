@@ -22,3 +22,12 @@ export function openTelegramInvite(text: string): void {
   const url = `https://t.me/share/url?text=${encodeURIComponent(text)}`;
   window.open(url, "_blank", "noopener,noreferrer");
 }
+
+/** Fixed marketing copy for official WhatsApp share (`https://wa.me/?text=…`). */
+export const NEONLIVE_WHATSAPP_MARKETING_TEXT =
+  "Hai pe NeonLive! Chat video live cu oameni din toată lumea 🎥✨ https://www.neonlive.chat";
+
+export function openNeonLiveMarketingWhatsAppShare(): void {
+  const text = encodeURIComponent(NEONLIVE_WHATSAPP_MARKETING_TEXT);
+  window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
+}

@@ -10,6 +10,7 @@ import {
   stripeCheckoutAutomaticPaymentMethods,
   stripeCheckoutComplianceParams,
 } from "@/src/lib/stripe-checkout-shared";
+import { bannedUserResponseIfAny } from "@/src/lib/banned-user";
 
 export const runtime = "nodejs";
 
@@ -20,7 +21,7 @@ export const runtime = "nodejs";
  * - `unit_amount` for Stripe is **integer cents**: `Math.round(amount * 100)` (e.g. $0.69 → 69)
  * - Currency: `usd`
  * - Metadata: `userId`, `coins` / `coinsAmount` / `coinsToBuy`, `packId`, `amount_cents` (webhook validation)
- * - Product name: e.g. "100 Neon Coins"
+ * - Product name: e.g. "440 Neon Coins" (matches pack total)
  */
 export async function POST(req: NextRequest) {
   try {
@@ -30,6 +31,9 @@ export async function POST(req: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const banned = await bannedUserResponseIfAny(userId);
+    if (banned) return banned;
 
     const body = await req.json().catch(() => ({}));
     const rawAmount = body?.amount;

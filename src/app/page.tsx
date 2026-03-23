@@ -406,7 +406,7 @@ export default function NeonLanding() {
                   <span>🔓</span>
                   <span className="hidden sm:inline">Decrypt Reward</span>
                   {rewards.pendingCount > 1 && (
-                    <span className="rounded-full bg-emerald-500/30 px-1.5 text-[10px] font-bold">
+                    <span className="text-[10px] font-bold tabular-nums text-[var(--color-text-secondary)]">
                       {rewards.pendingCount}
                     </span>
                   )}
@@ -441,18 +441,14 @@ export default function NeonLanding() {
                   <button
                     type="button"
                     onClick={handleCoinsPress}
-                    className="flex min-h-[48px] min-w-[100px] items-center justify-center gap-2 rounded-full px-4 py-3 text-base font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.98] sm:min-h-[52px] sm:min-w-[120px] sm:px-5"
-                    style={{
-                      background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
-                      boxShadow: "0 0 24px rgba(139, 92, 246, 0.35)",
-                    }}
+                    className="flex min-h-[48px] min-w-[100px] items-center justify-center gap-2 border-0 bg-transparent px-2 py-1 text-base font-normal text-[var(--color-text-secondary)] shadow-none transition-opacity hover:opacity-90 sm:min-h-0 sm:min-w-0"
                   >
                     {walletLoading ? (
                       <WalletSkeleton />
                     ) : (
-                      <span className="premium-number-glow number-plain">{formatNumber(displayCoins)}</span>
+                      <span className="number-plain tabular-nums">{formatNumber(displayCoins)}</span>
                     )}
-                    <span className="text-white/90">{t.coinsLabel}</span>
+                    <span>{t.coinsLabel}</span>
                   </button>
                   <div className="w-24 sm:w-28">
                     <RankProgressionBar coinsSpent={sessionSpent} />
@@ -521,15 +517,15 @@ export default function NeonLanding() {
                   <button
                     type="button"
                     onClick={handleOpenShop}
-                    className="flex min-h-11 min-w-11 flex-col items-center justify-center rounded-xl border border-violet-500/40 bg-violet-950/70 px-2 py-1 text-xs font-bold leading-tight text-white shadow-[0_0_16px_rgba(139,92,246,0.25)]"
+                    className="flex min-h-11 min-w-11 flex-col items-center justify-center border-0 bg-transparent px-0 py-0 text-xs font-normal leading-tight text-[var(--color-text-secondary)] shadow-none"
                     aria-label={`${t.coinsLabel}: ${displayCoins.toLocaleString("en-US")}`}
                   >
                     {walletLoading ? (
                       <span className="h-4 w-8 animate-pulse rounded bg-white/20" />
                     ) : (
-                      <span className="premium-number-glow number-plain tabular-nums">{formatNumber(displayCoins)}</span>
+                      <span className="number-plain tabular-nums">{formatNumber(displayCoins)}</span>
                     )}
-                    <span className="text-[9px] font-medium text-violet-200/80">{t.coinsLabel}</span>
+                    <span className="text-[9px] font-normal">{t.coinsLabel}</span>
                   </button>
                   <button
                     type="button"
@@ -739,13 +735,13 @@ export default function NeonLanding() {
                 </div>
                 <button
                   type="button"
-                  className="min-h-12 w-full rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 py-3 text-sm font-semibold text-white"
+                  className="min-h-12 w-full rounded-xl border border-white/15 py-3 text-sm font-medium text-white/90"
                   onClick={() => {
                     setMobileMenuOpen(false);
                     handleOpenShop();
                   }}
                 >
-                  <span className="premium-number-glow number-plain">
+                  <span className="number-plain tabular-nums text-[var(--color-text-secondary)]">
                     {formatNumber(displayCoins)} {t.coinsLabel}
                   </span>{" "}
                   · Open shop

@@ -47,6 +47,8 @@ export type GlobalPulseMessage = {
   countryCode: string | null;
   message: string;
   ts: number;
+  /** From server; older rows default to text */
+  kind?: "text" | "reaction";
   neonVip?: boolean;
 };
 
@@ -104,6 +106,7 @@ const GlobalPulseMessageRow = memo(function GlobalPulseMessageRow({
   onReport,
 }: RowProps) {
   const isSelf = m.userId === userId;
+  const isReaction = m.kind === "reaction";
   const safeUser = normalizeNumericText(
     truncateChatDisplayUsername(sanitizeForDisplay(m.userName || "User"))
   );
@@ -116,7 +119,7 @@ const GlobalPulseMessageRow = memo(function GlobalPulseMessageRow({
         isSelf
           ? "border-emerald-500/20 bg-emerald-950/15"
           : "border-white/[0.08] bg-black/30"
-      }`}
+      } ${isReaction ? "opacity-80" : ""}`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-1 items-baseline gap-1.5 text-[14px] leading-snug xl:text-[12px] xl:leading-snug">
@@ -126,7 +129,9 @@ const GlobalPulseMessageRow = memo(function GlobalPulseMessageRow({
             size="sm"
             className="mt-[3px] shrink-0 xl:mt-0.5"
           />
-          <p className="min-w-0 flex-1 break-words">
+          <p
+            className={`min-w-0 flex-1 break-words ${isReaction ? "italic" : ""}`}
+          >
             <span
               className={`font-semibold text-fuchsia-200/95 ${
                 vipGlow === "gold"
@@ -139,7 +144,9 @@ const GlobalPulseMessageRow = memo(function GlobalPulseMessageRow({
               {safeUser}
             </span>
             <span className="text-white/45">: </span>
-            <span className="text-[#faf5eb]/92">{safeMsg}</span>
+            <span className={`text-[#faf5eb]/92 ${isReaction ? "text-[1.15em] leading-tight" : ""}`}>
+              {safeMsg}
+            </span>
           </p>
         </div>
         {!isSelf && (
@@ -291,11 +298,37 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
       }
     };
 
+    const onMessageBlocked = (payload: unknown) => {
+      if (!payload || typeof payload !== "object") return;
+      const reason =
+        typeof (payload as { reason?: string }).reason === "string"
+          ? (payload as { reason: string }).reason
+          : "Message blocked by moderation.";
+      toast.error(reason, { duration: 5000 });
+    };
+
+    const onBanned = (payload: unknown) => {
+      const reason =
+        payload && typeof payload === "object" && typeof (payload as { reason?: string }).reason === "string"
+          ? (payload as { reason: string }).reason
+          : "Account suspended.";
+      const until =
+        payload && typeof payload === "object" && typeof (payload as { until?: string }).until === "string"
+          ? (payload as { until: string }).until
+          : null;
+      toast.error(
+        until ? `${reason} (until ${new Date(until).toLocaleString()})` : reason,
+        { duration: 8000 }
+      );
+    };
+
     socket.on("global_pulse_history", onHistory);
     socket.on("global_pulse_message", onMessage);
     socket.on("global_pulse_messages_removed", onMessagesRemoved);
     socket.on("global_pulse_floating_reaction", onFloatingReaction);
     socket.on("global_pulse_typing_update", onTypingUpdate);
+    socket.on("message-blocked", onMessageBlocked);
+    socket.on("banned", onBanned);
     socket.emit("global_pulse_request_history");
 
     return () => {
@@ -304,6 +337,8 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
       socket.off("global_pulse_messages_removed", onMessagesRemoved);
       socket.off("global_pulse_floating_reaction", onFloatingReaction);
       socket.off("global_pulse_typing_update", onTypingUpdate);
+      socket.off("message-blocked", onMessageBlocked);
+      socket.off("banned", onBanned);
     };
   }, [socket, userId, pushFloatingBurst]);
 
@@ -488,9 +523,20 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
         toast.error("Connect to send reactions.");
         return;
       }
+      const nick = (session as { nickname?: string | null } | null)?.nickname?.trim() ?? "";
+      const chatName =
+        nick || (locale === "ro" ? "Anonim" : "Anonymous");
+      forceScrollOnNextMessageRef.current = true;
+      emitTypingStop();
+      socket.emit("global_pulse_send", {
+        message: emoji,
+        type: "reaction",
+        userName: sanitizeForDisplay(chatName).slice(0, 80),
+        countryCode: countryCode && countryCode.length === 2 ? countryCode.toUpperCase() : null,
+      });
       socket.emit("global_pulse_floating_reaction", { emoji });
     },
-    [socket, connected, userId]
+    [socket, connected, userId, session, countryCode, locale, emitTypingStop]
   );
 
   if (status !== "authenticated" || !userId) {

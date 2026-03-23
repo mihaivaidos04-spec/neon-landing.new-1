@@ -3,6 +3,7 @@ import { auth } from "@/src/auth";
 import { getWalletBalance, spendCoins, addCoins } from "@/src/lib/wallet";
 import { prisma } from "@/src/lib/prisma";
 import { createNotification } from "@/src/lib/create-notification";
+import { bannedUserResponseIfAny } from "@/src/lib/banned-user";
 
 export const GIFT_TYPES = { heart: 5, fire: 50, rocket: 500 } as const;
 export type GiftType = keyof typeof GIFT_TYPES;
@@ -14,6 +15,9 @@ export async function POST(req: NextRequest) {
     if (!senderId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const banned = await bannedUserResponseIfAny(senderId);
+    if (banned) return banned;
 
     const body = await req.json().catch(() => ({}));
     const receiverId = typeof body.receiverId === "string" ? body.receiverId : null;

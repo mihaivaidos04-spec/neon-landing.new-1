@@ -39,7 +39,7 @@ export default function LiveIndicator() {
       <span className="text-xs font-semibold uppercase tracking-wider text-white/90">
         LIVE
       </span>
-      <span className="number-plain text-xs text-white/70">
+      <span className="number-plain text-xs text-[var(--color-text-secondary)]">
         {displayOnline} online
       </span>
     </div>

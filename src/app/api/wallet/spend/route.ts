@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/src/auth";
 import { spendCoins } from "@/src/lib/wallet";
 import { prisma } from "@/src/lib/prisma";
+import { bannedUserResponseIfAny } from "@/src/lib/banned-user";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,6 +11,8 @@ export async function POST(req: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const banned = await bannedUserResponseIfAny(userId);
+    if (banned) return banned;
     const body = await req.json().catch(() => ({}));
     const amount = typeof body.amount === "number" ? body.amount : parseInt(body.amount, 10);
     const reason = typeof body.reason === "string" ? body.reason : undefined;

@@ -111,10 +111,8 @@ export default function TheaterGiftDrawer({ locale, coins, onSelectGift, enabled
                     <span className="emoji-ios text-2xl leading-none">{THEATER_GIFT_EMOJI[id]}</span>
                   </span>
                   <span className="max-w-full truncate text-[11px] font-semibold text-white/95">{label}</span>
-                  <span className="gift-price-text text-[10px] text-emerald-200/75">{usd}</span>
-                  <span
-                    className={`gift-price-text number-plain text-[9px] ${affordable ? "text-white/50" : "text-amber-300/85"}`}
-                  >
+                  <span className="gift-price-text text-[10px] text-[var(--color-text-secondary)]">{usd}</span>
+                  <span className="gift-price-text number-plain text-[9px] text-[var(--color-text-secondary)]">
                     {cost.toLocaleString("en-US")} {t.coinsLabel}
                   </span>
                 </button>

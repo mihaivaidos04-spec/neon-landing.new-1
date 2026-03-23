@@ -499,6 +499,20 @@ async function createPair(
     console.error("[matching createPair]", errA ?? errB);
     return null;
   }
+  try {
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userA },
+        data: { totalMatches: { increment: 1 } },
+      }),
+      prisma.user.update({
+        where: { id: userB },
+        data: { totalMatches: { increment: 1 } },
+      }),
+    ]);
+  } catch (e) {
+    console.error("[matching createPair] totalMatches increment", e);
+  }
   return { status: "matched", partnerId: userB };
 }
 

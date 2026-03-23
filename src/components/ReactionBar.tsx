@@ -35,7 +35,9 @@ export default function ReactionBar({
             whileTap={canAfford && !disabled ? { scale: 0.95 } : {}}
           >
             <span className="emoji-ios text-xl">{r.emoji}</span>
-            <span className="premium-number-glow number-plain text-[9px] font-medium">{cost.toLocaleString("en-US")}</span>
+            <span className="number-plain text-[9px] font-medium tabular-nums text-[var(--color-text-secondary)]">
+              {cost.toLocaleString("en-US")}
+            </span>
           </motion.button>
         );
       })}

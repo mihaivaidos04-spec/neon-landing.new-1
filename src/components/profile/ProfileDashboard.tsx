@@ -732,7 +732,7 @@ export default function ProfileDashboard() {
                 neonVipGlow={profileNeonGlow || false}
               />
               <span
-                className="inline-flex shrink-0 items-center gap-0.5 rounded-md border border-orange-500/35 bg-orange-950/40 px-2 py-0.5 text-sm font-bold tabular-nums text-orange-100 shadow-[0_0_12px_rgba(251,146,60,0.35)]"
+                className="inline-flex shrink-0 items-center gap-0.5 text-sm font-bold tabular-nums text-[var(--color-text-secondary)]"
                 title={t("profile.streakTooltip")}
               >
                 <span aria-hidden>🔥</span>
@@ -1193,7 +1193,7 @@ export default function ProfileDashboard() {
                   {t("profile.currentCoins")}
                 </span>
               </div>
-              <p className="premium-number-glow mt-1 text-2xl font-bold tabular-nums text-amber-100">
+              <p className="mt-1 text-2xl font-bold tabular-nums text-[var(--color-text-secondary)]">
                 {me.coins.toLocaleString("en-US")}
               </p>
             </div>
@@ -1204,7 +1204,7 @@ export default function ProfileDashboard() {
                   {t("profile.totalGiftsReceived")}
                 </span>
               </div>
-              <p className="premium-number-glow mt-1 text-2xl font-bold tabular-nums text-fuchsia-100">
+              <p className="mt-1 text-2xl font-bold tabular-nums text-[var(--color-text-secondary)]">
                 {me.totalGiftsReceived.toLocaleString("en-US")}
               </p>
               <p className="mt-2 text-[11px] leading-relaxed text-white/45">{t("profile.inventoryHint")}</p>
