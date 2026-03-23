@@ -93,6 +93,7 @@ export default function BatteryDepletedModal({
   };
 
   function openWhatsApp(text: string) {
+    if (typeof window === "undefined") return;
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, "_blank", "noopener,noreferrer");
   }

@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import confetti from "canvas-confetti";
 import { useSocketContext } from "@/src/contexts/SocketContext";
+import { withConfetti } from "@/src/lib/safe-confetti";
+import type { Options } from "canvas-confetti";
 import { getT, getLocaleFromBrowser, type I18nLocale } from "@/src/i18n";
 
 type LegendPayload = {
@@ -18,7 +19,7 @@ function inter(tpl: string, vars: Record<string, string | number>) {
 
 /** Full-screen “boss” celebration for the purchaser only (canvas-confetti). */
 function fireNeonLegendBossConfetti() {
-  const colors = [
+  const colors: NonNullable<Options["colors"]> = [
     "#fbbf24",
     "#f59e0b",
     "#fde68a",
@@ -29,55 +30,57 @@ function fireNeonLegendBossConfetti() {
     "#67e8f9",
   ];
 
-  void confetti({
-    particleCount: 140,
-    spread: 360,
-    startVelocity: 48,
-    origin: { x: 0.5, y: 0.42 },
-    colors,
-    ticks: 320,
-    gravity: 0.92,
-    scalar: 1.25,
-    decay: 0.91,
-  });
-
-  const sideBursts = [0, 90, 180, 270];
-  for (const ms of sideBursts) {
-    setTimeout(() => {
-      void confetti({
-        particleCount: 45,
-        angle: 60,
-        spread: 58,
-        origin: { x: 0.08, y: 0.58 },
-        colors,
-        ticks: 220,
-        gravity: 1,
-        scalar: 1.15,
-      });
-      void confetti({
-        particleCount: 45,
-        angle: 120,
-        spread: 58,
-        origin: { x: 0.92, y: 0.58 },
-        colors,
-        ticks: 220,
-        gravity: 1,
-        scalar: 1.15,
-      });
-    }, ms);
-  }
-
-  setTimeout(() => {
-    void confetti({
-      particleCount: 90,
-      spread: 100,
-      origin: { x: 0.5, y: 0.2 },
+  withConfetti((c) => {
+    void c({
+      particleCount: 140,
+      spread: 360,
+      startVelocity: 48,
+      origin: { x: 0.5, y: 0.42 },
       colors,
-      ticks: 260,
-      gravity: 1.05,
-      scalar: 1.05,
+      ticks: 320,
+      gravity: 0.92,
+      scalar: 1.25,
+      decay: 0.91,
     });
-  }, 200);
+
+    const sideBursts = [0, 90, 180, 270];
+    for (const ms of sideBursts) {
+      window.setTimeout(() => {
+        void c({
+          particleCount: 45,
+          angle: 60,
+          spread: 58,
+          origin: { x: 0.08, y: 0.58 },
+          colors,
+          ticks: 220,
+          gravity: 1,
+          scalar: 1.15,
+        });
+        void c({
+          particleCount: 45,
+          angle: 120,
+          spread: 58,
+          origin: { x: 0.92, y: 0.58 },
+          colors,
+          ticks: 220,
+          gravity: 1,
+          scalar: 1.15,
+        });
+      }, ms);
+    }
+
+    window.setTimeout(() => {
+      void c({
+        particleCount: 90,
+        spread: 100,
+        origin: { x: 0.5, y: 0.2 },
+        colors,
+        ticks: 260,
+        gravity: 1.05,
+        scalar: 1.05,
+      });
+    }, 200);
+  });
 }
 
 const BANNER_MS = 5000;

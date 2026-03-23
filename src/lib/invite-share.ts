@@ -24,11 +24,13 @@ export function buildInviteShareText(referralCode: string): string {
 }
 
 export function openWhatsAppInvite(text: string): void {
+  if (typeof window === "undefined") return;
   const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
   window.open(url, "_blank", "noopener,noreferrer");
 }
 
 export function openTelegramInvite(text: string): void {
+  if (typeof window === "undefined") return;
   const url = `https://t.me/share/url?text=${encodeURIComponent(text)}`;
   window.open(url, "_blank", "noopener,noreferrer");
 }
@@ -38,6 +40,7 @@ export const NEONLIVE_WHATSAPP_MARKETING_TEXT =
   "Hai pe NeonLive! Chat video live cu oameni din toată lumea 🎥✨ https://www.neonlive.chat";
 
 export function openNeonLiveMarketingWhatsAppShare(): void {
+  if (typeof window === "undefined") return;
   const text = encodeURIComponent(NEONLIVE_WHATSAPP_MARKETING_TEXT);
   window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
 }

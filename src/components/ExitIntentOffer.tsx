@@ -17,6 +17,7 @@ export function hasSeenExitIntent(): boolean {
 }
 
 export function setExitIntentSeen(): void {
+  if (typeof window === "undefined") return;
   try {
     localStorage.setItem(STORAGE_KEY, "1");
   } catch {}

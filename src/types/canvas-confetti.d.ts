@@ -1,5 +1,5 @@
 declare module "canvas-confetti" {
-  interface Options {
+  export interface Options {
     particleCount?: number;
     angle?: number;
     spread?: number;

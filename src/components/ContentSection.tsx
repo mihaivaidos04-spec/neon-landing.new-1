@@ -47,7 +47,8 @@ import { getRankFromCoinsSpent } from "../lib/ranks";
 import { isShadowBanned } from "../lib/report-shadow-ban";
 import { pickRandomDemoCountry } from "../lib/demo-country-pool";
 import toast from "react-hot-toast";
-import confetti from "canvas-confetti";
+import { withConfetti } from "../lib/safe-confetti";
+import type { Options } from "canvas-confetti";
 import {
   getStoredTranslationTargetCode,
   setStoredTranslationTargetCode,
@@ -1049,10 +1050,12 @@ export default function ContentSection({
     if (!connected || !partnerId || searching) return;
     if (celebratedMatchRef.current === partnerId) return;
     celebratedMatchRef.current = partnerId;
-    const fire = (opts: { origin?: { x: number; y: number }; colors?: string[]; spread?: number }) =>
-      confetti({ ...opts, particleCount: 40, scalar: 0.8, ticks: 120 });
-    fire({ origin: { x: 0.25, y: 0.5 }, colors: ["#8b5cf6", "#a78bfa", "#39ff14"], spread: 55 });
-    fire({ origin: { x: 0.75, y: 0.5 }, colors: ["#8b5cf6", "#a78bfa", "#39ff14"], spread: 55 });
+    withConfetti((c) => {
+      const fire = (opts: Pick<Options, "origin" | "colors" | "spread">) =>
+        void c({ ...opts, particleCount: 40, scalar: 0.8, ticks: 120 });
+      fire({ origin: { x: 0.25, y: 0.5 }, colors: ["#8b5cf6", "#a78bfa", "#39ff14"], spread: 55 });
+      fire({ origin: { x: 0.75, y: 0.5 }, colors: ["#8b5cf6", "#a78bfa", "#39ff14"], spread: 55 });
+    });
   }, [connected, partnerId, searching]);
 
   // Common interests flash when matched

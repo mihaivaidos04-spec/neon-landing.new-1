@@ -161,7 +161,10 @@ export default function NotificationBell() {
                     <span className="mt-0.5 line-clamp-3 text-xs text-white/65">{n.message}</span>
                   ) : null}
                   <span className="mt-1 text-[10px] text-white/40">
-                    {new Date(n.createdAt).toLocaleString()}
+                    {(() => {
+                      const d = new Date(n.createdAt);
+                      return Number.isNaN(d.getTime()) ? "—" : d.toLocaleString();
+                    })()}
                   </span>
                 </button>
               ))

@@ -3,32 +3,34 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import confetti from "canvas-confetti";
 import { getT, getLocaleFromBrowser, type I18nLocale } from "@/src/i18n";
+import { withConfetti } from "@/src/lib/safe-confetti";
 
 function firePaymentSuccessConfetti() {
   const gold = ["#fbbf24", "#fcd34d", "#f59e0b", "#a855f7", "#22d3ee"];
-  void confetti({
-    particleCount: 100,
-    spread: 88,
-    origin: { y: 0.45 },
-    colors: gold,
-    ticks: 220,
-    scalar: 1.05,
-  });
-  void confetti({
-    particleCount: 40,
-    angle: 60,
-    spread: 55,
-    origin: { x: 0, y: 0.65 },
-    colors: gold,
-  });
-  void confetti({
-    particleCount: 40,
-    angle: 120,
-    spread: 55,
-    origin: { x: 1, y: 0.65 },
-    colors: gold,
+  withConfetti((c) => {
+    void c({
+      particleCount: 100,
+      spread: 88,
+      origin: { y: 0.45 },
+      colors: gold,
+      ticks: 220,
+      scalar: 1.05,
+    });
+    void c({
+      particleCount: 40,
+      angle: 60,
+      spread: 55,
+      origin: { x: 0, y: 0.65 },
+      colors: gold,
+    });
+    void c({
+      particleCount: 40,
+      angle: 120,
+      spread: 55,
+      origin: { x: 1, y: 0.65 },
+      colors: gold,
+    });
   });
 }
 

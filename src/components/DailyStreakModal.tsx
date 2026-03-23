@@ -60,6 +60,8 @@ export default function DailyStreakModal({ open, onClose, payload, locale = "en"
 
   if (!open || !payload) return null;
 
+  const calendar = Array.isArray(payload.calendar) ? payload.calendar : [];
+
   return (
     <div
       className="fixed inset-0 z-[255] flex items-center justify-center bg-black/88 p-4 backdrop-blur-md"
@@ -78,7 +80,7 @@ export default function DailyStreakModal({ open, onClose, payload, locale = "en"
         </p>
 
         <div className="mt-5 flex justify-between gap-1.5 sm:gap-2">
-          {payload.calendar.map((cell) => (
+          {calendar.map((cell) => (
             <div
               key={cell.dayKey}
               className="flex min-w-0 flex-1 flex-col items-center gap-1"

@@ -2,8 +2,9 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
-import confetti from "canvas-confetti";
 import type { ContentLocale } from "@/src/lib/content-i18n";
+import { withConfetti } from "@/src/lib/safe-confetti";
+import type { Options } from "canvas-confetti";
 
 type Props = {
   open: boolean;
@@ -11,17 +12,17 @@ type Props = {
   locale?: ContentLocale;
 };
 
-function burst(originY: number) {
+function burst(c: (opts?: Options) => Promise<null>, originY: number) {
   const count = 140;
-  const defaults = { origin: { y: originY }, zIndex: 3000 };
-  confetti({
+  const defaults: Options = { origin: { y: originY }, zIndex: 3000 };
+  void c({
     ...defaults,
     particleCount: Math.floor(count * 0.35),
     spread: 100,
     startVelocity: 35,
     colors: ["#a855f7", "#ec4899", "#22d3ee", "#fbbf24", "#ffffff"],
   });
-  confetti({
+  void c({
     ...defaults,
     particleCount: Math.floor(count * 0.2),
     spread: 70,
@@ -42,8 +43,10 @@ export default function WelcomeBonusModal({ open, onClose, locale = "en" }: Prop
     firedRef.current = true;
 
     const t = window.setTimeout(() => {
-      burst(0.72);
-      window.setTimeout(() => burst(0.55), 220);
+      withConfetti((c) => {
+        burst(c, 0.72);
+        window.setTimeout(() => burst(c, 0.55), 220);
+      });
     }, 80);
 
     return () => clearTimeout(t);
