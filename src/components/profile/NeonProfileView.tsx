@@ -23,6 +23,7 @@ type MePayload = {
   totalGiftsReceived: number;
   giftsReceivedByType: Record<string, number>;
   dbBadges: BadgeRow[];
+  isVip?: boolean;
 };
 
 type PublicPayload = {
@@ -38,6 +39,7 @@ type PublicPayload = {
   socialInstagram: string | null;
   socialTiktok: string | null;
   socialTwitter: string | null;
+  isVip?: boolean;
 };
 
 function formatOnlineMinutes(m: number): string {
@@ -436,8 +438,13 @@ export default function NeonProfileView({ mode, userId }: Props) {
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2">
               <h1 className="text-xl font-bold">{displayName}</h1>
+              {((mode === "public" && pub?.isVip) || (mode === "me" && me?.isVip)) && (
+                <span className="rounded-full border border-emerald-500/45 bg-emerald-500/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-200/95">
+                  🌍 AI Translator Active
+                </span>
+              )}
               {mode === "me" && (
                 <button type="button" onClick={() => setEditNick(true)} className="text-xs font-semibold text-[#a855f7]">
                   Edit

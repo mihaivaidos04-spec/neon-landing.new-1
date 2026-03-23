@@ -7,6 +7,8 @@ import { getContentT } from "../lib/content-i18n";
 import UserListSkeleton from "./UserListSkeleton";
 import { QUEUE_UNLOCK_COST, PRIORITY_BOOST_COST } from "../lib/coins";
 import { feedbackSuccess } from "../lib/feedback";
+import VipFeatureLock from "./VipFeatureLock";
+import { normalizeVipTier } from "../lib/vip-tier";
 
 function getAvatarUrl(userId: string): string {
   return `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(userId)}`;
@@ -21,6 +23,8 @@ type Props = {
   onOpenShop?: () => void;
   onWalletRefetch?: () => void | Promise<void>;
   onBoostedMatch?: (partnerId: string, partnerNickname?: string | null) => void;
+  vipTier?: string;
+  onOpenVipUpgrade?: () => void;
 };
 
 export default function QueuePreview({
@@ -32,6 +36,8 @@ export default function QueuePreview({
   onOpenShop,
   onWalletRefetch,
   onBoostedMatch,
+  vipTier = "free",
+  onOpenVipUpgrade,
 }: Props) {
   const t = getContentT(locale);
   const [users, setUsers] = useState<{ userId: string }[]>([]);
@@ -107,8 +113,26 @@ export default function QueuePreview({
 
   const canAffordBoost = coins >= PRIORITY_BOOST_COST || !!onSpend;
 
+  const tier = normalizeVipTier(vipTier);
+
   return (
     <div className="card-neon mt-3 rounded-xl border border-white/10 px-4 py-3">
+      {tier === "free" && onOpenVipUpgrade && (
+        <div className="mb-3 rounded-lg border border-violet-500/25 bg-violet-950/25 p-2">
+          <p className="mb-1.5 text-[10px] font-semibold text-violet-200/90">Matchmaking perks</p>
+          <div className="flex flex-col gap-1.5">
+            <VipFeatureLock
+              locked
+              onUpgrade={onOpenVipUpgrade}
+              label="VIP Only · faster queue"
+              className="w-full justify-start normal-case"
+            />
+            <p className="text-[9px] leading-snug text-white/45">
+              Bronze: skip ahead · Silver: priority quality · Gold: first in line
+            </p>
+          </div>
+        </div>
+      )}
       <div className="mb-3 flex items-center justify-between gap-3">
         <h3 className="text-sm font-medium text-white/90">
           {t.queuePreviewTitle}

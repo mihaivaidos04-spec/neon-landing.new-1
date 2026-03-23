@@ -1,4 +1,5 @@
 import type { DefaultSession } from "next-auth";
+import type { VipTier } from "@/src/lib/vip-tier";
 
 declare module "next-auth/jwt" {
   interface JWT {
@@ -28,5 +29,7 @@ declare module "next-auth" {
     isNeonVip?: boolean;
     /** Deterministic gold | blue for VIP name styling */
     neonVipGlow?: "gold" | "blue";
+    /** Spend-based tier (bronze / silver / gold) for chat, profile, match boost */
+    vipTier?: VipTier;
   }
 }

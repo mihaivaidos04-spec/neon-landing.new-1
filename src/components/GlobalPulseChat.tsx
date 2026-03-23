@@ -16,12 +16,14 @@ import toast from "react-hot-toast";
 import type { ContentLocale } from "../lib/content-i18n";
 import { useSocketContext } from "../contexts/SocketContext";
 import LazyUserFlag from "./LazyUserFlag";
+import UpgradeNeonVipModal from "./UpgradeNeonVipModal";
 import { prepareGlobalPulseOutgoingMessage } from "../lib/global-pulse-moderation";
 import { sanitizeForDisplay } from "../lib/text-moderation";
 import { truncateChatDisplayUsername } from "../lib/chat-display-username-limit";
-import { neonVipGlowVariant } from "../lib/neon-vip-style";
+import { globalPulseUsernameClass } from "../lib/neon-vip-style";
 import { GLOBAL_PULSE_FLOATING_REACTION_EMOJIS } from "../lib/global-pulse-floating-reactions";
 import { GLOBAL_PULSE_VISIBLE_MESSAGES } from "../lib/global-pulse-visible-messages";
+import { normalizeVipTier } from "../lib/vip-tier";
 
 function normalizeNumericText(input: string): string {
   return input
@@ -50,6 +52,8 @@ export type GlobalPulseMessage = {
   /** From server; older rows default to text */
   kind?: "text" | "reaction";
   neonVip?: boolean;
+  vipTier?: string;
+  pulseChannel?: string;
 };
 
 const MAX_FLOATING_PARTICLES = 280;
@@ -111,7 +115,7 @@ const GlobalPulseMessageRow = memo(function GlobalPulseMessageRow({
     truncateChatDisplayUsername(sanitizeForDisplay(m.userName || "User"))
   );
   const safeMsg = normalizeNumericText(sanitizeForDisplay(m.message));
-  const vipGlow = m.neonVip ? neonVipGlowVariant(m.userId) : false;
+  const nameVipClass = globalPulseUsernameClass(m.vipTier, m.neonVip, m.userId);
 
   return (
     <div
@@ -133,13 +137,7 @@ const GlobalPulseMessageRow = memo(function GlobalPulseMessageRow({
             className={`min-w-0 flex-1 break-words ${isReaction ? "italic" : ""}`}
           >
             <span
-              className={`font-semibold text-fuchsia-200/95 ${
-                vipGlow === "gold"
-                  ? "neon-vip-name-gold"
-                  : vipGlow === "blue"
-                    ? "neon-vip-name-blue"
-                    : ""
-              }`}
+              className={`font-semibold ${nameVipClass ? nameVipClass : "text-fuchsia-200/95"}`}
             >
               {safeUser}
             </span>
@@ -167,7 +165,10 @@ const GlobalPulseMessageRow = memo(function GlobalPulseMessageRow({
 export default function GlobalPulseChat({ locale = "en" }: Props) {
   const { data: session, status } = useSession();
   const { socket, connected } = useSocketContext();
-  const [messages, setMessages] = useState<GlobalPulseMessage[]>([]);
+  const [worldMessages, setWorldMessages] = useState<GlobalPulseMessage[]>([]);
+  const [goldMessages, setGoldMessages] = useState<GlobalPulseMessage[]>([]);
+  const [pulseTab, setPulseTab] = useState<"world" | "gold">("world");
+  const [showVipUpgrade, setShowVipUpgrade] = useState(false);
   const [input, setInput] = useState("");
   const [reportingId, setReportingId] = useState<string | null>(null);
   const [systemLine, setSystemLine] = useState<string | null>(null);
@@ -194,6 +195,8 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
     session?.user?.name?.trim() ||
     session?.user?.email?.split("@")[0] ||
     "User";
+  const vipTier = normalizeVipTier((session as { vipTier?: string })?.vipTier);
+  const displayMessages = pulseTab === "gold" ? goldMessages : worldMessages;
 
   const pushFloatingBurst = useCallback((emoji: string) => {
     const burst = makeFloatingBurst(emoji);
@@ -252,12 +255,12 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
           typeof (m as GlobalPulseMessage).message === "string"
       ) as GlobalPulseMessage[];
       forceScrollOnNextMessageRef.current = true;
-      setMessages(filtered.slice(-GLOBAL_PULSE_VISIBLE_MESSAGES));
+      setWorldMessages(filtered.slice(-GLOBAL_PULSE_VISIBLE_MESSAGES));
     };
 
     const onMessage = (msg: GlobalPulseMessage) => {
       if (!msg?.id) return;
-      setMessages((prev) => {
+      setWorldMessages((prev) => {
         if (prev.some((p) => p.id === msg.id)) return prev;
         return [...prev, msg].slice(-GLOBAL_PULSE_VISIBLE_MESSAGES);
       });
@@ -269,7 +272,8 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
       if (!Array.isArray(ids) || ids.length === 0) return;
       const idSet = new Set(ids.filter((x): x is string => typeof x === "string"));
       if (idSet.size === 0) return;
-      setMessages((prev) => prev.filter((m) => !idSet.has(m.id)));
+      setWorldMessages((prev) => prev.filter((m) => !idSet.has(m.id)));
+      setGoldMessages((prev) => prev.filter((m) => !idSet.has(m.id)));
     };
 
     const onFloatingReaction = (payload: unknown) => {
@@ -342,6 +346,53 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
     };
   }, [socket, userId, pushFloatingBurst]);
 
+  useEffect(() => {
+    if (!socket || !userId || pulseTab !== "gold" || vipTier !== "gold") return;
+
+    const onGoldHistory = (list: unknown) => {
+      if (!Array.isArray(list)) return;
+      const filtered = list.filter(
+        (m): m is GlobalPulseMessage =>
+          m &&
+          typeof m === "object" &&
+          typeof (m as GlobalPulseMessage).id === "string" &&
+          typeof (m as GlobalPulseMessage).message === "string"
+      ) as GlobalPulseMessage[];
+      forceScrollOnNextMessageRef.current = true;
+      setGoldMessages(filtered.slice(-GLOBAL_PULSE_VISIBLE_MESSAGES));
+    };
+
+    const onGoldMessage = (msg: GlobalPulseMessage) => {
+      if (!msg?.id) return;
+      setGoldMessages((prev) => {
+        if (prev.some((p) => p.id === msg.id)) return prev;
+        return [...prev, msg].slice(-GLOBAL_PULSE_VISIBLE_MESSAGES);
+      });
+    };
+
+    const onForbidden = () => {
+      toast.error("Gold Lounge is for Gold VIP only.");
+      setPulseTab("world");
+    };
+
+    socket.emit("global_pulse_gold_join");
+    socket.on("global_pulse_gold_history", onGoldHistory);
+    socket.on("global_pulse_gold_message", onGoldMessage);
+    socket.on("global_pulse_gold_forbidden", onForbidden);
+    socket.emit("global_pulse_request_history", { channel: "gold" });
+
+    return () => {
+      socket.emit("global_pulse_gold_leave");
+      socket.off("global_pulse_gold_history", onGoldHistory);
+      socket.off("global_pulse_gold_message", onGoldMessage);
+      socket.off("global_pulse_gold_forbidden", onForbidden);
+    };
+  }, [socket, userId, pulseTab, vipTier]);
+
+  useEffect(() => {
+    forceScrollOnNextMessageRef.current = true;
+  }, [pulseTab]);
+
   /** Drop stale typing entries */
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -358,10 +409,10 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
   }, []);
 
   useEffect(() => {
-    const grew = messages.length > prevMessagesLenRef.current;
+    const grew = displayMessages.length > prevMessagesLenRef.current;
     const shouldForceScroll = forceScrollOnNextMessageRef.current;
 
-    if (messages.length > 0 && (shouldForceScroll || grew)) {
+    if (displayMessages.length > 0 && (shouldForceScroll || grew)) {
       if (shouldForceScroll || isNearBottomRef.current) {
         requestAnimationFrame(() => scrollToBottom(shouldForceScroll ? "auto" : "smooth"));
       } else if (grew) {
@@ -372,8 +423,8 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
     if (shouldForceScroll) {
       forceScrollOnNextMessageRef.current = false;
     }
-    prevMessagesLenRef.current = messages.length;
-  }, [messages, scrollToBottom]);
+    prevMessagesLenRef.current = displayMessages.length;
+  }, [displayMessages, scrollToBottom]);
 
   useEffect(() => {
     return () => {
@@ -429,9 +480,10 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
       message: prep.text,
       userName: sanitizeForDisplay(displayName).slice(0, 80) || "User",
       countryCode: countryCode && countryCode.length === 2 ? countryCode.toUpperCase() : null,
+      ...(pulseTab === "gold" ? { channel: "gold" as const } : {}),
     });
     setInput("");
-  }, [socket, connected, userId, input, displayName, countryCode, showSystemLine, emitTypingStop]);
+  }, [socket, connected, userId, input, displayName, countryCode, showSystemLine, emitTypingStop, pulseTab]);
 
   const handleInputChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
@@ -533,10 +585,11 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
         type: "reaction",
         userName: sanitizeForDisplay(chatName).slice(0, 80),
         countryCode: countryCode && countryCode.length === 2 ? countryCode.toUpperCase() : null,
+        ...(pulseTab === "gold" ? { channel: "gold" as const } : {}),
       });
       socket.emit("global_pulse_floating_reaction", { emoji });
     },
-    [socket, connected, userId, session, countryCode, locale, emitTypingStop]
+    [socket, connected, userId, session, countryCode, locale, emitTypingStop, pulseTab]
   );
 
   if (status !== "authenticated" || !userId) {
@@ -578,6 +631,11 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
 
   return (
     <>
+      <UpgradeNeonVipModal
+        visible={showVipUpgrade}
+        onClose={() => setShowVipUpgrade(false)}
+        locale={locale ?? "en"}
+      />
       {floatingOverlay}
     <aside
       className="global-pulse-panel relative flex h-full min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/50 shadow-[0_0_32px_rgba(236,72,153,0.08),0_8px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl xl:rounded-l-xl xl:rounded-r-md"
@@ -590,13 +648,46 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
       />
 
       <div className="border-b border-white/[0.06] bg-black/20 px-3 py-2 xl:px-2.5 xl:py-1.5">
-        <h2 className="text-[11px] font-bold uppercase tracking-[0.22em] text-fuchsia-200/95 xl:text-[10px]">
-          Pulse
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setPulseTab("world")}
+            className={`rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition xl:text-[9px] ${
+              pulseTab === "world"
+                ? "bg-fuchsia-600/50 text-white"
+                : "text-white/50 hover:bg-white/10 hover:text-white/80"
+            }`}
+          >
+            World
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (vipTier !== "gold") {
+                setShowVipUpgrade(true);
+                return;
+              }
+              setPulseTab("gold");
+            }}
+            className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition xl:text-[9px] ${
+              pulseTab === "gold"
+                ? "bg-amber-500/45 text-amber-50"
+                : "text-amber-200/80 hover:bg-amber-500/15"
+            }`}
+          >
+            {vipTier !== "gold" && <span aria-hidden>🔒</span>}
+            Gold
+          </button>
+        </div>
+        <h2 className="mt-1 text-[11px] font-bold uppercase tracking-[0.22em] text-fuchsia-200/95 xl:text-[10px]">
+          {pulseTab === "gold" ? "Gold lounge" : "Pulse"}
         </h2>
         <p className="mt-0.5 text-[10px] leading-tight text-white/40 xl:hidden">
-          Public world chat · moderated
+          {pulseTab === "gold" ? "Exclusive · Gold VIP only" : "Public world chat · moderated"}
         </p>
-        <p className="mt-0.5 hidden text-[9px] leading-tight text-white/35 xl:block">World · moderated</p>
+        <p className="mt-0.5 hidden text-[9px] leading-tight text-white/35 xl:block">
+          {pulseTab === "gold" ? "Gold VIP" : "World · moderated"}
+        </p>
         {!connected && (
           <p className="mt-1 text-[10px] font-medium text-amber-400/90">Connecting…</p>
         )}
@@ -608,12 +699,14 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
         style={{ contain: "content" }}
         onScroll={handleScroll}
       >
-        {messages.length === 0 && (
+        {displayMessages.length === 0 && (
           <p className="px-1 py-6 text-center text-[14px] text-white/40 xl:text-xs">
-            No messages yet. Say hi to the world.
+            {pulseTab === "gold"
+              ? "Gold Lounge is quiet. Start the flex."
+              : "No messages yet. Say hi to the world."}
           </p>
         )}
-        {messages.map((m, idx) => {
+        {displayMessages.map((m) => {
           return (
             <div key={m.id} className="scroll-mt-2">
               <GlobalPulseMessageRow

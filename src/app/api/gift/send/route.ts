@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/src/auth";
 import { getWalletBalance, spendCoins, addCoins } from "@/src/lib/wallet";
 import { prisma } from "@/src/lib/prisma";
-import { createNotification } from "@/src/lib/create-notification";
+import { createNotification, giftNotificationCopy } from "@/src/lib/create-notification";
 import { bannedUserResponseIfAny } from "@/src/lib/banned-user";
 
 export const GIFT_TYPES = { heart: 5, fire: 50, rocket: 500 } as const;
@@ -63,12 +63,14 @@ export async function POST(req: NextRequest) {
 
     const sender = await prisma.user.findUnique({ where: { id: senderId }, select: { name: true } });
     const senderName = sender?.name ?? "Someone";
+    const { title, message } = giftNotificationCopy(senderName, giftType);
 
     await createNotification({
       userId: receiverId,
-      type: "GIFT",
-      title: "You received a gift!",
-      message: `${senderName} sent you ${amount} coins`,
+      type: "gift",
+      title,
+      message,
+      link: "/profile",
     });
 
     return NextResponse.json({

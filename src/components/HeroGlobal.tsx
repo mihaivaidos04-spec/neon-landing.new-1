@@ -86,6 +86,27 @@ export default function HeroGlobal({
             {isAuthenticated ? "Jump into the stage" : "Start Connecting Now"}
           </button>
         )}
+
+        <p
+          className="mx-auto mt-6 max-w-2xl text-center text-[11px] font-medium leading-relaxed text-white/55 sm:mt-8 sm:text-xs sm:text-white/60"
+          style={HERO_BODY_FONT}
+        >
+          <span className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 sm:gap-x-3">
+            <span>🔒 SSL Secured</span>
+            <span className="text-white/25" aria-hidden>
+              |
+            </span>
+            <span>💳 Stripe Payments</span>
+            <span className="text-white/25" aria-hidden>
+              |
+            </span>
+            <span>🛡️ AI Moderated</span>
+            <span className="text-white/25" aria-hidden>
+              |
+            </span>
+            <span>✅ GDPR Compliant</span>
+          </span>
+        </p>
       </div>
 
       <div

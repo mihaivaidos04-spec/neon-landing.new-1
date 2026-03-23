@@ -9,7 +9,7 @@ export type StoredAttribution = {
   utm_source?: string;
   utm_medium?: string;
   utm_campaign?: string;
-  ref?: string; // ?ref=USER_ID → referred_by_id
+  ref?: string; // ?ref=<referralCode or legacy user id>
   captured_at: string; // ISO timestamp
 };
 

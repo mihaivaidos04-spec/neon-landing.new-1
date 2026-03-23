@@ -3,6 +3,7 @@ import { prisma } from "@/src/lib/prisma";
 import { syncAutomaticBadges } from "@/src/lib/sync-automatic-badges";
 import { badgeUi } from "@/src/lib/profile-badge-display";
 import { giftEmojiForType } from "@/src/lib/profile-gift-emojis";
+import { vipTierFromUser } from "@/src/lib/vip-tier";
 
 export async function GET(
   _req: NextRequest,
@@ -32,6 +33,7 @@ export async function GET(
         totalOnlineMinutes: true,
         createdAt: true,
         isVip: true,
+        totalSpent: true,
       },
     });
 
@@ -80,6 +82,10 @@ export async function GET(
       totalOnlineMinutes: user.totalOnlineMinutes ?? 0,
       memberSince: user.createdAt.toISOString(),
       isVip: user.isVip ?? false,
+      vipTier: vipTierFromUser({
+        isVip: user.isVip === true,
+        totalSpent: user.totalSpent ?? 0,
+      }),
       socialInstagram: user.socialInstagram,
       socialTiktok: user.socialTiktok,
       socialTwitter: user.socialTwitter,

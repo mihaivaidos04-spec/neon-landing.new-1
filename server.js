@@ -11,6 +11,7 @@ import {
   GLOBAL_PULSE_HISTORY_LIMIT,
 } from "./global-pulse-constants.mjs";
 import { getPrisma } from "./server-prisma.mjs";
+import { vipTierFromUser } from "./src/lib/vip-tier.ts";
 
 env.loadEnvConfig(process.cwd(), process.env.NODE_ENV !== "production");
 
@@ -108,6 +109,8 @@ app.prepare().then(() => {
   const prisma = getPrisma();
 
   function chatRowToWire(row) {
+    let vipTier = row.vipTier || "free";
+    if (vipTier === "free" && row.neonVip === true) vipTier = "gold";
     return {
       id: row.id,
       userId: row.userId,
@@ -116,6 +119,8 @@ app.prepare().then(() => {
       message: row.message,
       kind: row.kind === "reaction" ? "reaction" : "text",
       neonVip: row.neonVip === true,
+      vipTier,
+      pulseChannel: row.pulseChannel || "world",
       ts: row.createdAt.getTime(),
     };
   }
@@ -236,18 +241,77 @@ app.prepare().then(() => {
       }
     });
 
-    socket.on("global_pulse_request_history", async () => {
+    socket.on("global_pulse_request_history", async (payload) => {
       try {
+        const wantGold =
+          payload && typeof payload === "object" && payload.channel === "gold";
+        if (wantGold) {
+          const uid = socket.userId;
+          if (!uid) {
+            socket.emit("global_pulse_gold_history", []);
+            return;
+          }
+          const u = await prisma.user.findUnique({
+            where: { id: uid },
+            select: { isVip: true, totalSpent: true },
+          });
+          const tier = u
+            ? vipTierFromUser({
+                isVip: u.isVip === true,
+                totalSpent: u.totalSpent ?? 0,
+              })
+            : "free";
+          if (tier !== "gold") {
+            socket.emit("global_pulse_gold_history", []);
+            return;
+          }
+        }
         const rows = await prisma.chatMessage.findMany({
+          where: { pulseChannel: wantGold ? "gold" : "world" },
           orderBy: { createdAt: "desc" },
           take: GLOBAL_PULSE_HISTORY_LIMIT,
         });
         const chronological = rows.reverse().map(chatRowToWire);
-        socket.emit("global_pulse_history", chronological);
+        if (wantGold) {
+          socket.emit("global_pulse_gold_history", chronological);
+        } else {
+          socket.emit("global_pulse_history", chronological);
+        }
       } catch (err) {
         console.error("[global_pulse_request_history]", err);
-        socket.emit("global_pulse_history", []);
+        const wantGold =
+          payload && typeof payload === "object" && payload.channel === "gold";
+        socket.emit(wantGold ? "global_pulse_gold_history" : "global_pulse_history", []);
       }
+    });
+
+    socket.on("global_pulse_gold_join", async () => {
+      const uid = socket.userId;
+      if (!uid) return;
+      try {
+        const u = await prisma.user.findUnique({
+          where: { id: uid },
+          select: { isVip: true, totalSpent: true },
+        });
+        const tier = u
+          ? vipTierFromUser({
+              isVip: u.isVip === true,
+              totalSpent: u.totalSpent ?? 0,
+            })
+          : "free";
+        if (tier !== "gold") {
+          socket.emit("global_pulse_gold_forbidden");
+          return;
+        }
+        socket.join("global_pulse_gold");
+      } catch (e) {
+        console.error("[global_pulse_gold_join]", e);
+        socket.emit("global_pulse_gold_forbidden");
+      }
+    });
+
+    socket.on("global_pulse_gold_leave", () => {
+      socket.leave("global_pulse_gold");
     });
 
     socket.on("global_pulse_send", async (payload) => {
@@ -321,11 +385,22 @@ app.prepare().then(() => {
       const cc = payload.countryCode;
       const countryCode =
         typeof cc === "string" && cc.length === 2 ? cc.toUpperCase() : null;
+      const pulseChannel = payload.channel === "gold" ? "gold" : "world";
       try {
         const sender = await prisma.user.findUnique({
           where: { id: uid },
-          select: { isVip: true },
+          select: { isVip: true, totalSpent: true },
         });
+        const tier = sender
+          ? vipTierFromUser({
+              isVip: sender.isVip === true,
+              totalSpent: sender.totalSpent ?? 0,
+            })
+          : "free";
+        if (pulseChannel === "gold" && tier !== "gold") {
+          socket.emit("global_pulse_gold_forbidden");
+          return;
+        }
         const row = await prisma.chatMessage.create({
           data: {
             userId: uid,
@@ -334,10 +409,16 @@ app.prepare().then(() => {
             message: raw.slice(0, 280),
             kind: isReaction ? "reaction" : "text",
             neonVip: sender?.isVip === true,
+            vipTier: tier,
+            pulseChannel,
           },
         });
         const entry = chatRowToWire(row);
-        io.to("global_pulse").emit("global_pulse_message", entry);
+        if (pulseChannel === "gold") {
+          io.to("global_pulse_gold").emit("global_pulse_gold_message", entry);
+        } else {
+          io.to("global_pulse").emit("global_pulse_message", entry);
+        }
       } catch (err) {
         console.error("[global_pulse_send]", err);
       }

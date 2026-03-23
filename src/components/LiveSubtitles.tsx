@@ -4,7 +4,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
 
-const LOCALE_TO_LANG: Record<ContentLocale, string> = {
+/** BCP-47 for Web Speech API — exported for AI Whisper chrome. */
+export const SPEECH_LANG_BY_LOCALE: Record<ContentLocale, string> = {
   ro: "ro-RO",
   en: "en-US",
   de: "de-DE",
@@ -39,6 +40,16 @@ type Props = {
   onInsufficientBalance?: () => void;
   /** Final speech segments from the local mic (raw, before translation). */
   onTranscriptFinal?: (text: string) => void;
+  /** MyMemory `to` ISO code (e.g. `ro`). Defaults to UI locale. */
+  translateToCode?: string;
+  /** Web Speech `recognition.lang` (BCP-47). Defaults from UI locale. */
+  speechLangBcp47?: string;
+  /**
+   * When true, subtitle text is forwarded via `onSubtitleTextChange` and the default bottom chip is hidden
+   * (used for in-panel AI Whisper bars).
+   */
+  useExternalDisplay?: boolean;
+  onSubtitleTextChange?: (text: string) => void;
 };
 
 export default function LiveSubtitles({
@@ -47,22 +58,29 @@ export default function LiveSubtitles({
   listenOnly = false,
   onInsufficientBalance,
   onTranscriptFinal,
+  translateToCode,
+  speechLangBcp47,
+  useExternalDisplay = false,
+  onSubtitleTextChange,
 }: Props) {
   const [subtitle, setSubtitle] = useState("");
   const recognitionRef = useRef<{ stop: () => void } | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onTranscriptFinalRef = useRef(onTranscriptFinal);
   onTranscriptFinalRef.current = onTranscriptFinal;
+  const onSubtitleTextChangeRef = useRef(onSubtitleTextChange);
+  onSubtitleTextChangeRef.current = onSubtitleTextChange;
+
+  const targetCode = translateToCode?.trim() || LOCALE_TO_TRANSLATE[locale];
 
   const translate = useCallback(
     async (text: string, sourceLang: string): Promise<string> => {
       if (!text.trim()) return text;
-      const target = LOCALE_TO_TRANSLATE[locale];
       const src = sourceLang.split("-")[0];
-      if (src === target) return text;
+      if (src === targetCode) return text;
       try {
         const res = await fetch(
-          `/api/translate?text=${encodeURIComponent(text)}&from=${src}&to=${target}`
+          `/api/translate?text=${encodeURIComponent(text)}&from=${src}&to=${targetCode}`
         );
         const data = await res.json();
         return data.translated ?? text;
@@ -70,10 +88,15 @@ export default function LiveSubtitles({
         return text;
       }
     },
-    [locale]
+    [targetCode]
   );
 
   const shouldListen = enabled || listenOnly;
+
+  useEffect(() => {
+    if (!enabled || !useExternalDisplay) return;
+    onSubtitleTextChangeRef.current?.(subtitle);
+  }, [subtitle, enabled, useExternalDisplay]);
 
   useEffect(() => {
     if (!shouldListen || typeof window === "undefined") return;
@@ -82,14 +105,18 @@ export default function LiveSubtitles({
       (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionInstance }).SpeechRecognition ||
       (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionInstance }).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      if (enabled) setSubtitle("(Speech recognition not supported)");
+      if (enabled) {
+        const msg = "(Speech recognition not supported)";
+        setSubtitle(msg);
+        if (useExternalDisplay) onSubtitleTextChangeRef.current?.(msg);
+      }
       return;
     }
 
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = LOCALE_TO_LANG[locale];
+    recognition.lang = speechLangBcp47?.trim() || SPEECH_LANG_BY_LOCALE[locale];
     recognitionRef.current = recognition;
 
     recognition.onresult = (event: SpeechRecognitionEventLike) => {
@@ -125,7 +152,9 @@ export default function LiveSubtitles({
     recognition.onerror = (e: { error?: string }) => {
       if (e.error === "not-allowed") {
         if (enabled) {
-          setSubtitle(getContentT(locale).liveTranslationMicDenied);
+          const msg = getContentT(locale).liveTranslationMicDenied;
+          setSubtitle(msg);
+          if (useExternalDisplay) onSubtitleTextChangeRef.current?.(msg);
         }
       }
     };
@@ -141,8 +170,11 @@ export default function LiveSubtitles({
       }
       recognitionRef.current = null;
       setSubtitle("");
+      if (useExternalDisplay) onSubtitleTextChangeRef.current?.("");
     };
-  }, [enabled, listenOnly, shouldListen, locale, translate]);
+  }, [enabled, listenOnly, shouldListen, locale, translate, speechLangBcp47, useExternalDisplay]);
+
+  if (useExternalDisplay) return null;
 
   if (!enabled || !subtitle) return null;
 

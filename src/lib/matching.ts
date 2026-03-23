@@ -1,11 +1,12 @@
 /**
  * Priority-based matching logic.
- * VIP Pass (fullpass/fullweek) or >500 coins → is_priority → front of queue.
+ * VIP Pass (fullpass/fullweek) or >500 coins or paid VIP tier (bronze/silver/gold) → is_priority.
  * Boosted (boosted_at within 5 min, 10 coins) → also gets priority.
  * Fast Match: priority users get paired in <2s, even by "stealing" from non-priority pairs.
  *
  * Refined scoring:
- * - priority_score = (has_active_subscription ? 10 : 0) + (coin_balance / 10)
+ * - priority_score = (has_active_subscription ? 10 : 0) + (coin_balance / 10) + tier_boost
+ * - tier_boost: bronze/silver/gold from lifetime spend + Whale (see `vip-tier.ts`)
  * - When user presses Next: prioritize matching with high priority_score users
  * - 0 coins + 0 battery → is_slow_queue; Quick Charge users get priority
  */
@@ -18,6 +19,9 @@ import { prisma } from "./prisma";
 import { pairingAllowed } from "./user-blocks";
 import { TARGET_COUNTRY_MATCH_COST } from "./coins";
 import { isPlausibleCountryCode } from "./valid-country-code";
+import { matchmakingPriorityBoost, vipTierFromUser, type VipTier } from "./vip-tier";
+import { createNotification } from "./create-notification";
+import { getPartnerNickname } from "./partner-nickname";
 
 const PRIORITY_COIN_THRESHOLD = 500;
 const FAST_MATCH_MS = 2000;
@@ -29,31 +33,44 @@ function isBoosted(boostedAt: string | null | undefined): boolean {
   return Date.now() - new Date(boostedAt).getTime() < BOOST_WINDOW_MS;
 }
 
+async function vipTierForMatchmaking(userId: string): Promise<VipTier> {
+  const u = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isVip: true, totalSpent: true },
+  });
+  if (!u) return "free";
+  return vipTierFromUser({ isVip: u.isVip === true, totalSpent: u.totalSpent ?? 0 });
+}
+
 /** VIP Pass = Full Pass or Full Month (both set gender+location expiry) */
 export async function computeIsPriority(userId: string): Promise<boolean> {
-  const [hasGender, hasLocation, balance] = await Promise.all([
+  const [hasGender, hasLocation, balance, paidTier] = await Promise.all([
     hasActivePass(userId, "gender"),
     hasActivePass(userId, "location"),
     getWalletBalance(userId),
+    vipTierForMatchmaking(userId),
   ]);
   const hasVipPass = hasGender && hasLocation; // fullpass/fullweek set both
   const hasEnoughCoins = (balance ?? 0) > PRIORITY_COIN_THRESHOLD;
-  return hasVipPass || hasEnoughCoins;
+  const hasSpendTier = paidTier !== "free";
+  return hasVipPass || hasEnoughCoins || hasSpendTier;
 }
 
-/** priority = (has_active_subscription ? 10 : 0) + (coin_balance / 10) */
+/** priority = (has_active_subscription ? 10 : 0) + (coin_balance / 10) + VIP tier boost */
 export type PriorityInfo = { priority: number; isSlowQueue: boolean };
 
 export async function computePriorityScore(userId: string): Promise<PriorityInfo> {
-  const [hasGender, hasLocation, coinBalance, battery] = await Promise.all([
+  const [hasGender, hasLocation, coinBalance, battery, spendTier] = await Promise.all([
     hasActivePass(userId, "gender"),
     hasActivePass(userId, "location"),
     getWalletBalance(userId),
     getBatteryLevel(userId),
+    vipTierForMatchmaking(userId),
   ]);
   const hasActiveSubscription = hasGender && hasLocation;
   const coins = coinBalance ?? 0;
-  const priority = (hasActiveSubscription ? 10 : 0) + coins / 10;
+  const priority =
+    (hasActiveSubscription ? 10 : 0) + coins / 10 + matchmakingPriorityBoost(spendTier);
   const isSlowQueue = coins === 0 && battery === 0;
   return { priority, isSlowQueue };
 }
@@ -513,6 +530,30 @@ async function createPair(
   } catch (e) {
     console.error("[matching createPair] totalMatches increment", e);
   }
+
+  void Promise.all([getPartnerNickname(userA), getPartnerNickname(userB)])
+    .then(([nickA, nickB]) => {
+      const labelB = nickB?.trim() || "Someone";
+      const labelA = nickA?.trim() || "Someone";
+      return Promise.all([
+        createNotification({
+          userId: userA,
+          type: "match",
+          title: "New match!",
+          message: `You're paired with ${labelB}. Say hi!`,
+          link: "/",
+        }),
+        createNotification({
+          userId: userB,
+          type: "match",
+          title: "New match!",
+          message: `You're paired with ${labelA}. Say hi!`,
+          link: "/",
+        }),
+      ]);
+    })
+    .catch(() => {});
+
   return { status: "matched", partnerId: userB };
 }
 

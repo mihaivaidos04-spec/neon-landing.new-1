@@ -44,6 +44,7 @@ import { getWalletBalance } from "@/src/lib/wallet";
 import { getSupabase } from "@/src/lib/supabase";
 import { addLoginXp } from "@/src/lib/login-xp";
 import { neonVipGlowVariant } from "@/src/lib/neon-vip-style";
+import { syncUserVipTierById, vipTierFromUser } from "@/src/lib/vip-tier";
 
 const GOOGLE_ID = process.env.GOOGLE_CLIENT_ID ?? process.env.AUTH_GOOGLE_ID;
 const GOOGLE_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? process.env.AUTH_GOOGLE_SECRET;
@@ -245,6 +246,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               totalSpent: true,
               isVip: true,
               nickname: true,
+              vipTier: true,
             },
           });
           if (user) {
@@ -258,6 +260,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             session.isGhost = ghostActive;
             session.isNeonVip = user.isVip === true;
             session.neonVipGlow = user.isVip ? neonVipGlowVariant(userId) : undefined;
+            const computedVip = vipTierFromUser({
+              isVip: user.isVip === true,
+              totalSpent: user.totalSpent ?? 0,
+            });
+            session.vipTier = computedVip;
+            if (user.vipTier !== computedVip) {
+              syncUserVipTierById(userId).catch(() => {});
+            }
           }
           const walletCoins = await getWalletBalance(userId);
           const coins = walletCoins ?? user?.coins ?? 0;

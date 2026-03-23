@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
 import toast from "react-hot-toast";
+import { buildInviteShareUrl } from "@/src/lib/invite-share";
 
 type Props = {
   locale: ContentLocale;
@@ -48,11 +49,27 @@ export default function BatteryDepletedModal({
 }: Props) {
   const t = getContentT(locale);
   const pendingShareRef = useRef(false);
+  const [refKey, setRefKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!visible || !isAuthenticated || !userId) return;
+    let cancelled = false;
+    void fetch("/api/referral/me", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d: { referralCode?: string }) => {
+        if (!cancelled && d?.referralCode) setRefKey(d.referralCode);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [visible, isAuthenticated, userId]);
 
   const handleRefillShare = () => {
-    if (!userId) return;
-    const shareText = buildShareText(userId);
-    const shareUrl = buildShareUrl(userId);
+    const key = refKey ?? userId;
+    if (!key) return;
+    const shareText = buildShareText(key);
+    const shareUrl = buildInviteShareUrl(key);
 
     if (typeof navigator !== "undefined" && navigator.share) {
       navigator

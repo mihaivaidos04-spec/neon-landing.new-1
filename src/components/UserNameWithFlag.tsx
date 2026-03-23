@@ -2,6 +2,8 @@
 
 import LazyUserFlag from "./LazyUserFlag";
 import type { UserFlagSize } from "./UserFlag";
+import { globalPulseUsernameClass } from "../lib/neon-vip-style";
+import { normalizeVipTier } from "../lib/vip-tier";
 
 type Props = {
   name: string;
@@ -13,6 +15,10 @@ type Props = {
   nameClassName?: string;
   /** Whale / VIP: gold or electric-blue neon text-shadow */
   neonVipGlow?: "gold" | "blue" | false;
+  /** Spend tier — animated / gold username on profile */
+  vipTier?: string | null;
+  /** For tier styling fallback */
+  profileUserId?: string;
 };
 
 /**
@@ -26,13 +32,21 @@ export default function UserNameWithFlag({
   className = "",
   nameClassName = "",
   neonVipGlow = false,
+  vipTier,
+  profileUserId = "",
 }: Props) {
-  const vipClass =
+  const tierNorm = normalizeVipTier(vipTier ?? undefined);
+  const tierClass =
+    tierNorm !== "free"
+      ? globalPulseUsernameClass(vipTier ?? "free", false, profileUserId || "user")
+      : "";
+  const legacyVipClass =
     neonVipGlow === "gold"
       ? "neon-vip-name-gold"
       : neonVipGlow === "blue"
         ? "neon-vip-name-blue"
         : "";
+  const vipClass = tierClass || legacyVipClass;
   return (
     <span
       className={`inline-flex min-w-0 max-w-full items-center gap-1 sm:gap-1.5 ${className}`}

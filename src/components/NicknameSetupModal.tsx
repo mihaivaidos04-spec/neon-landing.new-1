@@ -34,6 +34,14 @@ export default function NicknameSetupModal({ locale = "en", open, onSuccess }: P
       }
       await update();
       toast.success(locale === "ro" ? "Poreclă salvată" : "Nickname saved");
+      window.setTimeout(() => {
+        toast(
+          locale === "ro"
+            ? "NeonLive are traducere AI live — vorbește cu oricine în limba ta. Primele 5 minute gratis!"
+            : "NeonLive has live AI translation — talk to anyone in your language. First 5 minutes free!",
+          { icon: "💡", duration: 6500 }
+        );
+      }, 450);
       onSuccess?.();
     } catch {
       setError("Network error");

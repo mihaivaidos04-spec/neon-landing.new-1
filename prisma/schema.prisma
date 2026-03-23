@@ -18,19 +18,33 @@ model User {
   coins            Int       @default(0)
   isGhost          Boolean   @default(false)
   country          String?
+  /// Unique share code for ?ref= (uuid); backfilled lazily if null (existing users)
+  referralCode     String?   @unique
+  /// Set when user registered via someone else's referral link
+  referredBy       String?
   referralCount    Int       @default(0)
+  /// Lifetime coins earned as a referrer (signup + purchase bonuses)
+  referralCoins    Int       @default(0)
   totalCoinsSpent  Int       @default(0)
   /// Lifetime USD spent on Stripe billing packs / checkouts (for VIP glow, analytics)
   totalSpent       Float     @default(0)
   hasEverPurchased Boolean   @default(false)
   tier             String    @default("NEON_FREE")
   lastLogin        DateTime  @default(now())
-  /// Consecutive UTC calendar days with a qualifying login
+  /// Consecutive UTC calendar days with a qualifying daily-login claim
   currentStreak    Int       @default(0)
+  /// Best streak length achieved
+  longestStreak    Int       @default(0)
+  /// Last UTC day daily streak reward was claimed (POST /api/user/daily-login)
+  lastLoginDate    DateTime?
+  /// Running total of coins granted from daily login streak rewards
+  totalCoinsEarned Int       @default(0)
   /// Set to coin amount (e.g. 10) when streak bonus granted; cleared on next GET /api/profile/me
   streakBonusPopup Int       @default(0)
   /// Whale pack ($18.99) & high-tier visual perks
   isVip            Boolean   @default(false)
+  /// Cosmetic + matchmaking tier: free | bronze | silver | gold (synced from totalSpent + isVip)
+  vipTier          String    @default("free") @db.VarChar(16)
   /// Optional custom animated banner URL (GIF/Lottie hosted URL)
   animatedBanner   String?
   /// Profile avatar GIF URL (Neon VIP / whale pack only)
@@ -91,8 +105,19 @@ model User {
   profileHeartbeatAt DateTime?
   /// Updated on Socket register/disconnect for “last seen”
   lastSeenAt       DateTime  @default(now())
+  /// AI Whisper: minutes consumed today (UTC calendar day); reset in API at midnight UTC
+  translationMinutesToday Int       @default(0)
+  /// Last time translation usage was reset or counted — used with UTC day boundary
+  translationResetAt      DateTime  @default(now())
+  /// One-time 50-coin welcome after nickname setup (POST /api/user/welcome-bonus)
+  welcomeBonusGranted     Boolean   @default(false)
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+
+  referrer         User?     @relation("UserReferralInviter", fields: [referredBy], references: [id], onDelete: SetNull)
+  usersReferred    User[]    @relation("UserReferralInviter")
+  referralsMade    Referral[] @relation("ReferralReferrer")
+  referralAsInvitee Referral? @relation("ReferralInvitee")
 
   profileGalleryImages   ProfileGalleryImage[]
   friendshipsRequested   Friendship[]          @relation("FriendshipRequester")
@@ -107,6 +132,21 @@ model User {
   @@index([xp])
   @@index([currentLevel])
   @@index([isShadowBanned])
+}
+
+/// One row per invited user; tracks signup referral rewards
+model Referral {
+  id           String   @id @default(cuid())
+  referrerId   String
+  referredId   String   @unique
+  coinsAwarded Int
+  createdAt    DateTime @default(now())
+
+  referrer User @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred User @relation("ReferralInvitee", fields: [referredId], references: [id], onDelete: Cascade)
+
+  @@index([referrerId])
+  @@index([createdAt])
 }
 
 model Level {
@@ -134,11 +174,13 @@ model UserInventory {
 model Notification {
   id        String   @id @default(cuid())
   userId    String
-  type      String   // 'GIFT' | 'FOLLOW' | 'LEVEL_UP' | 'achievement'
+  /// gift | match | streak | referral | system | vip (+ legacy uppercase e.g. GIFT)
+  type      String   @db.VarChar(32)
   title     String
-  message   String?
-  body      String?
+  message   String   @default("")
   read      Boolean  @default(false)
+  /// In-app path e.g. /profile, /billing — optional deep link when row is clicked
+  link      String?  @db.VarChar(512)
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -397,6 +439,10 @@ model ChatMessage {
   kind        String   @default("text") @db.VarChar(16)
   /// Snapshot: sender had Neon VIP (whale) at post time — for gold/blue name glow in history
   neonVip     Boolean  @default(false)
+  /// Snapshot: sender VIP tier at post time (world vs gold lounge styling + history)
+  vipTier     String   @default("free") @db.VarChar(16)
+  /// world | gold — gold lounge messages only go to Gold-tier room
+  pulseChannel String  @default("world") @db.VarChar(16)
   createdAt   DateTime @default(now())
 
   @@index([createdAt])

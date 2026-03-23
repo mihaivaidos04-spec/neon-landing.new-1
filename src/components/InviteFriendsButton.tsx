@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
 import {
@@ -19,10 +19,25 @@ type Props = {
 export default function InviteFriendsButton({ locale = "en", userId, compact = false }: Props) {
   const t = getContentT(locale);
   const [open, setOpen] = useState(false);
+  const [refKey, setRefKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    void fetch("/api/referral/me", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d: { referralCode?: string }) => {
+        if (!cancelled && d?.referralCode) setRefKey(d.referralCode);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   if (!userId) return null;
-
-  const shareText = buildInviteShareText(userId);
+  const key = refKey ?? userId;
+  const shareText = buildInviteShareText(key);
 
   const handleWhatsApp = () => {
     openWhatsAppInvite(shareText);

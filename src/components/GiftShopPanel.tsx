@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
@@ -262,7 +263,14 @@ export function GiftShopQuestStack(props: BaseProps) {
       <div className="min-h-0 max-h-[min(48vh,420px)] flex-1 overflow-y-auto overflow-x-hidden pr-0.5 [-webkit-overflow-scrolling:touch] sm:max-h-[min(52vh,480px)]">
         <GiftShopPanelContent {...props} hideShopTitle />
       </div>
-      <p className="mt-2 shrink-0 text-center text-[10px] font-medium text-fuchsia-200/50">{t.coinsLabel}</p>
+      <p className="mt-2 shrink-0 text-center text-[9px] leading-snug text-violet-300/55">
+        Coin packs raise your daily AI Whisper limits — see{" "}
+        <Link href="/billing" className="text-fuchsia-300/90 underline hover:text-fuchsia-200">
+          Billing
+        </Link>
+        .
+      </p>
+      <p className="mt-1 shrink-0 text-center text-[10px] font-medium text-fuchsia-200/50">{t.coinsLabel}</p>
     </section>
   );
 }

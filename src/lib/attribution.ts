@@ -1,18 +1,15 @@
 /**
- * Attribution – save UTM and referral data to user_profiles.
- * Only updates when attribution is not yet set (first sign-in).
- * When ref (referral) is saved, awards 5 coins to the referrer.
+ * Attribution – save UTM data to user_profiles (first sign-in).
+ * Referral links (?ref=) are handled by POST /api/referral/register + Prisma.
  */
 
 import { getSupabase } from "./supabase";
-import { addCoins } from "./wallet";
-import { prisma } from "./prisma";
 
 export type AttributionInput = {
   utm_source?: string;
   utm_medium?: string;
   utm_campaign?: string;
-  ref?: string; // ?ref=USER_ID → referred_by_id
+  ref?: string; // ignored here; use /api/referral/register
 };
 
 /**
@@ -32,7 +29,7 @@ export async function saveAttribution(
     .single();
 
   // Only update if we have new data and profile hasn't been attributed yet
-  const hasInput = input.utm_source || input.utm_medium || input.utm_campaign || input.ref;
+  const hasInput = input.utm_source || input.utm_medium || input.utm_campaign;
   const alreadyAttributed = existing?.signup_source != null || existing?.referred_by_id != null;
   if (!hasInput || alreadyAttributed) {
     return { saved: false };
@@ -44,7 +41,6 @@ export async function saveAttribution(
   if (input.utm_source) updateFields.signup_source = input.utm_source;
   if (input.utm_medium) updateFields.utm_medium = input.utm_medium;
   if (input.utm_campaign) updateFields.utm_campaign = input.utm_campaign;
-  if (input.ref) updateFields.referred_by_id = input.ref;
 
   const { error } = await supabase.from("user_profiles").upsert(
     { user_id: userId, ...updateFields },
@@ -54,27 +50,6 @@ export async function saveAttribution(
   if (error) {
     console.error("[attribution save]", error);
     return { saved: false, error: error.message };
-  }
-
-  // Referral bonus: give 5 coins to referrer when someone signs up via their link
-  if (input.ref) {
-    const referrerId = input.ref;
-    if (referrerId !== userId) {
-      const externalId = `referral_${userId}`;
-      const res = await addCoins(referrerId, 5, { externalId, reason: "referral" });
-      if (!res.success && res.error !== "Already credited") {
-        console.error("[attribution referral bonus]", res.error);
-      }
-      // Update Prisma User.referralCount
-      try {
-        await prisma.user.update({
-          where: { id: referrerId },
-          data: { referralCount: { increment: 1 } },
-        });
-      } catch (e) {
-        console.error("[attribution referralCount update]", e);
-      }
-    }
   }
 
   return { saved: true };

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { BILLING_PACKS, type BillingPack } from "@/src/lib/billing-packs";
+import PoweredByStripeBadge from "@/src/components/PoweredByStripeBadge";
 
 function formatUsd(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
@@ -34,6 +35,12 @@ function packTier(pack: BillingPack): 1 | 2 | 3 {
   if (pack.id === "starter") return 1;
   if (pack.id === "popular") return 2;
   return 3;
+}
+
+function aiWhisperLineForPack(pack: BillingPack): string {
+  if (pack.id === "starter") return "VIP Bronze: 60 min AI translation / day";
+  if (pack.id === "popular") return "VIP Silver: 3 hours AI translation / day";
+  return "VIP Gold: unlimited AI translation / day";
 }
 
 function BillingPageInner() {
@@ -210,7 +217,11 @@ function BillingPageInner() {
               </p>
               <ul className="mt-4 flex-1 space-y-2 text-xs text-white/55">
                 <li className="flex gap-2">
-                  <span className="text-emerald-400">✓</span> Instant delivery to wallet
+                  <span className="text-fuchsia-400">🤖</span>
+                  <span className="text-violet-200/90">{aiWhisperLineForPack(pack)}</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-emerald-400">✓</span> Instant delivery
                 </li>
                 <li className="flex gap-2">
                   <span className="text-emerald-400">✓</span> Use for gifts &amp; features
@@ -238,6 +249,11 @@ function BillingPageInner() {
           ))}
         </div>
 
+        <div className="mt-10 rounded-2xl border border-violet-500/25 bg-violet-950/25 px-5 py-4 text-center">
+          <p className="text-sm font-semibold text-violet-200/95">Subscription plans &amp; passes</p>
+          <p className="mt-1 text-xs leading-relaxed text-white/50">Cancel anytime — no long-term commitment.</p>
+        </div>
+
         <p className="mt-12 text-center text-[11px] text-white/35">
           Payments processed by Stripe. By purchasing you agree to our{" "}
           <Link href="/terms" className="text-violet-400 underline hover:text-violet-300">
@@ -252,6 +268,10 @@ function BillingPageInner() {
             Refunds
           </Link>
           .
+        </p>
+
+        <p className="mx-auto mt-4 max-w-lg text-center text-[10px] leading-relaxed text-white/30">
+          30-day refund policy — see our Refunds page for eligibility and how to request a refund.
         </p>
 
         <div className="mt-8 text-center">

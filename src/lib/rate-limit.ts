@@ -10,14 +10,17 @@ const MAX_LOGIN_PER_WINDOW = 5;
 const MAX_GIFT_PER_WINDOW = 20;
 const MAX_ACTIVITY_PER_WINDOW = 30;
 
-export type RateLimitAction = "login" | "gift" | "activity" | "wallet_add";
+export type RateLimitAction = "login" | "gift" | "activity" | "wallet_add" | "daily_login";
 
 const MAX_WALLET_ADD_PER_WINDOW = 20;
+const MAX_DAILY_LOGIN_PER_WINDOW = 15;
 
 function getLimit(action: RateLimitAction): number {
   switch (action) {
     case "login":
       return MAX_LOGIN_PER_WINDOW;
+    case "daily_login":
+      return MAX_DAILY_LOGIN_PER_WINDOW;
     case "gift":
       return MAX_GIFT_PER_WINDOW;
     case "activity":

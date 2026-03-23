@@ -83,9 +83,9 @@ export async function handleUserActivity(
         await tx.notification.create({
           data: {
             userId,
-            type: "level_up",
+            type: "system",
             title: `Level ${newLevel} reached!`,
-            body: "Your Neon level just climbed — keep the vibe going.",
+            message: "Your Neon level just climbed — keep the vibe going.",
           },
         });
       }

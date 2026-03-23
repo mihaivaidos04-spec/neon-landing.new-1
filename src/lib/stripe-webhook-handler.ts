@@ -6,6 +6,8 @@ import { getSupabase } from "@/src/lib/supabase";
 import { getBillingPackById } from "@/src/lib/billing-packs";
 import { neonLevelFromXp, xpFromCoinsCredited } from "@/src/lib/neon-xp-level";
 import { broadcastLegendPurchase } from "@/src/lib/broadcast-legend-purchase";
+import { rewardReferrerOnReferredPurchase } from "@/src/lib/referral-service";
+import { syncUserVipTierInTx } from "@/src/lib/vip-tier";
 
 function isUniqueConstraintError(e: unknown): boolean {
   return e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
@@ -177,6 +179,8 @@ async function fulfillBillingPack(
       coinsAdded: coinsToBuy,
     });
   }
+
+  await rewardReferrerOnReferredPurchase(userId);
 }
 
 async function fulfillPlanCheckout(
@@ -279,6 +283,8 @@ async function fulfillPlanCheckout(
           packId: meta.planId ?? null,
         },
       });
+
+      await syncUserVipTierInTx(tx, userId);
     });
   } else {
     await prisma.stripePurchase.update({

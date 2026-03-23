@@ -27,6 +27,7 @@ import UpgradeNeonVipModal from "./UpgradeNeonVipModal";
 import MatchFilterBar, { type MatchFilter } from "./MatchFilterBar";
 import MatchTargetCountryBar from "./MatchTargetCountryBar";
 import QueuePreview from "./QueuePreview";
+import VipFeatureLock from "./VipFeatureLock";
 import PrivateInviteModal from "./PrivateInviteModal";
 import NeonLiveLogo from "./NeonLiveLogo";
 import { useSocketContext } from "../contexts/SocketContext";
@@ -47,6 +48,12 @@ import { isShadowBanned } from "../lib/report-shadow-ban";
 import { pickRandomDemoCountry } from "../lib/demo-country-pool";
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
+import {
+  getStoredTranslationTargetCode,
+  setStoredTranslationTargetCode,
+  TRANSLATION_TARGET_OPTIONS,
+} from "../lib/translation-target-options";
+import { normalizeVipTier } from "../lib/vip-tier";
 
 /** Demo: 2 min premium countdown; when 0, silent downgrade + blur + system messages */
 const PREMIUM_DURATION_SEC = 120;
@@ -187,6 +194,11 @@ export default function ContentSection({
     return () => window.removeEventListener("ghost-mode-changed", handler as EventListener);
   }, []);
   const [liveTranslationEnabled, setLiveTranslationEnabled] = useState(false);
+  const [translateTargetCode, setTranslateTargetCode] = useState("en");
+  const [translationRemainSec, setTranslationRemainSec] = useState<number | null>(null);
+  const [translationUnlimited, setTranslationUnlimited] = useState(false);
+  const [translationUpgradeHint, setTranslationUpgradeHint] = useState(false);
+  const translationRemainSecRef = useRef(0);
   const [partnerId, setPartnerId] = useState<string | null>(null);
   const [partnerNickname, setPartnerNickname] = useState<string | null>(null);
   const [previousPartnerId, setPreviousPartnerId] = useState<string | null>(null);
@@ -202,6 +214,7 @@ export default function ContentSection({
   const [isVipSubscriber, setIsVipSubscriber] = useState(false);
   /** User.isVip (Whale Pack) — gender preference matching */
   const [isNeonVipUser, setIsNeonVipUser] = useState(false);
+  const [vipTier, setVipTier] = useState<string>("free");
   const [showNeonVipGenderModal, setShowNeonVipGenderModal] = useState(false);
   const [batteryDepletedModalVisible, setBatteryDepletedModalVisible] = useState(false);
   const [batteryChargeLoading, setBatteryChargeLoading] = useState(false);
@@ -247,6 +260,52 @@ export default function ContentSection({
   batteryRef.current = battery;
   const hasPlayedLowBatteryRef = useRef(false);
   const t = getContentT(locale);
+
+  const refreshTranslationStatus = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const r = await fetch("/api/translation/status", { credentials: "include" });
+      if (!r.ok) return;
+      const d = (await r.json()) as {
+        unlimited?: boolean;
+        remainingMinutes?: number;
+      };
+      const unlimited = !!d.unlimited;
+      setTranslationUnlimited(unlimited);
+      if (unlimited) {
+        setTranslationRemainSec(null);
+        translationRemainSecRef.current = 0;
+      } else {
+        const sec = Math.max(0, Math.floor((d.remainingMinutes ?? 0) * 60));
+        setTranslationRemainSec(sec);
+        translationRemainSecRef.current = sec;
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setTranslateTargetCode(getStoredTranslationTargetCode(locale === "ro" ? "ro" : "en"));
+  }, [locale]);
+
+  useEffect(() => {
+    void refreshTranslationStatus();
+  }, [refreshTranslationStatus]);
+
+  useEffect(() => {
+    translationRemainSecRef.current = translationRemainSec ?? 0;
+  }, [translationRemainSec]);
+
+  useEffect(() => {
+    if (!liveTranslationEnabled || !userId || translationUnlimited) return;
+    const id = window.setInterval(() => {
+      translationRemainSecRef.current = Math.max(0, translationRemainSecRef.current - 1);
+      setTranslationRemainSec(translationRemainSecRef.current);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [liveTranslationEnabled, userId, translationUnlimited]);
 
   const requireAuth = useCallback(() => {
     if (isGuest && onRequireAuth) {
@@ -624,12 +683,50 @@ export default function ContentSection({
     setBeautyBlurOverlayVisible(false);
   }, []);
 
-  const handleLiveTranslationToggle = useCallback(() => {
+  const handleLiveTranslationToggle = useCallback(async () => {
     if (liveTranslationEnabled) {
       setLiveTranslationEnabled(false);
+      setTranslationUpgradeHint(false);
       return;
     }
     if (requireAuth()) return;
+    if (userId && onSpend) {
+      await refreshTranslationStatus();
+      try {
+        const r = await fetch("/api/translation/status", { credentials: "include" });
+        const d = (await r.json()) as {
+          unlimited?: boolean;
+          remainingMinutes?: number;
+        };
+        if (!r.ok) {
+          toast.error("Could not load translation quota");
+          return;
+        }
+        if (!d.unlimited && (d.remainingMinutes ?? 0) <= 0) {
+          setTranslationUpgradeHint(true);
+          toast("Daily AI translation limit reached — upgrade a VIP pack for more.", {
+            icon: "🤖",
+            duration: 5000,
+          });
+          onOpenShop();
+          return;
+        }
+        setTranslationUnlimited(!!d.unlimited);
+        if (d.unlimited) {
+          setTranslationRemainSec(null);
+        } else {
+          const sec = Math.max(0, Math.floor((d.remainingMinutes ?? 0) * 60));
+          setTranslationRemainSec(sec);
+          translationRemainSecRef.current = sec;
+        }
+      } catch {
+        toast.error("Network error");
+        return;
+      }
+      setLiveTranslationEnabled(true);
+      feedbackSuccess();
+      return;
+    }
     if (coinsRef.current < LIVE_TRANSLATION_COST_PER_MIN && !onSpend) {
       toast(t.needCoinsMessage, { icon: "💎" });
       onOpenShop();
@@ -637,7 +734,15 @@ export default function ContentSection({
     }
     setLiveTranslationEnabled(true);
     feedbackSuccess();
-  }, [liveTranslationEnabled, t.needCoinsMessage, onOpenShop, onSpend, requireAuth]);
+  }, [
+    liveTranslationEnabled,
+    t.needCoinsMessage,
+    onOpenShop,
+    onSpend,
+    requireAuth,
+    userId,
+    refreshTranslationStatus,
+  ]);
 
   const handleSendReaction = useCallback(
     async (reactionId: ReactionId) => {
@@ -998,6 +1103,7 @@ export default function ContentSection({
           if (data?.battery != null) setBattery(Math.max(0, Math.min(100, data.battery)));
           if (data?.isVip != null) setIsVipSubscriber(data.isVip);
           if (data?.isNeonVip != null) setIsNeonVipUser(!!data.isNeonVip);
+          if (typeof data?.vipTier === "string") setVipTier(data.vipTier);
         })
         .catch(() => {})
         .finally(() => setBatteryLoading(false));
@@ -1005,6 +1111,7 @@ export default function ContentSection({
       setBattery(getStoredGuestBattery());
       setIsVipSubscriber(false);
       setIsNeonVipUser(false);
+      setVipTier("free");
       setBatteryLoading(false);
     }
   }, [userId]);
@@ -1315,10 +1422,37 @@ export default function ContentSection({
     };
   }, [activeFilter, beautyBlurPaid, onSpend, setCoins]);
 
-  // Live translation: deduct 3 coins every 60s when active
+  // Live translation: auth users consume daily minutes via API; guests pay coins per minute
   useEffect(() => {
     if (!liveTranslationEnabled || !connected) return;
     const deduct = async () => {
+      if (userId && onSpend) {
+        const res = await fetch("/api/translation/use", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ minutes: 1 }),
+        });
+        if (res.status === 403) {
+          setLiveTranslationEnabled(false);
+          setTranslationUpgradeHint(true);
+          toast("Upgrade to VIP for unlimited translation", { icon: "🤖", duration: 5000 });
+          return;
+        }
+        if (res.ok) {
+          const j = (await res.json()) as { status?: { remainingMinutes?: number; unlimited?: boolean } };
+          const st = j.status;
+          if (st?.unlimited) {
+            setTranslationUnlimited(true);
+            setTranslationRemainSec(null);
+          } else if (st && typeof st.remainingMinutes === "number") {
+            const sec = Math.max(0, Math.floor(st.remainingMinutes * 60));
+            setTranslationRemainSec(sec);
+            translationRemainSecRef.current = sec;
+          }
+        }
+        return;
+      }
       if (onSpend) {
         const ok = await onSpend(LIVE_TRANSLATION_COST_PER_MIN, "live_translation");
         if (!ok) {
@@ -1339,7 +1473,14 @@ export default function ContentSection({
         liveTranslationIntervalRef.current = null;
       }
     };
-  }, [liveTranslationEnabled, connected, onSpend, setCoins, handleLiveTranslationInsufficientBalance]);
+  }, [
+    liveTranslationEnabled,
+    connected,
+    onSpend,
+    setCoins,
+    handleLiveTranslationInsufficientBalance,
+    userId,
+  ]);
 
   // Premium countdown: at 0 silent downgrade + blur (+ toast notice)
   useEffect(() => {
@@ -1364,6 +1505,33 @@ export default function ContentSection({
   const questCurrent = onMissionIncrement ? (missionCount ?? 0) : dailyQuestCount;
   const questCompleted = onMissionIncrement ? (missionCompleted ?? false) : dailyQuestCompleted;
   const mobileInCallMode = connected && !searching;
+
+  const aiTranslationUi = useMemo(() => {
+    if (!userId || isGuest) return null;
+    return {
+      active: liveTranslationEnabled,
+      onToggle: () => void handleLiveTranslationToggle(),
+      targetCode: translateTargetCode,
+      onTargetChange: (code: string) => {
+        setTranslateTargetCode(code);
+        setStoredTranslationTargetCode(code);
+      },
+      remainingSeconds: translationRemainSec,
+      unlimited: translationUnlimited,
+      upgradeHint: translationUpgradeHint,
+      onOpenPricing: onOpenShop,
+    };
+  }, [
+    userId,
+    isGuest,
+    liveTranslationEnabled,
+    handleLiveTranslationToggle,
+    translateTargetCode,
+    translationRemainSec,
+    translationUnlimited,
+    translationUpgradeHint,
+    onOpenShop,
+  ]);
 
   const agoraChannelName = useMemo(() => {
     if (
@@ -1472,6 +1640,7 @@ export default function ContentSection({
                 ghostMode={ghostMode}
                 liveTranslationEnabled={liveTranslationEnabled}
                 onLiveTranslationInsufficientBalance={handleLiveTranslationInsufficientBalance}
+                aiTranslationUi={aiTranslationUi}
                 reaction={incomingReaction || localReaction}
                 onReactionComplete={handleReactionOverlayComplete}
                 showCrownOnPartner={!!(connected && partnerId && top1UserId === partnerId)}
@@ -1519,11 +1688,48 @@ export default function ContentSection({
                 mobileSplitActive={mobileInCallMode}
                 onMobileNext={() => void handleStartOrNext()}
                 onMobileStop={handleStop}
+                vipTier={vipTier}
+                onOpenVipUpgrade={() => setShowNeonVipGenderModal(true)}
               />
               </div>
               </MobileVideoSwipeStart>
               {searching && useRealMatching && (
-                <div className="absolute left-3 top-3 z-20 flex max-w-[min(calc(100vw-1.5rem),17rem)] flex-col gap-2 rounded-xl border border-white/10 bg-black/55 p-2 shadow-lg backdrop-blur-md">
+                <div className="absolute left-3 top-3 z-20 flex max-w-[min(calc(100vw-1.5rem),19rem)] flex-col gap-2 rounded-xl border border-white/10 bg-black/55 p-2 shadow-lg backdrop-blur-md">
+                  {userId && (
+                    <div className="rounded-lg border border-violet-500/35 bg-violet-950/40 p-2 text-[11px]">
+                      <p className="font-medium text-violet-200/95">
+                        🤖 AI Whisper is ready — we&apos;ll translate your conversation live.
+                      </p>
+                      <label className="mt-1.5 flex flex-wrap items-center gap-1.5 text-white/55">
+                        <span>Translate to:</span>
+                        <select
+                          value={translateTargetCode}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setTranslateTargetCode(v);
+                            setStoredTranslationTargetCode(v);
+                          }}
+                          className="max-w-[11rem] rounded-md border border-white/15 bg-black/70 py-1 pl-1.5 pr-2 text-[11px] text-white"
+                        >
+                          {TRANSLATION_TARGET_OPTIONS.map((o) => (
+                            <option key={o.code} value={o.code}>
+                              {o.flag} {o.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      {normalizeVipTier(vipTier) === "free" && (
+                        <div className="mt-2">
+                          <VipFeatureLock
+                            locked
+                            onUpgrade={() => setShowNeonVipGenderModal(true)}
+                            label="VIP Only · more AI minutes"
+                            className="w-full justify-center py-1.5 text-[9px] normal-case"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <MatchFilterBar
                     filter={matchFilter}
                     onFilterChange={(f) => {
@@ -1557,6 +1763,8 @@ export default function ContentSection({
                   setCoins={setCoins}
                   onOpenShop={onOpenShop}
                   onWalletRefetch={onWalletRefetch}
+                  vipTier={vipTier}
+                  onOpenVipUpgrade={() => setShowNeonVipGenderModal(true)}
                   onBoostedMatch={(pid, pNick) => {
                     setSearching(false);
                     setConnected(true);

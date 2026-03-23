@@ -5,7 +5,7 @@ import { getWalletBalance, spendCoins, addCoins } from "@/src/lib/wallet";
 import { prisma } from "@/src/lib/prisma";
 import { checkRateLimit } from "@/src/lib/rate-limit";
 import { handleUserActivity } from "@/src/app/actions/activity";
-import { createNotification } from "@/src/lib/create-notification";
+import { createNotification, giftNotificationCopy } from "@/src/lib/create-notification";
 
 export const GIFT_AMOUNTS = { heart: 5, fire: 50, rocket: 500 } as const;
 export type GiftType = keyof typeof GIFT_AMOUNTS;
@@ -57,11 +57,13 @@ export async function sendGift(receiverId: string, giftType: GiftType): Promise<
   await handleUserActivity("gift_received", { coins: amount, giftType }, receiverId);
 
   const senderName = sender?.name ?? "Someone";
+  const { title, message } = giftNotificationCopy(senderName, giftType);
   await createNotification({
     userId: receiverId,
-    type: "GIFT",
-    title: "You received a gift!",
-    message: `${senderName} sent you ${amount} coins`,
+    type: "gift",
+    title,
+    message,
+    link: "/profile",
   });
 
   return {

@@ -12,6 +12,7 @@ import {
 } from "../lib/age-verification-cookie";
 import { getOrCreateGuestAlias } from "../lib/guest-identity";
 import { getBrowserLocale, getContentT, type ContentLocale } from "../lib/content-i18n";
+import type { DailyStreakModalPayload } from "@/src/components/DailyStreakModal";
 import { getRankFromCoinsSpent } from "../lib/ranks";
 import RankBadge from "../components/RankBadge";
 import WalletSkeleton from "../components/WalletSkeleton";
@@ -95,6 +96,9 @@ const GlobalPulseGuestPanel = dynamic(() => import("@/src/components/GlobalPulse
 });
 const LoginWall = dynamic(() => import("@/src/components/LoginWall"), { ssr: false });
 const NicknameSetupModal = dynamic(() => import("@/src/components/NicknameSetupModal"), { ssr: false });
+const AiWhisperLanding = dynamic(() => import("@/src/components/landing/AiWhisperLanding"), { ssr: false });
+const WelcomeBonusModal = dynamic(() => import("@/src/components/WelcomeBonusModal"), { ssr: false });
+const DailyStreakModal = dynamic(() => import("@/src/components/DailyStreakModal"), { ssr: false });
 
 /** Custom fields from NextAuth JWT/callbacks */
 type AppSession = NonNullable<ReturnType<typeof useSession>["data"]> & {
@@ -130,6 +134,9 @@ export default function NeonLanding() {
   const [showDecryptReward, setShowDecryptReward] = useState(false);
   const [showShopModal, setShowShopModal] = useState(false);
   const [showLoginWall, setShowLoginWall] = useState(false);
+  const [showWelcomeBonusModal, setShowWelcomeBonusModal] = useState(false);
+  const [showDailyStreakModal, setShowDailyStreakModal] = useState(false);
+  const [dailyStreakPayload, setDailyStreakPayload] = useState<DailyStreakModalPayload | null>(null);
   const [hasEverPurchased, setHasEverPurchased] = useState(true);
   const [loginAt, setLoginAt] = useState(0);
   const router = useRouter();
@@ -255,28 +262,41 @@ export default function NeonLanding() {
       .catch(() => {});
   }, [status, mounted, wallet]);
 
-  // Save UTM + ref attribution to user profile on sign-in
+  // Save UTM + apply referral code on sign-in
   const hasSavedAttributionRef = useRef(false);
   useEffect(() => {
     if (status !== "authenticated" || !mounted || hasSavedAttributionRef.current) return;
     const attribution = getStoredAttribution();
-    if (!attribution?.utm_source && !attribution?.utm_medium && !attribution?.utm_campaign && !attribution?.ref) return;
+    if (!attribution?.utm_source && !attribution?.utm_medium && !attribution?.utm_campaign && !attribution?.ref)
+      return;
     hasSavedAttributionRef.current = true;
-    fetch("/api/attribution/save", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        utm_source: attribution.utm_source,
-        utm_medium: attribution.utm_medium,
-        utm_campaign: attribution.utm_campaign,
-        ref: attribution.ref,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.saved) clearStoredAttribution();
-      })
-      .catch(() => {});
+
+    void (async () => {
+      try {
+        if (attribution.ref?.trim()) {
+          await fetch("/api/referral/register", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: attribution.ref.trim() }),
+          });
+        }
+        if (attribution.utm_source || attribution.utm_medium || attribution.utm_campaign) {
+          await fetch("/api/attribution/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              utm_source: attribution.utm_source,
+              utm_medium: attribution.utm_medium,
+              utm_campaign: attribution.utm_campaign,
+            }),
+          });
+        }
+        clearStoredAttribution();
+      } catch {
+        /* ignore */
+      }
+    })();
   }, [status, mounted]);
 
   const signInWithDiscord = useCallback(() => {
@@ -285,6 +305,11 @@ export default function NeonLanding() {
 
   const openGuestLoginPrompt = useCallback(() => {
     setShowLoginWall(true);
+  }, []);
+
+  const scrollToVideoStage = useCallback(() => {
+    if (typeof document === "undefined") return;
+    document.getElementById("neon-stage")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
   const handleOpenShop = () => setShowShopModal(true);
@@ -364,6 +389,64 @@ export default function NeonLanding() {
   const authSession = session as AppSession | null | undefined;
   const needsNicknameSetup =
     status === "authenticated" && !authSession?.nickname?.trim();
+
+  const handleNicknameSetupComplete = useCallback(async () => {
+    try {
+      const res = await fetch("/api/user/welcome-bonus", { method: "POST", credentials: "include" });
+      const data = (await res.json().catch(() => ({}))) as { granted?: boolean };
+      if (res.ok && data.granted) {
+        setShowWelcomeBonusModal(true);
+      }
+    } catch {
+      /* ignore */
+    }
+    await wallet.refetch();
+  }, [wallet]);
+
+  useEffect(() => {
+    if (status !== "authenticated" || !mounted) return;
+    try {
+      if (sessionStorage.getItem("neon-welcome-bonus-pending") === "1") {
+        sessionStorage.removeItem("neon-welcome-bonus-pending");
+        setShowWelcomeBonusModal(true);
+        void wallet.refetch();
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [status, mounted, wallet]);
+
+  useEffect(() => {
+    if (status !== "authenticated" || !mounted || needsNicknameSetup) return;
+
+    void (async () => {
+      try {
+        const res = await fetch("/api/user/daily-login", { method: "POST", credentials: "include" });
+        const data = (await res.json().catch(() => ({}))) as {
+          showModal?: boolean;
+          currentStreak?: number;
+          coinsEarned?: number;
+          weeklyBadge?: boolean;
+          calendar?: DailyStreakModalPayload["calendar"];
+          balance?: number;
+        };
+        if (res.ok && data.showModal) {
+          setDailyStreakPayload({
+            currentStreak: data.currentStreak ?? 1,
+            coinsEarned: data.coinsEarned ?? 0,
+            weeklyBadge: Boolean(data.weeklyBadge),
+            calendar: data.calendar ?? [],
+            balance: typeof data.balance === "number" ? data.balance : 0,
+          });
+          setShowDailyStreakModal(true);
+        }
+        await wallet.refetch();
+      } catch {
+        /* ignore */
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per auth/nickname gate; not on every wallet tick
+  }, [status, mounted, needsNicknameSetup]);
 
   return (
     <div className="relative flex h-[100dvh] max-h-[100dvh] max-w-[100vw] flex-col overflow-hidden bg-[#000000] text-white antialiased">
@@ -561,11 +644,17 @@ export default function NeonLanding() {
           </div>
         </header>
       )}
-      <main className="relative z-10 mx-auto flex min-h-0 w-full max-w-[100vw] flex-1 overflow-hidden px-2 pb-2 pt-2 sm:px-3 sm:pt-3 xl:px-4">
+      <main className="relative z-10 mx-auto flex min-h-0 w-full max-w-[100vw] flex-1 flex-col overflow-x-hidden overflow-y-auto px-2 pb-2 pt-2 sm:px-3 sm:pt-3 xl:px-4">
+        {canShowLanding && status === "unauthenticated" && (
+          <AiWhisperLanding
+            onStartTalking={scrollToVideoStage}
+            onSeePricing={() => router.push("/billing")}
+          />
+        )}
         {canShowLanding && (
           <>
             {/* Theater row: wide video stage + narrow Global Pulse (mobile: stacked, scrollable) */}
-            <div className="flex h-full min-h-0 w-full flex-col gap-2 xl:flex-row xl:items-stretch xl:justify-start xl:gap-3 2xl:gap-4">
+            <div className="flex w-full min-h-[min(48dvh,440px)] flex-1 flex-col gap-2 xl:min-h-0 xl:flex-row xl:items-stretch xl:justify-start xl:gap-3 2xl:gap-4">
               <div
                 id="neon-stage"
                 className="min-h-0 min-w-0 w-full flex-1"
@@ -674,8 +763,23 @@ export default function NeonLanding() {
         <AgeVerificationModal onAccept={handleAgeVerified} />
       )}
       {needsNicknameSetup && (
-        <NicknameSetupModal open locale={locale as ContentLocale} />
+        <NicknameSetupModal
+          open
+          locale={locale as ContentLocale}
+          onSuccess={() => void handleNicknameSetupComplete()}
+        />
       )}
+      <WelcomeBonusModal
+        open={showWelcomeBonusModal}
+        onClose={() => setShowWelcomeBonusModal(false)}
+        locale={locale as ContentLocale}
+      />
+      <DailyStreakModal
+        open={showDailyStreakModal}
+        onClose={() => setShowDailyStreakModal(false)}
+        payload={dailyStreakPayload}
+        locale={locale as ContentLocale}
+      />
       <LoginWall open={showLoginWall} onClose={() => setShowLoginWall(false)} locale={locale} />
 
       {canShowLanding && (
@@ -755,6 +859,16 @@ export default function NeonLanding() {
                   }}
                 >
                   Billing & packs
+                </button>
+                <button
+                  type="button"
+                  className="min-h-12 w-full rounded-xl border border-emerald-500/35 bg-emerald-950/25 py-3 text-sm font-medium text-emerald-200"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    router.push("/referral");
+                  }}
+                >
+                  Invite friends · earn coins
                 </button>
                 <button
                   type="button"

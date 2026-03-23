@@ -19,6 +19,7 @@ import FuturisticGiftIcon from "@/src/components/FuturisticGiftIcon";
 import ProfilePresenceBadge from "@/src/components/profile/ProfilePresenceBadge";
 import ProfileFriendsTab from "@/src/components/profile/ProfileFriendsTab";
 import { neonVipGlowVariant } from "@/src/lib/neon-vip-style";
+import { normalizeVipTier } from "@/src/lib/vip-tier";
 
 const ShopModal = dynamic(() => import("@/src/components/ShopModal"), { ssr: false });
 
@@ -78,6 +79,7 @@ type MeResponse = {
   currentStreak: number;
   streakBonusPopup: number;
   isNeonVip: boolean;
+  vipTier?: string;
   animatedBanner: string | null;
   profileGifUrl: string | null;
   profileBannerEffect: string | null;
@@ -512,11 +514,19 @@ export default function ProfileDashboard() {
   const totalSpentUsd = me?.totalSpent ?? 0;
   const isGoldSpendRing = totalSpentUsd > GOLD_NEON_MIN_TOTAL_SPENT_USD;
   const useLevelNeonPulse = !isGoldSpendRing && currentLevel >= AVATAR_NEON_PULSE_MIN_LEVEL;
-  const avatarOuterClass = isGoldSpendRing
-    ? "profile-avatar-gold-neon-wrap"
-    : useLevelNeonPulse
-      ? "profile-avatar-neon-wrap"
-      : "profile-avatar-static-ring";
+  const spendVipTier = normalizeVipTier(me?.vipTier);
+  const avatarOuterClass =
+    spendVipTier === "gold"
+      ? "vip-profile-avatar-gold-tier-wrap"
+      : spendVipTier === "silver"
+        ? "vip-profile-avatar-silver-wrap"
+        : spendVipTier === "bronze"
+          ? "vip-profile-avatar-bronze-wrap"
+          : isGoldSpendRing
+            ? "profile-avatar-gold-neon-wrap"
+            : useLevelNeonPulse
+              ? "profile-avatar-neon-wrap"
+              : "profile-avatar-static-ring";
 
   if (status === "loading" || (status === "authenticated" && !me && !loadErr)) {
     return (
@@ -689,7 +699,7 @@ export default function ProfileDashboard() {
           <div
             className={`shrink-0 ${avatarOuterClass}`}
             style={
-              isGoldSpendRing
+              isGoldSpendRing || spendVipTier !== "free"
                 ? undefined
                 : ({
                     "--profile-glow-from": glow.from,
@@ -730,6 +740,8 @@ export default function ProfileDashboard() {
                 locale={locale}
                 nameClassName="text-xl font-bold sm:text-2xl"
                 neonVipGlow={profileNeonGlow || false}
+                vipTier={me.vipTier}
+                profileUserId={myUserId ?? ""}
               />
               <span
                 className="inline-flex shrink-0 items-center gap-0.5 text-sm font-bold tabular-nums text-[var(--color-text-secondary)]"
@@ -738,6 +750,26 @@ export default function ProfileDashboard() {
                 <span aria-hidden>🔥</span>
                 {me.currentStreak ?? 0}
               </span>
+              {spendVipTier === "bronze" && (
+                <span className="text-lg leading-none" title="VIP Bronze" aria-hidden>
+                  👑
+                </span>
+              )}
+              {spendVipTier === "silver" && (
+                <span className="text-lg leading-none" title="VIP Silver" aria-hidden>
+                  💎
+                </span>
+              )}
+              {spendVipTier === "gold" && (
+                <>
+                  <span className="text-lg leading-none" title="VIP Gold" aria-hidden>
+                    🌟
+                  </span>
+                  <span className="inline-flex shrink-0 items-center rounded border border-amber-400/60 bg-gradient-to-r from-amber-500/30 to-yellow-400/25 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.2em] text-amber-100 shadow-[0_0_12px_rgba(251,191,36,0.45)]">
+                    GOLD
+                  </span>
+                </>
+              )}
               {me.isNeonVip && (
                 <span className="inline-flex shrink-0 items-center rounded-md border border-sky-400/50 bg-sky-500/15 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-sky-100 shadow-[0_0_14px_rgba(56,189,248,0.4)]">
                   {t("profile.neonVipBadge")}

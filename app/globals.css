@@ -1025,6 +1025,133 @@ body {
     0 0 26px rgba(59, 130, 246, 0.45);
 }
 
+/* VIP spend tiers — Global Pulse usernames */
+.vip-chat-name-bronze {
+  color: #fde68a;
+  text-shadow:
+    0 0 6px rgba(251, 191, 36, 0.9),
+    0 0 12px rgba(245, 158, 11, 0.65),
+    0 0 22px rgba(234, 179, 8, 0.4);
+}
+@keyframes vip-silver-shimmer {
+  0%,
+  100% {
+    color: #e9d5ff;
+    text-shadow:
+      0 0 6px rgba(168, 85, 247, 0.95),
+      0 0 14px rgba(147, 51, 234, 0.75),
+      0 0 24px rgba(126, 34, 206, 0.45);
+  }
+  50% {
+    color: #ddd6fe;
+    text-shadow:
+      0 0 8px rgba(192, 132, 252, 1),
+      0 0 18px rgba(168, 85, 247, 0.85),
+      0 0 32px rgba(139, 92, 246, 0.55);
+  }
+}
+.vip-chat-name-silver {
+  animation: vip-silver-shimmer 2.4s ease-in-out infinite;
+}
+.vip-chat-name-rainbow {
+  background: linear-gradient(90deg, #f472b6, #a78bfa, #38bdf8, #4ade80, #facc15, #f472b6);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: vip-rainbow-shift 3.5s linear infinite;
+}
+@keyframes vip-rainbow-shift {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Profile avatar rings by VIP tier */
+.vip-profile-avatar-bronze-wrap {
+  padding: 3px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.85), rgba(180, 83, 9, 0.55), rgba(251, 191, 36, 0.75));
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.35);
+}
+.vip-profile-avatar-silver-wrap {
+  padding: 3px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    120deg,
+    rgba(168, 85, 247, 0.9),
+    rgba(59, 130, 246, 0.65),
+    rgba(192, 132, 252, 0.9)
+  );
+  background-size: 200% 200%;
+  animation: vip-profile-silver-spin 5s linear infinite;
+  box-shadow: 0 0 22px rgba(168, 85, 247, 0.4);
+}
+@keyframes vip-profile-silver-spin {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+.vip-profile-avatar-gold-tier-wrap {
+  padding: 3px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    #facc15,
+    #f472b6,
+    #a78bfa,
+    #38bdf8,
+    #facc15
+  );
+  background-size: 300% 100%;
+  animation: vip-rainbow-shift 4s linear infinite;
+  box-shadow:
+    0 0 24px rgba(250, 204, 21, 0.55),
+    0 0 40px rgba(244, 114, 182, 0.25);
+}
+
+/* In-app notification dropdown — row slide-in */
+@keyframes neon-notif-row-enter {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.neon-notif-row-enter {
+  animation: neon-notif-row-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes neon-notif-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.neon-notif-panel-open {
+  animation: neon-notif-panel-in 0.28s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neon-notif-row-enter,
+  .neon-notif-panel-open {
+    animation: none;
+  }
+}
+
 /* Shop urgency banner */
 @keyframes shop-flash-sale-pulse {
   0%, 100% { transform: scale(1); filter: brightness(1); box-shadow: 0 0 20px rgba(251, 113, 133, 0.35); }
@@ -1055,6 +1182,20 @@ body {
   .profile-banner-effect-stars::before,
   .shop-flash-sale-banner {
     animation: none;
+  }
+
+  .vip-chat-name-silver,
+  .vip-chat-name-rainbow,
+  .vip-profile-avatar-silver-wrap,
+  .vip-profile-avatar-gold-tier-wrap {
+    animation: none;
+  }
+
+  .vip-chat-name-rainbow {
+    color: #f9a8d4;
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
   }
 }
 

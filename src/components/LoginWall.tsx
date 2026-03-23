@@ -318,6 +318,22 @@ export default function LoginWall({ open, onClose, locale }: Props) {
               </p>
             </div>
 
+            <div className="mx-auto mt-6 max-w-md space-y-2 text-center sm:mt-7">
+              <p className="text-sm font-semibold tracking-tight text-white/88 sm:text-base">
+                Join 10,000+ users worldwide
+              </p>
+              <p
+                className="text-xl leading-none tracking-[0.2em] sm:text-2xl"
+                role="img"
+                aria-label="Active users in Brazil, United States, India, Germany, Mexico, France, Japan"
+              >
+                🇧🇷🇺🇸🇮🇳🇩🇪🇲🇽🇫🇷🇯🇵
+              </p>
+              <p className="text-[11px] font-medium text-white/48 sm:text-xs sm:text-white/50">
+                Your data is never sold or shared
+              </p>
+            </div>
+
             <div className="mx-auto mt-8 flex w-full max-w-md flex-col gap-3.5 sm:mt-10 sm:gap-4">
               <button
                 type="button"
@@ -500,9 +516,24 @@ export default function LoginWall({ open, onClose, locale }: Props) {
         locale={locale}
         open={showNicknameSetup}
         onSuccess={() => {
-          setShowNicknameSetup(false);
-          onClose();
-          window.location.assign(postAuthUrl);
+          void (async () => {
+            try {
+              const res = await fetch("/api/user/welcome-bonus", { method: "POST", credentials: "include" });
+              const data = (await res.json().catch(() => ({}))) as { granted?: boolean };
+              if (res.ok && data.granted) {
+                try {
+                  sessionStorage.setItem("neon-welcome-bonus-pending", "1");
+                } catch {
+                  /* ignore */
+                }
+              }
+            } catch {
+              /* ignore */
+            }
+            setShowNicknameSetup(false);
+            onClose();
+            window.location.assign(postAuthUrl);
+          })();
         }}
       />
     </>

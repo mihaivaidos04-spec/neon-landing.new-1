@@ -12,7 +12,8 @@ import type { VideoFilterId } from "../lib/video-filters";
 import { getFilterCss } from "../lib/video-filters";
 import SearchingSpinner from "./SearchingSpinner";
 import BeautyBlurOverlay from "./BeautyBlurOverlay";
-import LiveSubtitles from "./LiveSubtitles";
+import LiveSubtitles, { SPEECH_LANG_BY_LOCALE } from "./LiveSubtitles";
+import { TRANSLATION_TARGET_OPTIONS } from "../lib/translation-target-options";
 import NeonWhisperOverlay from "./NeonWhisperOverlay";
 import ReactionOverlay from "./ReactionOverlay";
 import CrownOverlay from "./CrownOverlay";
@@ -22,12 +23,14 @@ import GiftLayer, { type ActiveGift } from "./GiftLayer";
 import BioCard from "./BioCard";
 import VideoSkeletonLoader from "./VideoSkeletonLoader";
 import TheaterGiftDrawer from "./TheaterGiftDrawer";
+import VipFeatureLock from "./VipFeatureLock";
 import PartnerVideoGiftOverlay, {
   type PartnerVideoGiftPayload,
 } from "./PartnerVideoGiftOverlay";
 import type { TheaterGiftId } from "../lib/theater-gifts";
 import type { ReactionId } from "../lib/reactions";
 import type { RankId } from "../lib/ranks";
+import { normalizeVipTier } from "../lib/vip-tier";
 
 function videoFullscreenLabels(locale: ContentLocale): { enter: string; exit: string } {
   if (locale === "ro") {
@@ -80,6 +83,17 @@ type Props = {
   /** Live translation: speech-to-text + translate, display as subtitles */
   liveTranslationEnabled?: boolean;
   onLiveTranslationInsufficientBalance?: () => void;
+  /** Logged-in AI Whisper chrome (language, timer, in-panel bars). Omit for guests. */
+  aiTranslationUi?: {
+    active: boolean;
+    onToggle: () => void;
+    targetCode: string;
+    onTargetChange: (code: string) => void;
+    remainingSeconds: number | null;
+    unlimited: boolean;
+    upgradeHint: boolean;
+    onOpenPricing?: () => void;
+  } | null;
   /** Reaction overlay: current reaction to display */
   reaction?: ReactionId | null;
   onReactionComplete?: () => void;
@@ -158,6 +172,9 @@ type Props = {
   onMobileNext?: () => void;
   /** Mobile split: STOP — same as action bar stop / session end flow. */
   onMobileStop?: () => void;
+  /** Spend-based tier — VIP upsell in AI Whisper panel */
+  vipTier?: string;
+  onOpenVipUpgrade?: () => void;
 };
 
 export default function VideoBridge({
@@ -175,6 +192,7 @@ export default function VideoBridge({
   ghostMode = false,
   liveTranslationEnabled = false,
   onLiveTranslationInsufficientBalance,
+  aiTranslationUi = null,
   reaction = null,
   onReactionComplete,
   showCrownOnPartner = false,
@@ -220,6 +238,8 @@ export default function VideoBridge({
   mobileSplitActive = false,
   onMobileNext,
   onMobileStop,
+  vipTier = "free",
+  onOpenVipUpgrade,
 }: Props) {
   const t = getContentT(locale);
   const fsLabels = videoFullscreenLabels(locale);
@@ -234,6 +254,11 @@ export default function VideoBridge({
   const [faceMask, setFaceMask] = useState<FaceMaskId>("none");
   const [masksMenuOpen, setMasksMenuOpen] = useState(false);
   const masksMenuRef = useRef<HTMLDivElement>(null);
+  const [whisperLine, setWhisperLine] = useState("");
+
+  useEffect(() => {
+    if (!liveTranslationEnabled) setWhisperLine("");
+  }, [liveTranslationEnabled]);
 
   const agoraEnabled =
     Boolean(agoraChannelName?.trim()) && !searching;
@@ -492,6 +517,67 @@ export default function VideoBridge({
           <div className="pointer-events-auto flex flex-wrap items-center gap-1.5">
             <CountrySelector userId={leaderboardCurrentUserId ?? null} compact />
           </div>
+          {aiTranslationUi && !searching && (
+            <div className="pointer-events-auto mt-1 flex max-w-[11rem] flex-col gap-1 rounded-xl border border-violet-500/35 bg-black/75 p-2 shadow-lg backdrop-blur-md">
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-[9px] font-semibold uppercase tracking-wide text-violet-300/90">AI Whisper</span>
+                <button
+                  type="button"
+                  onClick={aiTranslationUi.onToggle}
+                  className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${
+                    aiTranslationUi.active
+                      ? "bg-emerald-600/90 text-white"
+                      : "bg-white/10 text-white/70 hover:bg-white/15"
+                  }`}
+                >
+                  {aiTranslationUi.active ? "ON" : "OFF"}
+                </button>
+              </div>
+              <label className="text-[9px] text-white/45">Translate to</label>
+              <select
+                value={aiTranslationUi.targetCode}
+                onChange={(e) => aiTranslationUi.onTargetChange(e.target.value)}
+                className="w-full rounded-md border border-white/15 bg-black/60 py-1 pl-1.5 pr-6 text-[10px] text-white"
+              >
+                {TRANSLATION_TARGET_OPTIONS.map((o) => (
+                  <option key={o.code} value={o.code}>
+                    {o.flag} {o.label}
+                  </option>
+                ))}
+              </select>
+              {aiTranslationUi.unlimited ? (
+                <span className="text-[9px] text-emerald-300/90">Unlimited translation</span>
+              ) : aiTranslationUi.remainingSeconds != null && aiTranslationUi.remainingSeconds >= 0 ? (
+                <span className="tabular-nums text-[9px] text-cyan-200/95">
+                  AI:{" "}
+                  {`${Math.floor(aiTranslationUi.remainingSeconds / 60)}:${String(aiTranslationUi.remainingSeconds % 60).padStart(2, "0")}`}{" "}
+                  left
+                </span>
+              ) : null}
+              {aiTranslationUi.upgradeHint && (
+                <button
+                  type="button"
+                  onClick={aiTranslationUi.onOpenPricing}
+                  className="text-left text-[9px] font-medium text-amber-300/95 underline decoration-amber-500/50"
+                >
+                  Upgrade to VIP for unlimited translation
+                </button>
+              )}
+              {normalizeVipTier(vipTier) === "free" && onOpenVipUpgrade && (
+                <div className="mt-1 space-y-0.5 border-t border-white/10 pt-1.5">
+                  <VipFeatureLock
+                    locked
+                    onUpgrade={onOpenVipUpgrade}
+                    label="VIP Only"
+                    className="w-full justify-center py-1.5 text-[8px]"
+                  />
+                  <p className="text-center text-[8px] leading-snug text-white/40">
+                    Bronze 60m · Silver 3h · Gold unlimited AI translation
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         {/* Partner video — top jumătate pe mobil (split); umple stage pe desktop / căutare */}
         <div
@@ -527,6 +613,20 @@ export default function VideoBridge({
             </div>
           )}
           <CrownOverlay visible={showCrownOnPartner} position="partner" />
+          {aiTranslationUi?.active && !searching && (
+            <div className="pointer-events-none absolute left-2 right-2 top-14 z-[21] flex justify-center px-1 max-md:top-16">
+              <div
+                className="flex max-w-full items-center gap-2 rounded-lg border border-fuchsia-500/20 bg-black/50 px-3 py-1.5 text-center text-[11px] leading-snug text-white/80 backdrop-blur-md"
+                role="status"
+                aria-label="Partner translation"
+              >
+                <span className="shrink-0 rounded bg-fuchsia-700/90 px-1 py-0.5 text-[9px] font-bold uppercase text-white">
+                  AI
+                </span>
+                <span className="truncate">Partner’s words → translated here (live)</span>
+              </div>
+            </div>
+          )}
           {partnerIsPremium && (
             <div
               className="absolute left-3 top-12 z-20 rounded-md border border-violet-500/40 bg-violet-950/80 px-2.5 py-1.5 text-[11px] font-medium text-violet-300/95 shadow-lg max-lg:top-14"
@@ -911,6 +1011,10 @@ export default function VideoBridge({
         <LiveSubtitles
           locale={locale}
           enabled={liveTranslationEnabled && !searching}
+          translateToCode={aiTranslationUi?.targetCode}
+          speechLangBcp47={SPEECH_LANG_BY_LOCALE[locale]}
+          useExternalDisplay={Boolean(aiTranslationUi && liveTranslationEnabled && !searching)}
+          onSubtitleTextChange={aiTranslationUi ? setWhisperLine : undefined}
           listenOnly={
             neonWhisperEnabled &&
             agoraEnabled &&

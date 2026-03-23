@@ -9,6 +9,7 @@ import { syncAutomaticBadges } from "@/src/lib/sync-automatic-badges";
 import { badgeUi } from "@/src/lib/profile-badge-display";
 import { bannedUserResponseIfAny } from "@/src/lib/banned-user";
 import { moderateText } from "@/src/lib/moderation";
+import { vipTierFromUser } from "@/src/lib/vip-tier";
 
 const BIO_MAX = 150;
 const URL_MAX = 500;
@@ -209,6 +210,11 @@ export async function GET() {
       currentLevel: user.currentLevel,
       levelProgress: progress,
       badges: computeProfileBadges(user),
+      isVip: user.isVip ?? false,
+      vipTier: vipTierFromUser({
+        isVip: user.isVip === true,
+        totalSpent: user.totalSpent ?? 0,
+      }),
     });
   } catch (err) {
     console.error("[api/profile/me GET]", err);

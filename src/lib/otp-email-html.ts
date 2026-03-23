@@ -37,10 +37,16 @@ export function buildOtpEmailHtml(plainSixDigits: string): string {
             ${spaced}
           </div>
         </td></tr>
-        <tr><td align="center" style="padding:0 32px 24px;">
+        <tr><td align="center" style="padding:0 32px 20px;">
           <p style="color:#888888;font-size:14px;line-height:1.5;margin:0;">
             Expiră în 5 minute.<br/>
             Dacă nu ai solicitat acest cod, ignoră acest email.
+          </p>
+        </td></tr>
+        <tr><td align="center" style="padding:0 32px 24px;">
+          <p style="color:#c4b5fd;font-size:14px;line-height:1.55;margin:0;">
+            Știai? NeonLive traduce conversațiile live cu AI.<br/>
+            <a href="https://neonlive.chat" style="color:#f0abfc;text-decoration:underline;">Începe primul chat tradus</a>
           </p>
         </td></tr>
         <tr><td align="center" style="padding:0 32px 32px;border-top:1px solid #1a1a2a;">
