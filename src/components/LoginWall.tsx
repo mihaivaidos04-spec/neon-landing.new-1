@@ -136,8 +136,6 @@ export default function LoginWall({ open, onClose, locale }: Props) {
     };
   }, [open]);
 
-  if (!open) return null;
-
   const postAuthUrl = getSafeAuthCallbackUrl("/");
 
   const isValidEmail = (value: string): boolean => /\S+@\S+\.\S+/.test(value);
@@ -271,6 +269,8 @@ export default function LoginWall({ open, onClose, locale }: Props) {
   const otpMm = Math.floor(otpRemainingMs / 60000);
   const otpSs = Math.floor((otpRemainingMs % 60000) / 1000);
   const otpTimeStr = `${String(otpMm).padStart(2, "0")}:${String(otpSs).padStart(2, "0")}`;
+
+  if (!open) return null;
 
   return (
     <>
