@@ -44,7 +44,8 @@ import { getWalletBalance } from "@/src/lib/wallet";
 import { getSupabase } from "@/src/lib/supabase";
 import { addLoginXp } from "@/src/lib/login-xp";
 import { neonVipGlowVariant } from "@/src/lib/neon-vip-style";
-import { syncUserVipTierById, vipTierFromUser } from "@/src/lib/vip-tier";
+import { vipTierFromUser } from "@/src/lib/vip-tier";
+import { syncUserVipTierById } from "@/src/lib/vip-tier-server";
 
 const GOOGLE_ID = process.env.GOOGLE_CLIENT_ID ?? process.env.AUTH_GOOGLE_ID;
 const GOOGLE_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? process.env.AUTH_GOOGLE_SECRET;

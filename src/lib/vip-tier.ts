@@ -1,6 +1,7 @@
-import type { Prisma } from "@prisma/client";
-import { prisma } from "@/src/lib/prisma";
-
+/**
+ * VIP tier helpers safe for client + server (no DB / Prisma).
+ * DB sync lives in `vip-tier-server.ts`.
+ */
 export type VipTier = "free" | "bronze" | "silver" | "gold";
 
 export function normalizeVipTier(raw: string | null | undefined): VipTier {
@@ -22,24 +23,4 @@ export function matchmakingPriorityBoost(tier: VipTier): number {
   if (tier === "silver") return 12;
   if (tier === "bronze") return 4;
   return 0;
-}
-
-export async function syncUserVipTierInTx(tx: Prisma.TransactionClient, userId: string): Promise<void> {
-  const u = await tx.user.findUnique({
-    where: { id: userId },
-    select: { isVip: true, totalSpent: true },
-  });
-  if (!u) return;
-  const tier = vipTierFromUser({ isVip: u.isVip === true, totalSpent: u.totalSpent ?? 0 });
-  await tx.user.update({ where: { id: userId }, data: { vipTier: tier } });
-}
-
-export async function syncUserVipTierById(userId: string): Promise<void> {
-  const u = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { isVip: true, totalSpent: true },
-  });
-  if (!u) return;
-  const tier = vipTierFromUser({ isVip: u.isVip === true, totalSpent: u.totalSpent ?? 0 });
-  await prisma.user.update({ where: { id: userId }, data: { vipTier: tier } });
 }

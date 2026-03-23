@@ -7,7 +7,7 @@ import { getBillingPackById } from "@/src/lib/billing-packs";
 import { neonLevelFromXp, xpFromCoinsCredited } from "@/src/lib/neon-xp-level";
 import { broadcastLegendPurchase } from "@/src/lib/broadcast-legend-purchase";
 import { rewardReferrerOnReferredPurchase } from "@/src/lib/referral-service";
-import { syncUserVipTierInTx } from "@/src/lib/vip-tier";
+import { syncUserVipTierInTx } from "@/src/lib/vip-tier-server";
 
 function isUniqueConstraintError(e: unknown): boolean {
   return e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
