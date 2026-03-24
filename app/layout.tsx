@@ -7,6 +7,7 @@ import AuthProvider from "@/src/components/AuthProvider";
 import Footer from "@/src/components/Footer";
 import CookieConsentBanner from "@/src/components/CookieConsentBanner";
 import UtmCapture from "@/src/components/UtmCapture";
+import DeviceBodyClass from "@/src/components/DeviceBodyClass";
 import GiftNotificationListener from "@/src/components/GiftNotificationListener";
 import LegendPurchaseListener from "@/src/components/LegendPurchaseListener";
 import MiniMessengerDock from "@/src/components/MiniMessengerDock";
@@ -139,6 +140,7 @@ export default function RootLayout({
           />
         )}
         <div className="relative z-10">
+          <DeviceBodyClass />
           <UtmCapture />
           <AuthProvider>
             <SocketProviderWithAuth>

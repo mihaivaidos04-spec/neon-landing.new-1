@@ -55,6 +55,7 @@ import {
   TRANSLATION_TARGET_OPTIONS,
 } from "../lib/translation-target-options";
 import { normalizeVipTier } from "../lib/vip-tier";
+import { useDevice } from "../hooks/useDevice";
 
 /** Demo: 2 min premium countdown; when 0, silent downgrade + blur + system messages */
 const PREMIUM_DURATION_SEC = 120;
@@ -153,6 +154,7 @@ export default function ContentSection({
   onBatteryDisplayChange,
   onMobileChatOpen,
 }: Props) {
+  const { isMobile, isDesktop } = useDevice();
   const [activeGift, setActiveGift] = useState<ActiveGift | null>(null);
   const [partnerVideoGift, setPartnerVideoGift] =
     useState<PartnerVideoGiftPayload | null>(null);
@@ -1508,6 +1510,7 @@ export default function ContentSection({
   const questCurrent = onMissionIncrement ? (missionCount ?? 0) : dailyQuestCount;
   const questCompleted = onMissionIncrement ? (missionCompleted ?? false) : dailyQuestCompleted;
   const mobileInCallMode = connected && !searching;
+  const mobileTheaterChrome = mobileInCallMode && isMobile;
 
   const aiTranslationUi = useMemo(() => {
     if (!userId || isGuest) return null;
@@ -1606,8 +1609,8 @@ export default function ContentSection({
         {/* Theater column: video-first on mobile, ~65–70vw stage on xl */}
         <div className="order-1 flex h-full min-h-0 min-w-0 w-full flex-1 flex-col gap-2 overflow-hidden xl:order-2 xl:min-w-0">
           <div className={`theater-stage theater-ambient-glow relative z-[1] mt-0 min-h-0 w-full min-w-0 flex-1 overflow-hidden rounded-2xl xl:mx-0 xl:mt-0 ${
-            mobileInCallMode
-              ? "max-md:fixed max-md:inset-0 max-md:z-[35] max-md:flex max-md:h-[100dvh] max-md:w-[100vw] max-md:max-w-[100vw] max-md:flex-col max-md:overflow-hidden max-md:overflow-x-hidden max-md:rounded-none"
+            mobileTheaterChrome
+              ? "fixed inset-0 z-[35] flex h-[100dvh] w-[100vw] max-w-[100vw] flex-col overflow-hidden overflow-x-hidden rounded-none"
               : ""
           }`}>
               {searching && (
@@ -1627,7 +1630,11 @@ export default function ContentSection({
                 disabled={battery === 0}
                 onCommit={() => void handleStartOrNext()}
               >
-              <div className="theater-video-shell relative h-full min-h-0 max-md:min-h-0 max-md:flex-1 max-md:overflow-hidden rounded-2xl max-md:rounded-none">
+              <div
+                className={`theater-video-shell relative h-full min-h-0 rounded-2xl ${
+                  mobileTheaterChrome ? "min-h-0 flex-1 overflow-hidden rounded-none" : ""
+                }`}
+              >
               <VideoBridge
                 locale={locale}
                 searching={searching}
@@ -1689,8 +1696,6 @@ export default function ContentSection({
                 )}
                 transitionOutActive={videoTransitionOut}
                 mobileSplitActive={mobileInCallMode}
-                onMobileNext={() => void handleStartOrNext()}
-                onMobileStop={handleStop}
                 vipTier={vipTier}
                 onOpenVipUpgrade={() => setShowNeonVipGenderModal(true)}
               />
@@ -1776,67 +1781,53 @@ export default function ContentSection({
                   }}
                 />
               )}
-              {mobileInCallMode && (
+              {mobileTheaterChrome && (
                 <div
-                  className="absolute bottom-0 left-0 right-0 z-[45] hidden h-16 max-md:flex max-md:items-center max-md:justify-between max-md:gap-2 max-md:border-t max-md:border-fuchsia-500/25 max-md:bg-black/70 max-md:px-3 max-md:shadow-[0_-8px_32px_rgba(0,0,0,0.45)] max-md:backdrop-blur-md max-md:[padding-bottom:max(0px,env(safe-area-inset-bottom))]"
+                  className="absolute bottom-0 left-0 right-0 z-[45] flex min-h-[60px] items-center justify-center gap-1.5 border-t border-fuchsia-500/25 bg-black/70 px-2.5 py-1.5 shadow-[0_-8px_32px_rgba(0,0,0,0.45)] backdrop-blur-md [padding-bottom:max(6px,env(safe-area-inset-bottom))]"
                   role="toolbar"
-                  aria-label="Quick chat and reactions"
+                  aria-label="Stop, reactions, and next"
                 >
                   <button
                     type="button"
-                    onClick={() => {
-                      if (isGuest) onGuestPaywallTrigger?.("chat");
-                      else onMobileChatOpen?.();
-                    }}
-                    className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-violet-500/35 bg-violet-950/40 text-violet-200 transition active:scale-95"
-                    aria-label="Chat"
+                    onClick={handleStop}
+                    className="shrink-0 rounded-3xl border border-white/25 px-5 py-2 text-sm font-bold text-white/80 transition-all hover:bg-white/10 active:scale-[0.98]"
                   >
-                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                      />
-                    </svg>
+                    {t.stopBtn}
                   </button>
-                  <div className="flex flex-1 items-center justify-center gap-2 sm:gap-3">
-                    {(
-                      [
-                        { id: "heart" as ReactionId, emoji: "❤️", label: "Heart" },
-                        { id: "laugh" as ReactionId, emoji: "😂", label: "Laugh" },
-                        { id: "love" as ReactionId, emoji: "😍", label: "Like" },
-                      ] as const
-                    ).map((r) => (
-                      <button
-                        key={r.id}
-                        type="button"
-                        onClick={() => {
-                          if (isGuest) {
-                            onGuestPaywallTrigger?.("gift");
-                            return;
-                          }
-                          void handleSendReaction(r.id);
-                        }}
-                        className="flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-xl shadow-[0_0_16px_rgba(236,72,153,0.15)] transition active:scale-90"
-                        aria-label={r.label}
-                      >
-                        {r.emoji}
-                      </button>
-                    ))}
-                  </div>
+                  {(
+                    [
+                      { id: "heart" as ReactionId, emoji: "❤️", label: "Heart" },
+                      { id: "laugh" as ReactionId, emoji: "😂", label: "Laugh" },
+                      { id: "love" as ReactionId, emoji: "😍", label: "Like" },
+                    ] as const
+                  ).map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => {
+                        if (isGuest) {
+                          onGuestPaywallTrigger?.("gift");
+                          return;
+                        }
+                        void handleSendReaction(r.id);
+                      }}
+                      className="flex size-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-xl shadow-[0_0_16px_rgba(236,72,153,0.15)] transition active:scale-90"
+                      aria-label={r.label}
+                    >
+                      {r.emoji}
+                    </button>
+                  ))}
                   <button
                     type="button"
-                    onClick={() => {
-                      if (isGuest) onGuestPaywallTrigger?.("gift");
-                      else onOpenShop();
-                    }}
-                    className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-fuchsia-500/40 bg-fuchsia-950/45 text-fuchsia-200 transition active:scale-95"
-                    aria-label="Gifts and coins"
+                    onClick={() => void handleStartOrNext()}
+                    disabled={battery === 0}
+                    className={`relative shrink-0 rounded-3xl border-0 px-7 py-2 text-sm font-bold text-white shadow-none outline-none ring-0 ring-offset-0 transition-all focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 active:scale-[0.98] ${
+                      battery === 0
+                        ? "cursor-not-allowed bg-zinc-600 opacity-60"
+                        : "btn-gradient-neon hover:opacity-95"
+                    }`}
                   >
-                    <span className="text-lg" aria-hidden>
-                      🎁
-                    </span>
+                    {t.nextBtn}
                   </button>
                 </div>
               )}
@@ -1855,28 +1846,33 @@ export default function ContentSection({
           />
           <p
             className={`single-screen-compact mt-1 text-center text-xs text-white/65 sm:text-sm ${
-              mobileInCallMode ? "max-md:hidden" : ""
+              mobileTheaterChrome ? "hidden" : ""
             }`}
           >
             {t.subPlayerText}
           </p>
-          <div className={`action-bar sticky bottom-0 z-20 mt-0 shrink-0 rounded-2xl border border-white/10 bg-black/55 px-2 py-2 backdrop-blur-xl ${
-            mobileInCallMode ? "max-md:hidden" : ""
-          }`}>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex gap-2">
+          <div className={`action-bar sticky bottom-0 z-20 mt-0 shrink-0 rounded-2xl border border-white/10 bg-black/55 backdrop-blur-xl ${
+            mobileTheaterChrome ? "hidden" : ""
+          } ${isDesktop ? "px-4 py-3" : "px-2 py-2"}`}>
+          <div
+            className={`flex flex-wrap items-center justify-between ${isDesktop ? "gap-4" : "gap-2"}`}
+          >
+            <div className={`flex ${isDesktop ? "gap-3" : "gap-2"}`}>
               <button
                 type="button"
                 onClick={handleStartOrNext}
                 disabled={battery === 0}
-                className={`relative min-h-[46px] min-w-[110px] rounded-full px-6 py-2.5 text-sm font-semibold text-white transition-all active:scale-[0.98] sm:min-h-[50px] sm:min-w-[132px] sm:px-8 sm:py-3 ${
+                className={`relative rounded-full border-0 font-semibold text-white shadow-none outline-none ring-0 ring-offset-0 transition-all focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 active:scale-[0.98] ${
+                  isDesktop
+                    ? "min-h-[52px] min-w-[140px] px-8 py-3.5 text-base"
+                    : "min-h-[44px] min-w-[100px] px-5 py-2 text-sm"
+                } ${
                   !connected ? "max-md:hidden" : ""
                 } ${
                   battery === 0
                     ? "cursor-not-allowed bg-zinc-600 opacity-60"
                     : "btn-gradient-neon hover:opacity-95"
                 }`}
-                style={battery > 0 ? { boxShadow: "0 0 20px rgba(139, 92, 246, 0.4)" } : undefined}
               >
                 {!connected && (
                   <span
@@ -1892,7 +1888,11 @@ export default function ContentSection({
                 <button
                   type="button"
                   onClick={handleStop}
-                  className="min-h-[46px] min-w-[92px] rounded-full border border-white/25 px-5 py-2.5 text-sm font-semibold text-white/80 transition-all hover:bg-white/10 active:scale-[0.98] sm:min-h-[50px] sm:min-w-[110px] sm:px-6 sm:py-3"
+                  className={`rounded-full border border-white/25 font-semibold text-white/80 transition-all hover:bg-white/10 active:scale-[0.98] ${
+                    isDesktop
+                      ? "min-h-[50px] min-w-[118px] px-7 py-3 text-base"
+                      : "min-h-[44px] min-w-[84px] px-4 py-2 text-sm"
+                  }`}
                 >
                   {t.stopBtn}
                 </button>
@@ -1908,13 +1908,15 @@ export default function ContentSection({
                 </button>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className={`flex ${isDesktop ? "gap-3" : "gap-2"}`}>
               <button
                 type="button"
                 onClick={onOpenShop}
-                className={`min-h-[44px] min-w-[78px] rounded-full border border-fuchsia-400/40 bg-fuchsia-950/30 px-3 py-2 text-xs font-semibold text-fuchsia-100 transition-all hover:bg-fuchsia-900/35 sm:min-h-[48px] ${
-                  mobileInCallMode ? "max-md:hidden" : ""
-                }`}
+                className={`rounded-full border border-fuchsia-400/40 bg-fuchsia-950/30 font-semibold text-fuchsia-100 transition-all hover:bg-fuchsia-900/35 ${
+                  isDesktop
+                    ? "min-h-[48px] min-w-[88px] px-4 py-2.5 text-sm"
+                    : "min-h-[40px] min-w-[72px] px-2.5 py-1.5 text-xs"
+                } ${mobileTheaterChrome ? "hidden" : ""}`}
               >
                 Gifts
               </button>
@@ -1923,7 +1925,11 @@ export default function ContentSection({
                   type="button"
                   onClick={handleInvite}
                   disabled={inviteLoading || !socketConnected || (coins < PRIVATE_ROOM_COST_PER_MIN && !onSpend)}
-                  className="min-h-[44px] min-w-[80px] rounded-full bg-[#8b5cf6]/80 px-4 py-3 text-sm font-medium text-white transition-all active:scale-[0.98] hover:bg-[#8b5cf6] disabled:opacity-50 sm:min-h-[48px]"
+                  className={`rounded-full bg-[#8b5cf6]/80 font-medium text-white transition-all active:scale-[0.98] hover:bg-[#8b5cf6] disabled:opacity-50 ${
+                    isDesktop
+                      ? "min-h-[50px] min-w-[92px] px-5 py-3 text-base"
+                      : "min-h-[40px] min-w-[76px] px-3 py-2 text-sm"
+                  }`}
                 >
                   {t.privateInviteBtn}
                 </button>
@@ -1931,23 +1937,27 @@ export default function ContentSection({
               <button
                 type="button"
                 onClick={handleReport}
-                className={`min-h-[44px] min-w-[80px] rounded-full border border-white/20 px-4 py-3 text-sm font-medium text-white/80 transition-all active:scale-[0.98] hover:bg-white/10 sm:min-h-[48px] ${
-                  mobileInCallMode ? "max-md:hidden" : ""
-                }`}
+                className={`rounded-full border border-white/20 font-medium text-white/80 transition-all active:scale-[0.98] hover:bg-white/10 ${
+                  isDesktop
+                    ? "min-h-[48px] min-w-[92px] px-5 py-3 text-base"
+                    : "min-h-[40px] min-w-[76px] px-3 py-2 text-sm"
+                } ${mobileTheaterChrome ? "hidden" : ""}`}
               >
                 {t.reportBtn}
               </button>
               <button
                 type="button"
-                className={`min-h-[44px] min-w-[80px] rounded-full border border-white/20 px-4 py-3 text-sm font-medium text-white/80 transition-all active:scale-[0.98] hover:bg-white/10 sm:min-h-[48px] ${
-                  mobileInCallMode ? "max-md:hidden" : ""
-                }`}
+                className={`rounded-full border border-white/20 font-medium text-white/80 transition-all active:scale-[0.98] hover:bg-white/10 ${
+                  isDesktop
+                    ? "min-h-[48px] min-w-[92px] px-5 py-3 text-base"
+                    : "min-h-[40px] min-w-[76px] px-3 py-2 text-sm"
+                } ${mobileTheaterChrome ? "hidden" : ""}`}
               >
                 {t.blockBtn}
               </button>
             </div>
           </div>
-          <div className={`mt-2 flex items-center gap-2 ${mobileInCallMode ? "max-md:hidden" : ""}`}>
+          <div className={`mt-2 flex items-center ${isDesktop ? "gap-3" : "gap-2"} ${mobileTheaterChrome ? "hidden" : ""}`}>
             <input
               type="text"
               value={quickChatDraft}

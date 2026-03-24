@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 
 /**
  * Site-wide subtle trust cue — fixed bottom-right; lifts when DM dock is present.
+ * Hidden (`display: none` via Tailwind `hidden`); remove `hidden` from root to show again.
  */
 export default function TrustSafetyFloatingBadge() {
   const { status } = useSession();
@@ -11,7 +12,7 @@ export default function TrustSafetyFloatingBadge() {
 
   return (
     <div
-      className={`pointer-events-none fixed right-3 z-[125] sm:right-4 ${
+      className={`hidden pointer-events-none fixed right-3 z-[125] sm:right-4 ${
         docked
           ? "bottom-[max(5.25rem,calc(env(safe-area-inset-bottom)+4.5rem))]"
           : "bottom-[max(1rem,calc(env(safe-area-inset-bottom)+0.75rem))]"
