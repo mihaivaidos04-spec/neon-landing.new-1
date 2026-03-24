@@ -37,14 +37,12 @@ export async function POST(req: NextRequest) {
         select: {
           translationMinutesToday: true,
           isVip: true,
-          totalSpent: true,
         },
       });
       if (!u) return { error: "not_found" as const };
 
       const tier = translationTierFromUser({
         isVip: u.isVip === true,
-        totalSpent: u.totalSpent ?? 0,
       });
       if (tier === "gold") {
         return { ok: true as const, skipped: true };

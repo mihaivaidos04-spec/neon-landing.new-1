@@ -1,7 +1,7 @@
 import type { ContentLocale } from "./content-i18n";
 
 /**
- * Social-proof toasts (UI only). Prices mirror coin packs in `billing-packs.ts` (2.99 / 5.00 / 6.99).
+ * Social-proof toasts (UI only).
  */
 export type SocialProofPurchaseEvent = {
   user: string;

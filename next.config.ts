@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["nodemailer", "stripe"],
+  serverExternalPackages: ["nodemailer"],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "api.dicebear.com", pathname: "/**" },

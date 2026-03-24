@@ -40,10 +40,6 @@ import LandingMobileSheet from "@/src/components/mobile/LandingMobileSheet";
 
 const UserAvatar = dynamic(() => import("@/src/components/UserAvatar"), { ssr: false });
 const GhostModeToggle = dynamic(() => import("@/src/components/GhostModeToggle"), { ssr: false });
-const FirstPurchaseBonusTimer = dynamic(
-  () => import("@/src/components/FirstPurchaseBonusTimer"),
-  { ssr: false }
-);
 const LiveIndicator = dynamic(() => import("@/src/components/LiveIndicator"), { ssr: false });
 const HeaderInviteShare = dynamic(() => import("@/src/components/HeaderInviteShare"), { ssr: false });
 const SocialProofPopup = dynamic(
@@ -146,8 +142,6 @@ export default function NeonLanding() {
   const [showWelcomeBonusModal, setShowWelcomeBonusModal] = useState(false);
   const [showDailyStreakModal, setShowDailyStreakModal] = useState(false);
   const [dailyStreakPayload, setDailyStreakPayload] = useState<DailyStreakModalPayload | null>(null);
-  const [hasEverPurchased, setHasEverPurchased] = useState(true);
-  const [loginAt, setLoginAt] = useState(0);
   const router = useRouter();
   const hasAppliedFirstLoginRef = useRef(false);
   const heartSoundCooldownRef = useRef(0);
@@ -194,22 +188,6 @@ export default function NeonLanding() {
     setAgeVerifiedLocalStorage();
     setAgeGateOk(true);
   }, []);
-
-  // Track login time for First Purchase Bonus timer
-  useEffect(() => {
-    if (status === "authenticated" && loginAt === 0) {
-      setLoginAt(Date.now());
-    }
-  }, [status, loginAt]);
-
-  // Fetch hasEverPurchased for First Purchase Bonus
-  useEffect(() => {
-    if (status !== "authenticated") return;
-    fetch("/api/me")
-      .then((r) => r.json())
-      .then((d) => setHasEverPurchased(d.hasEverPurchased ?? true))
-      .catch(() => setHasEverPurchased(true));
-  }, [status]);
 
   // Guest coins: init from storage when not signed in
   useEffect(() => {
@@ -343,9 +321,6 @@ export default function NeonLanding() {
     }
     setShowShopModal(true);
   }, [status, signInWithDiscord]);
-
-  const handleOpenCheckout = () => router.push("/checkout");
-  const handleRechargeWithPayment = () => router.push("/checkout?bundle=starter");
 
   const { addSpend: addSessionSpend, isWhale, sessionSpent } = useSessionSpending();
 
@@ -690,10 +665,7 @@ export default function NeonLanding() {
       )}
       <main className="relative z-10 mx-auto flex min-h-0 w-full max-w-[100vw] flex-1 flex-col overflow-x-hidden overflow-y-auto px-2 pb-2 pt-2 sm:px-3 sm:pt-3 xl:px-4">
         {canShowLanding && status === "unauthenticated" && (
-          <AiWhisperLandingHero
-            onStartTalking={handleStartTalkingFree}
-            onSeePricing={() => router.push("/billing")}
-          />
+          <AiWhisperLandingHero onStartTalking={handleStartTalkingFree} />
         )}
         {canShowLanding && (
           <>
@@ -709,8 +681,6 @@ export default function NeonLanding() {
                   coins={displayCoins}
                   setCoins={setCoins}
                   onOpenShop={handleOpenShop}
-                  onRechargeWithPayment={handleRechargeWithPayment}
-                  onOpenGenderFilter={() => router.push("/checkout?plan=gender")}
                   onSpend={status === "authenticated" ? handleSpend : undefined}
                   onAddCoins={status === "authenticated" ? handleAddCoins : undefined}
                   ensureFilterAccess={status === "authenticated" ? ensureFilterAccess : undefined}
@@ -762,13 +732,6 @@ export default function NeonLanding() {
       {canShowLanding && (
         <GlobalNotificationToast locale={locale} />
       )}
-      {status === "authenticated" && loginAt > 0 && (
-        <FirstPurchaseBonusTimer
-          hasEverPurchased={hasEverPurchased}
-          loginAt={loginAt}
-          onOpenShop={handleOpenShop}
-        />
-      )}
       {showWelcomeToast && (
         <WelcomeToast
           message={t.welcomeToastMessage}
@@ -800,7 +763,7 @@ export default function NeonLanding() {
             if (status === "authenticated") wallet.refetch();
             else setCoins(newBalance);
           }}
-          onGetCoins={() => router.push("/billing")}
+          onGetCoins={handleOpenShop}
           locale="en"
         />
       )}
@@ -897,16 +860,6 @@ export default function NeonLanding() {
                 </button>
                 <button
                   type="button"
-                  className="min-h-12 w-full rounded-xl border border-white/15 py-3 text-sm font-medium text-white"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    router.push("/billing");
-                  }}
-                >
-                  Billing & packs
-                </button>
-                <button
-                  type="button"
                   className="min-h-12 w-full rounded-xl border border-emerald-500/35 bg-emerald-950/25 py-3 text-sm font-medium text-emerald-200"
                   onClick={() => {
                     setMobileMenuOpen(false);
@@ -947,16 +900,6 @@ export default function NeonLanding() {
                   }}
                 >
                   {t.connectAccount}
-                </button>
-                <button
-                  type="button"
-                  className="min-h-12 w-full rounded-xl border border-white/15 py-3 text-sm font-medium text-white/90"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    router.push("/billing");
-                  }}
-                >
-                  View coin packs
                 </button>
               </div>
             )}

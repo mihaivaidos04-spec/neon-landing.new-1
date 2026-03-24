@@ -4,7 +4,7 @@ import type { CSSProperties } from "react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import UserNameWithFlag from "@/src/components/UserNameWithFlag";
@@ -12,7 +12,6 @@ import UserFlag from "@/src/components/UserFlag";
 import { getT, getLocaleFromBrowser, isRtl, type I18nLocale } from "@/src/i18n";
 import { PROFILE_BADGE_DEFINITIONS } from "@/src/lib/profile-badge-defs";
 import { avatarGlowColors } from "@/src/lib/level-progress";
-import { BILLING_PACKS } from "@/src/lib/billing-packs";
 import { SHOP_ITEMS, type ShopItem } from "@/src/lib/shop-items";
 import CharacterGallerySection from "@/src/components/profile/CharacterGallerySection";
 import FuturisticGiftIcon from "@/src/components/FuturisticGiftIcon";
@@ -25,18 +24,6 @@ const ShopModal = dynamic(() => import("@/src/components/ShopModal"), { ssr: fal
 
 function inter(tpl: string, v: Record<string, string | number>) {
   return tpl.replace(/\{(\w+)\}/g, (_, k) => (v[k] != null ? String(v[k]) : ""));
-}
-
-function StripeCheckoutSpinnerLabel({ label }: { label: string }) {
-  return (
-    <span className="inline-flex items-center justify-center gap-2">
-      <span
-        className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-fuchsia-400/35 border-t-pink-300 shadow-[0_0_10px_rgba(244,114,182,0.45)]"
-        aria-hidden
-      />
-      {label}
-    </span>
-  );
 }
 
 type DayStat = {
@@ -62,8 +49,6 @@ type MeResponse = {
   socialDiscord: string | null;
   coins: number;
   totalCoinsSpent: number;
-  /** Lifetime USD from Stripe (gold avatar ring when > 50) */
-  totalSpent: number;
   totalGiftsReceived: number;
   giftsReceivedByType: Record<string, number>;
   countryCode: string | null;
@@ -176,8 +161,6 @@ function GenderGlyph({ gender }: { gender: string | null | undefined }) {
 /** Pulsating neon avatar ring only at this level and above */
 const AVATAR_NEON_PULSE_MIN_LEVEL = 5;
 const VIP_MIN_COINS_SPENT = 500;
-/** USD lifetime Stripe spend — gold neon avatar when above this */
-const GOLD_NEON_MIN_TOTAL_SPENT_USD = 50;
 
 const LANG_PRESETS: { code: string; flag: string; label: string }[] = [
   { code: "en", flag: "🇬🇧", label: "English" },
@@ -226,7 +209,6 @@ function SocialNeonIcon({
 export default function ProfileDashboard() {
   const { data: session, status, update: updateSession } = useSession();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [locale, setLocale] = useState<I18nLocale>("en");
   const [me, setMe] = useState<MeResponse | null>(null);
   const [activity, setActivity] = useState<Record<string, number>>({});
@@ -246,7 +228,6 @@ export default function ProfileDashboard() {
   const [bioEditing, setBioEditing] = useState(false);
   const [boostTick, setBoostTick] = useState(0);
   const [saving, setSaving] = useState(false);
-  const [buyLoading, setBuyLoading] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
   const [hoverTip, setHoverTip] = useState<{ x: number; y: number; text: string } | null>(null);
   const [loadErr, setLoadErr] = useState(false);
@@ -256,7 +237,6 @@ export default function ProfileDashboard() {
   const [gifDraft, setGifDraft] = useState("");
   const [animatedBannerDraft, setAnimatedBannerDraft] = useState("");
   const [effectDraft, setEffectDraft] = useState<string>("");
-  const paymentSuccessHandledRef = useRef(false);
 
   const t = useMemo(() => getT(locale), [locale]);
   const rtl = isRtl(locale);
@@ -307,16 +287,6 @@ export default function ProfileDashboard() {
       })
       .catch(() => setLoadErr(true));
   }, [t]);
-
-  useEffect(() => {
-    if (searchParams.get("payment") !== "success") return;
-    if (paymentSuccessHandledRef.current) return;
-    paymentSuccessHandledRef.current = true;
-    toast.success(t("profile.paymentSuccessToast"), { icon: "✨", duration: 5500 });
-    void updateSession?.();
-    void loadMe();
-    router.replace("/profile", { scroll: false });
-  }, [searchParams, router, loadMe, updateSession, t]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -406,32 +376,6 @@ export default function ProfileDashboard() {
     }
   };
 
-  const buyCoins = async () => {
-    const starter = BILLING_PACKS[0];
-    setBuyLoading(true);
-    try {
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: starter.priceUsd, coinsAmount: starter.coins }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        toast.error(data.error ?? "Checkout failed");
-        return;
-      }
-      if (data.url) {
-        window.location.href = data.url as string;
-        return;
-      }
-      toast.error("No checkout URL");
-    } catch {
-      toast.error("Network error");
-    } finally {
-      setBuyLoading(false);
-    }
-  };
-
   const saveBioAndGender = async () => {
     setSaving(true);
     try {
@@ -508,10 +452,10 @@ export default function ProfileDashboard() {
   const xp = me?.xp ?? (session as { xp?: number })?.xp ?? 0;
   const glow = avatarGlowColors(currentLevel);
   const progress = me?.levelProgress;
-  const totalSpentUsd = me?.totalSpent ?? 0;
-  const isGoldSpendRing = totalSpentUsd > GOLD_NEON_MIN_TOTAL_SPENT_USD;
-  const useLevelNeonPulse = !isGoldSpendRing && currentLevel >= AVATAR_NEON_PULSE_MIN_LEVEL;
   const spendVipTier = normalizeVipTier(me?.vipTier);
+  const isGoldSpendRing =
+    spendVipTier === "gold" || (me?.totalCoinsSpent ?? 0) >= VIP_MIN_COINS_SPENT;
+  const useLevelNeonPulse = !isGoldSpendRing && currentLevel >= AVATAR_NEON_PULSE_MIN_LEVEL;
   const avatarOuterClass =
     spendVipTier === "gold"
       ? "vip-profile-avatar-gold-tier-wrap"
@@ -566,8 +510,7 @@ export default function ProfileDashboard() {
   const ghostBoostActive = me.isGhost || ghostCountdownActive;
   const ghostRemainStr =
     ghostCountdownActive && ghostEndMs != null ? formatRemainMs(ghostEndMs - Date.now()) : null;
-  const vipBorderActive =
-    totalSpentUsd > GOLD_NEON_MIN_TOTAL_SPENT_USD || (me.totalCoinsSpent ?? 0) >= VIP_MIN_COINS_SPENT;
+  const vipBorderActive = isGoldSpendRing;
   const showActiveBoostsCard = ghostBoostActive || vipBorderActive;
 
   const bannerEffectLayer =
@@ -1192,18 +1135,6 @@ export default function ProfileDashboard() {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[200px]">
               <button
                 type="button"
-                onClick={() => void buyCoins()}
-                disabled={buyLoading}
-                className="min-h-11 w-full rounded-full border border-amber-400/50 bg-gradient-to-r from-amber-500/25 to-yellow-500/20 px-4 py-2.5 text-sm font-bold uppercase tracking-wide text-amber-100 shadow-[0_0_22px_rgba(251,191,36,0.35)] transition hover:border-amber-300/60 hover:shadow-[0_0_28px_rgba(251,191,36,0.5)] disabled:opacity-50"
-              >
-                {buyLoading ? (
-                  <StripeCheckoutSpinnerLabel label={t("profile.buyCoinsLoading")} />
-                ) : (
-                  t("profile.addCoinsCta")
-                )}
-              </button>
-              <button
-                type="button"
                 onClick={() => setShopOpen(true)}
                 className="min-h-10 w-full rounded-full bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 px-4 py-2 text-xs font-bold text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] transition hover:opacity-95"
               >
@@ -1355,21 +1286,6 @@ export default function ProfileDashboard() {
           )}
         </section>
 
-        <div className="fixed bottom-0 left-0 right-0 z-30 flex justify-center border-t border-white/10 bg-[#050508]/90 px-4 py-3 shadow-[0_-8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:hidden">
-          <button
-            type="button"
-            onClick={() => void buyCoins()}
-            disabled={buyLoading}
-            className="min-h-11 w-full max-w-md rounded-full border border-amber-400/50 bg-gradient-to-r from-amber-500/30 to-yellow-500/25 px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-amber-50 shadow-[0_0_24px_rgba(251,191,36,0.4)] disabled:opacity-50"
-          >
-            {buyLoading ? (
-              <StripeCheckoutSpinnerLabel label={t("profile.buyCoinsLoading")} />
-            ) : (
-              t("profile.addCoinsCta")
-            )}
-          </button>
-        </div>
-
         <ShopModal
           open={shopOpen}
           onClose={() => setShopOpen(false)}
@@ -1378,10 +1294,6 @@ export default function ProfileDashboard() {
           onSuccess={(newBalance) => {
             setMe((prev) => (prev ? { ...prev, coins: newBalance } : prev));
             void updateSession?.();
-          }}
-          onGetCoins={() => {
-            setShopOpen(false);
-            void buyCoins();
           }}
         />
           </>

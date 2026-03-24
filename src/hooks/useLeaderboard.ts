@@ -5,7 +5,8 @@ import { useSocketContext } from "../contexts/SocketContext";
 
 export type LeaderboardEntry = {
   userId: string;
-  totalSpent: number;
+  /** Coins spent in the rolling leaderboard window (not USD). */
+  recentCoinsSpent: number;
   rank: number;
   isGhostModeEnabled?: boolean;
   countryCode?: string | null;

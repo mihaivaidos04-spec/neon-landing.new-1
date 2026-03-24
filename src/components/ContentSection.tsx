@@ -23,11 +23,9 @@ import VideoBridge from "./VideoBridge";
 import MobileVideoSwipeStart from "./MobileVideoSwipeStart";
 import VideoAdOverlay from "./VideoAdOverlay";
 import GenderFilterCTA from "./GenderFilterCTA";
-import UpgradeNeonVipModal from "./UpgradeNeonVipModal";
 import MatchFilterBar, { type MatchFilter } from "./MatchFilterBar";
 import MatchTargetCountryBar from "./MatchTargetCountryBar";
 import QueuePreview from "./QueuePreview";
-import VipFeatureLock from "./VipFeatureLock";
 import PrivateInviteModal from "./PrivateInviteModal";
 import NeonLiveLogo from "./NeonLiveLogo";
 import { useSocketContext } from "../contexts/SocketContext";
@@ -54,7 +52,6 @@ import {
   setStoredTranslationTargetCode,
   TRANSLATION_TARGET_OPTIONS,
 } from "../lib/translation-target-options";
-import { normalizeVipTier } from "../lib/vip-tier";
 import { useDevice } from "../hooks/useDevice";
 
 /** Demo: 2 min premium countdown; when 0, silent downgrade + blur + system messages */
@@ -66,9 +63,6 @@ type Props = {
   coins: number;
   setCoins: (fn: (prev: number) => number) => void;
   onOpenShop: () => void;
-  /** Navigate to checkout with starter bundle for full battery recharge (auth users) */
-  onRechargeWithPayment?: () => void;
-  onOpenGenderFilter?: () => void;
   /** When provided (auth users with wallet), spend goes through API instead of setCoins */
   onSpend?: (amount: number, reason?: string) => Promise<boolean>;
   /** When provided (auth users with wallet), add goes through API instead of setCoins */
@@ -130,8 +124,6 @@ export default function ContentSection({
   coins,
   setCoins,
   onOpenShop,
-  onRechargeWithPayment,
-  onOpenGenderFilter,
   onSpend,
   onAddCoins,
   ensureFilterAccess,
@@ -200,7 +192,6 @@ export default function ContentSection({
   const [translateTargetCode, setTranslateTargetCode] = useState("en");
   const [translationRemainSec, setTranslationRemainSec] = useState<number | null>(null);
   const [translationUnlimited, setTranslationUnlimited] = useState(false);
-  const [translationUpgradeHint, setTranslationUpgradeHint] = useState(false);
   const translationRemainSecRef = useRef(0);
   const [partnerId, setPartnerId] = useState<string | null>(null);
   const [partnerNickname, setPartnerNickname] = useState<string | null>(null);
@@ -215,10 +206,6 @@ export default function ContentSection({
   const [videoTransitionOut, setVideoTransitionOut] = useState(false);
   const [battery, setBattery] = useState(100);
   const [isVipSubscriber, setIsVipSubscriber] = useState(false);
-  /** User.isVip (Whale Pack) — gender preference matching */
-  const [isNeonVipUser, setIsNeonVipUser] = useState(false);
-  const [vipTier, setVipTier] = useState<string>("free");
-  const [showNeonVipGenderModal, setShowNeonVipGenderModal] = useState(false);
   const [batteryDepletedModalVisible, setBatteryDepletedModalVisible] = useState(false);
   const [batteryChargeLoading, setBatteryChargeLoading] = useState(false);
   const [batteryLoading, setBatteryLoading] = useState(!!userId);
@@ -477,10 +464,6 @@ export default function ContentSection({
         const data = await res.json().catch(() => ({}));
         if (res.status === 403) {
           setSearching(false);
-          if (data?.code === "NEON_VIP_REQUIRED") {
-            setShowNeonVipGenderModal(true);
-            return;
-          }
           toast.error(data?.error ?? "Your account is temporarily restricted. Please try again later.");
           return;
         }
@@ -689,7 +672,6 @@ export default function ContentSection({
   const handleLiveTranslationToggle = useCallback(async () => {
     if (liveTranslationEnabled) {
       setLiveTranslationEnabled(false);
-      setTranslationUpgradeHint(false);
       return;
     }
     if (requireAuth()) return;
@@ -706,12 +688,10 @@ export default function ContentSection({
           return;
         }
         if (!d.unlimited && (d.remainingMinutes ?? 0) <= 0) {
-          setTranslationUpgradeHint(true);
-          toast("Daily AI translation limit reached — upgrade a VIP pack for more.", {
+          toast("Daily AI translation limit reached — try again tomorrow.", {
             icon: "🤖",
             duration: 5000,
           });
-          onOpenShop();
           return;
         }
         setTranslationUnlimited(!!d.unlimited);
@@ -1107,16 +1087,12 @@ export default function ContentSection({
         .then((data) => {
           if (data?.battery != null) setBattery(Math.max(0, Math.min(100, data.battery)));
           if (data?.isVip != null) setIsVipSubscriber(data.isVip);
-          if (data?.isNeonVip != null) setIsNeonVipUser(!!data.isNeonVip);
-          if (typeof data?.vipTier === "string") setVipTier(data.vipTier);
         })
         .catch(() => {})
         .finally(() => setBatteryLoading(false));
     } else {
       setBattery(getStoredGuestBattery());
       setIsVipSubscriber(false);
-      setIsNeonVipUser(false);
-      setVipTier("free");
       setBatteryLoading(false);
     }
   }, [userId]);
@@ -1317,10 +1293,6 @@ export default function ContentSection({
       const data = await res.json().catch(() => ({}));
       if (res.status === 403) {
         setSearching(false);
-        if (data?.code === "NEON_VIP_REQUIRED") {
-          setShowNeonVipGenderModal(true);
-          return;
-        }
         toast.error(data?.error ?? "Your account is temporarily restricted. Please try again later.");
         return;
       }
@@ -1440,8 +1412,7 @@ export default function ContentSection({
         });
         if (res.status === 403) {
           setLiveTranslationEnabled(false);
-          setTranslationUpgradeHint(true);
-          toast("Upgrade to VIP for unlimited translation", { icon: "🤖", duration: 5000 });
+          toast("Translation limit reached — try again later.", { icon: "🤖", duration: 5000 });
           return;
         }
         if (res.ok) {
@@ -1524,8 +1495,7 @@ export default function ContentSection({
       },
       remainingSeconds: translationRemainSec,
       unlimited: translationUnlimited,
-      upgradeHint: translationUpgradeHint,
-      onOpenPricing: onOpenShop,
+      upgradeHint: false,
     };
   }, [
     userId,
@@ -1535,8 +1505,6 @@ export default function ContentSection({
     translateTargetCode,
     translationRemainSec,
     translationUnlimited,
-    translationUpgradeHint,
-    onOpenShop,
   ]);
 
   const agoraChannelName = useMemo(() => {
@@ -1696,8 +1664,6 @@ export default function ContentSection({
                 )}
                 transitionOutActive={videoTransitionOut}
                 mobileSplitActive={mobileInCallMode}
-                vipTier={vipTier}
-                onOpenVipUpgrade={() => setShowNeonVipGenderModal(true)}
               />
               </div>
               </MobileVideoSwipeStart>
@@ -1726,16 +1692,6 @@ export default function ContentSection({
                           ))}
                         </select>
                       </label>
-                      {normalizeVipTier(vipTier) === "free" && (
-                        <div className="mt-2">
-                          <VipFeatureLock
-                            locked
-                            onUpgrade={() => setShowNeonVipGenderModal(true)}
-                            label="VIP Only · more AI minutes"
-                            className="w-full justify-center py-1.5 text-[9px] normal-case"
-                          />
-                        </div>
-                      )}
                     </div>
                   )}
                   <MatchFilterBar
@@ -1744,9 +1700,6 @@ export default function ContentSection({
                       if (requireAuth()) return;
                       setMatchFilter(f);
                     }}
-                    isNeonVip={isNeonVipUser}
-                    onOpenUpgradeVip={() => setShowNeonVipGenderModal(true)}
-                    vipHint={t.matchFilterGenderVipHint}
                     disabled={false}
                   />
                   <MatchTargetCountryBar
@@ -1771,8 +1724,6 @@ export default function ContentSection({
                   setCoins={setCoins}
                   onOpenShop={onOpenShop}
                   onWalletRefetch={onWalletRefetch}
-                  vipTier={vipTier}
-                  onOpenVipUpgrade={() => setShowNeonVipGenderModal(true)}
                   onBoostedMatch={(pid, pNick) => {
                     setSearching(false);
                     setConnected(true);
@@ -1836,12 +1787,7 @@ export default function ContentSection({
           <GenderFilterCTA
             visible={showGenderFilterCTA}
             onClose={() => setShowGenderFilterCTA(false)}
-            onSelectGenderFilter={() => onOpenGenderFilter?.() ?? onOpenShop()}
-            locale={locale}
-          />
-          <UpgradeNeonVipModal
-            visible={showNeonVipGenderModal}
-            onClose={() => setShowNeonVipGenderModal(false)}
+            onSelectGenderFilter={() => setShowGenderFilterCTA(false)}
             locale={locale}
           />
           <p
@@ -2015,7 +1961,6 @@ export default function ContentSection({
         visible={batteryDepletedModalVisible}
         onQuickCharge={handleQuickCharge}
         onOpenShop={onOpenShop}
-        onRechargeWithPayment={onRechargeWithPayment}
         canAfford={coins >= BATTERY_QUICK_CHARGE_COST || !!onSpend}
         loading={batteryChargeLoading}
         isAuthenticated={!!userId}

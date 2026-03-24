@@ -1,23 +1,15 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/src/auth";
-import { prisma } from "@/src/lib/prisma";
 
+/** Lightweight session probe (legacy clients expected JSON). */
 export async function GET() {
   try {
     const session = await auth();
-    const userId = (session as any)?.userId ?? session?.user?.id;
+    const userId = (session as { userId?: string })?.userId ?? session?.user?.id;
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { hasEverPurchased: true },
-    });
-
-    return NextResponse.json({
-      hasEverPurchased: user?.hasEverPurchased ?? false,
-    });
+    return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[api/me]", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

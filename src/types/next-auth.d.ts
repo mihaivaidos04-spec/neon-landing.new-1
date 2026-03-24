@@ -21,8 +21,6 @@ declare module "next-auth" {
     isGhost?: boolean;
     xp?: number;
     currentLevel?: number;
-    /** Lifetime USD from Stripe (billing packs) */
-    totalSpent?: number;
     /** ISO 3166-1 alpha-2 from User.country (IP or manual) */
     countryCode?: string | null;
     /** Whale pack — GIF avatar + neon name glow */

@@ -33,7 +33,6 @@ export async function GET(
         totalOnlineMinutes: true,
         createdAt: true,
         isVip: true,
-        totalSpent: true,
       },
     });
 
@@ -84,7 +83,6 @@ export async function GET(
       isVip: user.isVip ?? false,
       vipTier: vipTierFromUser({
         isVip: user.isVip === true,
-        totalSpent: user.totalSpent ?? 0,
       }),
       socialInstagram: user.socialInstagram,
       socialTiktok: user.socialTiktok,

@@ -3,10 +3,9 @@
  */
 
 import type { GiftId } from "../components/GiftsBar";
-import { BILLING_PACKS } from "./billing-packs";
 
-/** Starter pack rate for ~USD hints in UI (follows billing starter pack). */
-const GIFT_USD_REFERENCE_PACK = BILLING_PACKS.find((p) => p.id === "starter") ?? BILLING_PACKS[0];
+/** Rough coins-per-USD hint for gift theater labels (not tied to any purchase pack). */
+export const COINS_PER_USD_HINT = 20;
 
 /** Cost in coins per gift */
 export const GIFT_COST: Record<GiftId, number> = {
@@ -69,19 +68,6 @@ export const REACTION_COST: Record<string, number> = {
 /** Demo: starting balance for new users */
 export const INITIAL_COINS = 10;
 
-/** Coin packages in shop (world prices in USD) */
-export const COIN_PACKAGES = [
-  // Apple-style psychological tiers
-  // Starter: 50 coins – 1.49$
-  { id: "small", coins: 50, priceUsd: 1.49, featured: false },
-  // Pro: 150 coins + 20 bonus = 170 coins – 3.49$
-  { id: "medium", coins: 170, priceUsd: 3.49, featured: true },
-  // Elite: 300 coins – 4.99$
-  { id: "large", coins: 300, priceUsd: 4.99, featured: false },
-] as const;
-
-export type CoinPackageId = (typeof COIN_PACKAGES)[number]["id"];
-
 export function getGiftCost(giftId: GiftId): number {
   return GIFT_COST[giftId] ?? 0;
 }
@@ -90,11 +76,10 @@ export function canAffordGift(balance: number, giftId: GiftId): boolean {
   return balance >= getGiftCost(giftId);
 }
 
-/** Approximate fiat label from starter-pack pricing (theater / shop hints). */
+/** Approximate fiat label for theater hints only (not a real price). */
 export function getGiftApproxUsdLabel(giftId: GiftId): string {
   const cost = getGiftCost(giftId);
-  const usd =
-    (cost / GIFT_USD_REFERENCE_PACK.coins) * GIFT_USD_REFERENCE_PACK.priceUsd;
+  const usd = cost / COINS_PER_USD_HINT;
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",

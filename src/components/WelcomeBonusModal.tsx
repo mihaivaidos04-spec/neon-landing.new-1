@@ -79,7 +79,7 @@ export default function WelcomeBonusModal({ open, onClose, locale = "en" }: Prop
         </p>
 
         <Link
-          href="/billing"
+          href="/profile"
           onClick={onClose}
           className="mt-6 block rounded-xl border border-amber-400/45 bg-gradient-to-r from-amber-950/60 to-violet-950/50 px-4 py-3 text-center text-sm font-semibold text-amber-100 transition hover:border-amber-300/60 hover:brightness-110"
         >

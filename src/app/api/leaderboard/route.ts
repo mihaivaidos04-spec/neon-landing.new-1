@@ -18,7 +18,7 @@ export async function GET() {
 
     const leaderboard = (data ?? []).map((row: { user_id: string; total_spent: number; rank_position: number; is_ghost_mode_enabled?: boolean; user_country_code?: string | null }) => ({
       userId: row.user_id,
-      totalSpent: Number(row.total_spent ?? 0),
+      recentCoinsSpent: Number(row.total_spent ?? 0),
       rank: row.rank_position,
       isGhostModeEnabled: !!row.is_ghost_mode_enabled,
       countryCode: row.user_country_code ?? null,

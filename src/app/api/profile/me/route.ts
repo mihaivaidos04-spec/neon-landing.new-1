@@ -100,7 +100,6 @@ export async function GET() {
         xp: true,
         currentLevel: true,
         totalCoinsSpent: true,
-        totalSpent: true,
         country: true,
         lastSeenAt: true,
         isGhost: true,
@@ -202,7 +201,6 @@ export async function GET() {
       })),
       coins,
       totalCoinsSpent: user.totalCoinsSpent ?? 0,
-      totalSpent: user.totalSpent ?? 0,
       totalGiftsReceived,
       giftsReceivedByType,
       countryCode: user.country,
@@ -213,7 +211,6 @@ export async function GET() {
       isVip: user.isVip ?? false,
       vipTier: vipTierFromUser({
         isVip: user.isVip === true,
-        totalSpent: user.totalSpent ?? 0,
       }),
     });
   } catch (err) {

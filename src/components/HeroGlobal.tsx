@@ -96,7 +96,7 @@ export default function HeroGlobal({
             <span className="text-white/25" aria-hidden>
               |
             </span>
-            <span>💳 Stripe Payments</span>
+            <span>100% free to use</span>
             <span className="text-white/25" aria-hidden>
               |
             </span>

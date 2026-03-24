@@ -48,7 +48,7 @@ export async function maybeNotifyVipPassExpiringSoon(userId: string): Promise<vo
       type: "vip",
       title: "Pass expiring soon",
       message: "⚠️ Your VIP expires in 3 days. Renew now!",
-      link: "/billing",
+      link: "/profile",
     });
   } catch (e) {
     console.warn("[maybeNotifyVipPassExpiringSoon]", e);

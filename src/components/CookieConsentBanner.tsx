@@ -69,7 +69,7 @@ export default function CookieConsentBanner() {
                 onClick={() => accept("essential")}
                 className="text-left underline decoration-violet-500/50 hover:text-violet-300"
               >
-                Essential only — required for login, security, and checkout
+                Essential only — required for login and security
               </button>
               <button
                 type="button"

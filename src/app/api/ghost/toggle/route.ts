@@ -1,28 +1,12 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/src/auth";
 import { getSupabase } from "@/src/lib/supabase";
-import { getWalletBalance } from "@/src/lib/wallet";
-import { GHOST_MODE_COST_PER_2MIN } from "@/src/lib/coins";
 
-/** Check if user has Ghost product (unlimited) from Lemon purchase */
-async function hasGhostSubscription(userId: string): Promise<boolean> {
-  const ghostVariantId = process.env.NEXT_PUBLIC_LEMON_VARIANT_GHOST;
-  if (!ghostVariantId) return false;
-  const supabase = getSupabase();
-  const { data } = await supabase
-    .from("lemon_payment_log")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("variant_id", ghostVariantId)
-    .limit(1)
-    .maybeSingle();
-  return !!data;
-}
-
+/** Ghost mode — free for all authenticated users (no payment or coin gate). */
 export async function POST(req: Request) {
   try {
     const session = await auth();
-    const userId = (session as any)?.userId ?? session?.user?.id;
+    const userId = (session as { userId?: string })?.userId ?? session?.user?.id;
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -33,18 +17,6 @@ export async function POST(req: Request) {
     const supabase = getSupabase();
 
     if (enabled) {
-      const hasSubscription = await hasGhostSubscription(userId);
-      if (!hasSubscription) {
-        const balance = await getWalletBalance(userId);
-        const hasCoins = (balance ?? 0) >= GHOST_MODE_COST_PER_2MIN;
-        if (!hasCoins) {
-          return NextResponse.json(
-            { needsPayment: true, error: "Insufficient coins or subscription" },
-            { status: 402 }
-          );
-        }
-      }
-
       const { error } = await supabase
         .from("user_profiles")
         .upsert(

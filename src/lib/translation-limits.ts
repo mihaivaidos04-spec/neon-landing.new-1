@@ -1,16 +1,16 @@
 import { vipTierFromUser, type VipTier } from "./vip-tier";
 
-/** Daily AI Whisper translation caps (minutes per UTC day). */
+/** Daily AI Whisper translation caps (minutes per UTC day). All tiers unlimited — no paywall. */
 export const TRANSLATION_LIMITS = {
-  free: 5,
-  bronze: 60,
-  silver: 180,
+  free: 999999,
+  bronze: 999999,
+  silver: 999999,
   gold: 999999,
 } as const;
 
 export type TranslationTier = VipTier;
 
-export function translationTierFromUser(u: { isVip: boolean; totalSpent: number }): TranslationTier {
+export function translationTierFromUser(u: { isVip: boolean }): TranslationTier {
   return vipTierFromUser(u);
 }
 

@@ -23,12 +23,9 @@ model User {
   /// Set when user registered via someone else's referral link
   referredBy       String?
   referralCount    Int       @default(0)
-  /// Lifetime coins earned as a referrer (signup + purchase bonuses)
+  /// Lifetime coins earned as a referrer (signup bonuses)
   referralCoins    Int       @default(0)
   totalCoinsSpent  Int       @default(0)
-  /// Lifetime USD spent on Stripe billing packs / checkouts (for VIP glow, analytics)
-  totalSpent       Float     @default(0)
-  hasEverPurchased Boolean   @default(false)
   tier             String    @default("NEON_FREE")
   lastLogin        DateTime  @default(now())
   /// Consecutive UTC calendar days with a qualifying daily-login claim
@@ -68,8 +65,6 @@ model User {
   /// Set when AI moderation flags or auto-actions the account
   autoFlagged      Boolean   @default(false)
   moderationFlags  String?   // JSON: { toxicCount, nsfwCount, lastFlaggedAt }
-  stripeCustomerId     String?   @unique
-  stripeSubscriptionId String?   @unique
   accounts         Account[]
   sessions         Session[]
   authenticators   Authenticator[]
@@ -80,8 +75,6 @@ model User {
   activityLogs     ActivityLog[]
   reportsGiven     Report[]  @relation("ReportReporter")
   reportsReceived  Report[]  @relation("ReportReported")
-  stripePurchases         StripePurchase[]
-  walletCreditTransactions WalletCreditTransaction[]
   /// Optional cover image URL (LinkedIn-style); empty = default gradient
   profileBannerUrl String?
   /// Custom avatar (Supabase Storage); falls back to `image` (OAuth) when null
@@ -334,98 +327,17 @@ model Transaction {
   senderId   String
   receiverId String
   amount     Int
-  type       String   // 'GIFT' | 'PURCHASE' | 'STRIPE_PURCHASE'
+  type       String   // 'GIFT' | 'PURCHASE'
   giftType   String?
   itemId     String?  // For shop purchases
-  promocodeId String? // If used a creator promocode
-  /** Stripe Checkout: 'completed' when coins credited; null for legacy gift rows */
-  status          String?
-  /** Idempotency — one ledger row per Checkout session */
-  stripeSessionId String? @unique
   createdAt  DateTime @default(now())
 
   sender   User @relation("TransactionSender", fields: [senderId], references: [id], onDelete: Cascade)
   receiver User @relation("TransactionReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  promocode Promocode? @relation(fields: [promocodeId], references: [id], onDelete: SetNull)
 
   @@index([senderId])
   @@index([receiverId])
   @@index([createdAt])
-  @@index([promocodeId])
-}
-
-/**
- * Stripe (and future) wallet credits — one row per successful checkout credit.
- * Distinct from peer-to-peer `Transaction` (gifts).
- */
-model WalletCreditTransaction {
-  id              String   @id @default(cuid())
-  userId          String
-  amount          Int
-  status          String
-  provider        String   @default("stripe")
-  stripeSessionId String?  @unique
-  createdAt       DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([createdAt])
-  @@map("wallet_credit_transactions")
-}
-
-/** Stripe Checkout purchases (coins / platform credits) — separate from peer-to-peer Transaction gifts */
-model StripePurchase {
-  id              String   @id @default(cuid())
-  userId          String
-  amountUsd       Float
-  currency        String   @default("USD")
-  status          String   // pending | completed | failed
-  stripeSessionId String   @unique
-  coinsAdded      Int      @default(0)
-  packId          String?  // small | medium | whale | null for legacy plan checkouts
-  createdAt       DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([createdAt])
-}
-
-model Promocode {
-  id         String   @id @default(cuid())
-  creatorId  String
-  code       String   @unique
-  bonusPercent Int    @default(10)
-  usedCount  Int      @default(0)
-  createdAt  DateTime @default(now())
-
-  transactions Transaction[]
-
-  @@index([creatorId])
-}
-
-model CreatorPayout {
-  id        String   @id @default(cuid())
-  userId    String
-  amountEur Decimal  @db.Decimal(10, 2)
-  status    String   // 'pending' | 'completed' | 'failed'
-  paidAt    DateTime?
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-}
-
-model CreatorGoal {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  title       String
-  targetCoins Int
-  currentCoins Int     @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([userId])
 }
 
 /// Global Pulse world chat — short-lived rows (TTL enforced in app + optional SQL helper).

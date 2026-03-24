@@ -4,15 +4,13 @@ import { addCoins } from "@/src/lib/wallet";
 import { checkRateLimit } from "@/src/lib/rate-limit";
 
 /**
- * Add coins to wallet. Called after successful payment (e.g. from payment webhook
- * or from success page with verified session_id). For idempotency, pass externalId
- * (e.g. payment/session id) to avoid double-credit.
- * Rate-limited to prevent brute-force attacks.
+ * Add coins to wallet (in-app grants: quests, bonuses). Rate-limited.
+ * Pass `externalId` for idempotent grants.
  */
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
-    const userId = (session as any)?.userId ?? session?.user?.id;
+    const userId = (session as { userId?: string })?.userId ?? session?.user?.id;
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

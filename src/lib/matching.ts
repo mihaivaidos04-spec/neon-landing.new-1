@@ -36,10 +36,10 @@ function isBoosted(boostedAt: string | null | undefined): boolean {
 async function vipTierForMatchmaking(userId: string): Promise<VipTier> {
   const u = await prisma.user.findUnique({
     where: { id: userId },
-    select: { isVip: true, totalSpent: true },
+    select: { isVip: true },
   });
   if (!u) return "free";
-  return vipTierFromUser({ isVip: u.isVip === true, totalSpent: u.totalSpent ?? 0 });
+  return vipTierFromUser({ isVip: u.isVip === true });
 }
 
 /** VIP Pass = Full Pass or Full Month (both set gender+location expiry) */

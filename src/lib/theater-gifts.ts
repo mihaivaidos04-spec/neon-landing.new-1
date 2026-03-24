@@ -1,8 +1,5 @@
 import type { GiftId } from "@/src/components/GiftsBar";
-import { BILLING_PACKS } from "@/src/lib/billing-packs";
-
-const USD_REF_PACK =
-  BILLING_PACKS.find((p) => p.id === "starter") ?? BILLING_PACKS[0];
+import { COINS_PER_USD_HINT } from "@/src/lib/coins";
 
 /** Theater drawer: standard gifts + premium Fire / Rocket (Socket overlay on partner video). */
 export type TheaterGiftId = GiftId | "fire" | "rocket";
@@ -33,11 +30,10 @@ export function isTheaterOverlayGift(
   return THEATER_OVERLAY_GIFT_TYPES.includes(id as TheaterOverlayGiftType);
 }
 
-/** ~USD hint from starter-pack rate (same as getGiftApproxUsdLabel). */
+/** ~USD hint for display only (same scale as getGiftApproxUsdLabel). */
 export function getTheaterGiftApproxUsdLabel(id: TheaterGiftId): string {
   const cost = getTheaterGiftCost(id);
-  const usd =
-    (cost / USD_REF_PACK.coins) * USD_REF_PACK.priceUsd;
+  const usd = cost / COINS_PER_USD_HINT;
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",

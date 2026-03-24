@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import LiveIndicator from "@/src/components/LiveIndicator";
 import LandingActivityFeed from "@/src/components/landing/LandingActivityFeed";
 
@@ -8,11 +7,10 @@ const FLAGS_ROW = ["🇧🇷", "🇺🇸", "🇯🇵", "🇰🇷", "🇮🇳", "
 
 type HeroProps = {
   onStartTalking: () => void;
-  onSeePricing: () => void;
 };
 
 /** Compact hero above the video stage — “Start Talking” scrolls / auth handled by parent. */
-export function AiWhisperLandingHero({ onStartTalking, onSeePricing }: HeroProps) {
+export function AiWhisperLandingHero({ onStartTalking }: HeroProps) {
   return (
     <div className="relative z-[5] w-full shrink-0 border-b border-white/[0.06] bg-gradient-to-b from-[#0c0614] via-[#080510] to-black px-4 py-10 sm:px-6 sm:py-14">
       <div
@@ -40,13 +38,6 @@ export function AiWhisperLandingHero({ onStartTalking, onSeePricing }: HeroProps
                 className="min-h-[52px] rounded-full bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-500 px-8 py-3 text-sm font-bold text-white shadow-[0_0_32px_rgba(168,85,247,0.45)] transition hover:brightness-110 active:scale-[0.99]"
               >
                 Start Talking Free
-              </button>
-              <button
-                type="button"
-                onClick={onSeePricing}
-                className="min-h-[52px] rounded-full border border-white/20 bg-white/5 px-8 py-3 text-sm font-semibold text-white/90 transition hover:border-fuchsia-400/40 hover:bg-white/10"
-              >
-                See Pricing
               </button>
             </div>
             <p className="mt-6 text-xs text-white/45 lg:text-left">
@@ -122,31 +113,8 @@ export function AiWhisperLandingRest() {
 
         <section className="mt-14 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 sm:p-8">
           <h3 className="text-center text-lg font-semibold text-white">AI translation included</h3>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { tier: "Free", price: "$0", line: "5 min AI translation / day", highlight: false },
-              { tier: "VIP Bronze", price: "$2.99", line: "60 min / day", highlight: false },
-              { tier: "VIP Silver", price: "$5.00", line: "3 hours / day", highlight: true },
-              { tier: "VIP Gold", price: "$6.99", line: "Unlimited translation", highlight: false },
-            ].map((p) => (
-              <div
-                key={p.tier}
-                className={`rounded-xl border p-4 text-left ${
-                  p.highlight ? "border-fuchsia-500/50 bg-fuchsia-950/20" : "border-white/10 bg-black/30"
-                }`}
-              >
-                <p className="text-xs font-semibold uppercase tracking-wide text-fuchsia-300/90">{p.tier}</p>
-                <p className="mt-1 text-xl font-light text-white">{p.price}</p>
-                <p className="mt-2 text-sm text-white/60">{p.line}</p>
-              </div>
-            ))}
-          </div>
-          <p className="mt-6 text-center text-xs text-white/40">
-            VIP tiers follow your Neon pack purchases ($2.99 / $5 / $6.99). See{" "}
-            <Link href="/billing" className="text-violet-400 underline hover:text-violet-300">
-              billing
-            </Link>
-            .
+          <p className="mx-auto mt-4 max-w-xl text-center text-sm text-white/65">
+            Live AI subtitles and translation are included for everyone at no cost — no subscriptions or paid tiers.
           </p>
         </section>
 

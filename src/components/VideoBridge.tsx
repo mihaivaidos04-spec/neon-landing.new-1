@@ -23,14 +23,12 @@ import GiftLayer, { type ActiveGift } from "./GiftLayer";
 import BioCard from "./BioCard";
 import VideoSkeletonLoader from "./VideoSkeletonLoader";
 import TheaterGiftDrawer from "./TheaterGiftDrawer";
-import VipFeatureLock from "./VipFeatureLock";
 import PartnerVideoGiftOverlay, {
   type PartnerVideoGiftPayload,
 } from "./PartnerVideoGiftOverlay";
 import type { TheaterGiftId } from "../lib/theater-gifts";
 import type { ReactionId } from "../lib/reactions";
 import type { RankId } from "../lib/ranks";
-import { normalizeVipTier } from "../lib/vip-tier";
 import { useDevice } from "../hooks/useDevice";
 
 function videoFullscreenLabels(locale: ContentLocale): { enter: string; exit: string } {
@@ -93,7 +91,6 @@ type Props = {
     remainingSeconds: number | null;
     unlimited: boolean;
     upgradeHint: boolean;
-    onOpenPricing?: () => void;
   } | null;
   /** Reaction overlay: current reaction to display */
   reaction?: ReactionId | null;
@@ -103,12 +100,11 @@ type Props = {
   /** Leaderboard crown: show on self-view if current user is #1 */
   showCrownOnSelf?: boolean;
   /** Leaderboard entries for overlay */
-  leaderboard?: { userId: string; totalSpent: number; rank: number; isGhostModeEnabled?: boolean }[];
+  leaderboard?: { userId: string; recentCoinsSpent: number; rank: number; isGhostModeEnabled?: boolean }[];
   /** Locale for leaderboard label */
   leaderboardLocale?: ContentLocale;
   /** Current user ID (for Go Ghost CTA in leaderboard, Invite Friends) */
   leaderboardCurrentUserId?: string | null;
-  /** Open Ghost Mode checkout */
   onGoGhost?: () => void;
   /** Partner video: blur until 5s countdown or Instant Reveal */
   partnerVideoBlurred?: boolean;
@@ -169,9 +165,6 @@ type Props = {
   transitionOutActive?: boolean;
   /** Below md (768px): vertical 50/50 partner/local + Ome-style chrome; md+ unchanged. */
   mobileSplitActive?: boolean;
-  /** Spend-based tier — VIP upsell in AI Whisper panel */
-  vipTier?: string;
-  onOpenVipUpgrade?: () => void;
 };
 
 export default function VideoBridge({
@@ -233,8 +226,6 @@ export default function VideoBridge({
   neonWhisperEnabled = false,
   transitionOutActive = false,
   mobileSplitActive = false,
-  vipTier = "free",
-  onOpenVipUpgrade,
 }: Props) {
   const t = getContentT(locale);
   const fsLabels = videoFullscreenLabels(locale);
@@ -567,28 +558,6 @@ export default function VideoBridge({
                   left
                 </span>
               ) : null}
-              {aiTranslationUi.upgradeHint && (
-                <button
-                  type="button"
-                  onClick={aiTranslationUi.onOpenPricing}
-                  className="text-left text-[9px] font-medium text-amber-300/95 underline decoration-amber-500/50"
-                >
-                  Upgrade to VIP for unlimited translation
-                </button>
-              )}
-              {normalizeVipTier(vipTier) === "free" && onOpenVipUpgrade && (
-                <div className="mt-1 space-y-0.5 border-t border-white/10 pt-1.5">
-                  <VipFeatureLock
-                    locked
-                    onUpgrade={onOpenVipUpgrade}
-                    label="VIP Only"
-                    className="w-full justify-center py-1.5 text-[8px]"
-                  />
-                  <p className="text-center text-[8px] leading-snug text-white/40">
-                    Bronze 60m · Silver 3h · Gold unlimited AI translation
-                  </p>
-                </div>
-              )}
             </div>
           )}
         </div>

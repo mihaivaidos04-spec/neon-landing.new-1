@@ -12,8 +12,6 @@ type Props = {
   visible: boolean;
   onQuickCharge: () => void;
   onOpenShop: () => void;
-  /** Navigate to checkout with starter bundle for full recharge (auth users) */
-  onRechargeWithPayment?: () => void;
   canAfford: boolean;
   loading?: boolean;
   /** True if user is authenticated (can pay) */
@@ -40,7 +38,6 @@ export default function BatteryDepletedModal({
   visible,
   onQuickCharge,
   onOpenShop,
-  onRechargeWithPayment,
   canAfford,
   loading = false,
   isAuthenticated = false,
@@ -182,15 +179,6 @@ export default function BatteryDepletedModal({
                 </button>
               )}
             </div>
-            {isAuthenticated && onRechargeWithPayment && (
-              <button
-                type="button"
-                onClick={onRechargeWithPayment}
-                className="w-full rounded-xl border border-emerald-500/50 bg-emerald-500/20 px-4 py-3 text-sm font-semibold text-emerald-300 transition-all hover:bg-emerald-500/30"
-              >
-                {t.batteryRechargeWithPayment}
-              </button>
-            )}
           </div>
         </motion.div>
       </motion.div>

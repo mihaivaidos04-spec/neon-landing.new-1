@@ -3,7 +3,7 @@
  */
 
 import { getSupabase } from "./supabase";
-import type { FilterPlanId } from "./checkout-bundles";
+import type { FilterPlanId } from "./filter-plan-types";
 
 /** Plan duration in hours */
 const PLAN_DURATION_HOURS: Record<FilterPlanId, number> = {

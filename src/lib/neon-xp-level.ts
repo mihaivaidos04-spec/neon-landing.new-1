@@ -1,14 +1,14 @@
 /**
- * Neon level curve (purchases + activity XP share the same pool):
+ * Neon level curve (activity XP):
  * - Level = floor(sqrt(xp / 10)) + 1
- * - XP from coin purchases: floor(coins / 10) per billing credit
+ * - XP from coin grants: floor(coins / 10) per credited amount
  */
 
 export function neonLevelFromXp(xp: number): number {
   return Math.floor(Math.sqrt(Math.max(0, xp) / 10)) + 1;
 }
 
-/** XP granted when user receives N coins from a Stripe pack (or similar). */
+/** XP granted when user receives N coins (bonus, quest, etc.). */
 export function xpFromCoinsCredited(coins: number): number {
   if (!Number.isFinite(coins) || coins <= 0) return 0;
   return Math.floor(coins / 10);

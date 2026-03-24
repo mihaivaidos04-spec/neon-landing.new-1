@@ -9,11 +9,9 @@ export function normalizeVipTier(raw: string | null | undefined): VipTier {
   return "free";
 }
 
-/** Same thresholds as AI translation caps — aligns spend + Whale pack with visible tier. */
-export function vipTierFromUser(u: { isVip: boolean; totalSpent: number }): VipTier {
+/** Cosmetic tier: whale pack / admin `isVip` → gold; no paid spend tiers. */
+export function vipTierFromUser(u: { isVip: boolean }): VipTier {
   if (u.isVip) return "gold";
-  if (u.totalSpent >= 5) return "silver";
-  if (u.totalSpent >= 2.99) return "bronze";
   return "free";
 }
 

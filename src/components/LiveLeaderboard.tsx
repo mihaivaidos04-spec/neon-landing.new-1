@@ -50,7 +50,7 @@ export default function LiveLeaderboard({ leaderboard, locale = "ro", currentUse
                 {formatUserId(entry.userId, isBlurred)}
               </span>
               <span className="number-plain shrink-0 text-[10px] tabular-nums text-[var(--color-text-secondary)]">
-                {entry.totalSpent}
+                {entry.recentCoinsSpent}
               </span>
               {isCurrentUser && isBlurred && onGoGhost && (
                 <button

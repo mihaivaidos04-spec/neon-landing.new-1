@@ -47,13 +47,11 @@ export async function getTranslationStatusForUser(
       translationMinutesToday: true,
       translationResetAt: true,
       isVip: true,
-      totalSpent: true,
     },
   });
   if (!u) return null;
   const tier = translationTierFromUser({
     isVip: u.isVip === true,
-    totalSpent: u.totalSpent ?? 0,
   });
   const dailyLimitMinutes = dailyLimitMinutesForTier(tier);
   const unlimited = tier === "gold";

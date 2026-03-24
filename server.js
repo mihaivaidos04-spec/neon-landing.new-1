@@ -163,7 +163,7 @@ app.prepare().then(() => {
     },
   });
 
-  /** Exposed for Stripe webhook → global Whale Pack celebration (see `broadcast-legend-purchase.ts`) */
+  /** Exposed for Socket.IO helpers (cron, DMs, etc.) */
   globalThis.__neonSocketIo = io;
 
   /** Global Pulse floating emoji — must match `GLOBAL_PULSE_FLOATING_REACTION_EMOJIS` in src/lib/global-pulse-floating-reactions.ts */
@@ -268,20 +268,6 @@ app.prepare().then(() => {
             socket.emit("global_pulse_gold_history", []);
             return;
           }
-          const u = await prisma.user.findUnique({
-            where: { id: uid },
-            select: { isVip: true, totalSpent: true },
-          });
-          const tier = u
-            ? vipTierFromUser({
-                isVip: u.isVip === true,
-                totalSpent: u.totalSpent ?? 0,
-              })
-            : "free";
-          if (tier !== "gold") {
-            socket.emit("global_pulse_gold_history", []);
-            return;
-          }
         }
         const rows = await prisma.chatMessage.findMany({
           where: { pulseChannel: wantGold ? "gold" : "world" },
@@ -306,20 +292,6 @@ app.prepare().then(() => {
       const uid = socket.userId;
       if (!uid) return;
       try {
-        const u = await prisma.user.findUnique({
-          where: { id: uid },
-          select: { isVip: true, totalSpent: true },
-        });
-        const tier = u
-          ? vipTierFromUser({
-              isVip: u.isVip === true,
-              totalSpent: u.totalSpent ?? 0,
-            })
-          : "free";
-        if (tier !== "gold") {
-          socket.emit("global_pulse_gold_forbidden");
-          return;
-        }
         socket.join("global_pulse_gold");
       } catch (e) {
         console.error("[global_pulse_gold_join]", e);
@@ -406,18 +378,9 @@ app.prepare().then(() => {
       try {
         const sender = await prisma.user.findUnique({
           where: { id: uid },
-          select: { isVip: true, totalSpent: true },
+          select: { isVip: true },
         });
-        const tier = sender
-          ? vipTierFromUser({
-              isVip: sender.isVip === true,
-              totalSpent: sender.totalSpent ?? 0,
-            })
-          : "free";
-        if (pulseChannel === "gold" && tier !== "gold") {
-          socket.emit("global_pulse_gold_forbidden");
-          return;
-        }
+        const tier = sender ? vipTierFromUser({ isVip: sender.isVip === true }) : "free";
         const row = await prisma.chatMessage.create({
           data: {
             userId: uid,

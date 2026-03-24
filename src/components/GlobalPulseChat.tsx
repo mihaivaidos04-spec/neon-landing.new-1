@@ -16,7 +16,6 @@ import toast from "react-hot-toast";
 import type { ContentLocale } from "../lib/content-i18n";
 import { useSocketContext } from "../contexts/SocketContext";
 import LazyUserFlag from "./LazyUserFlag";
-import UpgradeNeonVipModal from "./UpgradeNeonVipModal";
 import { prepareGlobalPulseOutgoingMessage } from "../lib/global-pulse-moderation";
 import { sanitizeForDisplay } from "../lib/text-moderation";
 import { truncateChatDisplayUsername } from "../lib/chat-display-username-limit";
@@ -168,7 +167,6 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
   const [worldMessages, setWorldMessages] = useState<GlobalPulseMessage[]>([]);
   const [goldMessages, setGoldMessages] = useState<GlobalPulseMessage[]>([]);
   const [pulseTab, setPulseTab] = useState<"world" | "gold">("world");
-  const [showVipUpgrade, setShowVipUpgrade] = useState(false);
   const [input, setInput] = useState("");
   const [reportingId, setReportingId] = useState<string | null>(null);
   const [systemLine, setSystemLine] = useState<string | null>(null);
@@ -631,11 +629,6 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
 
   return (
     <>
-      <UpgradeNeonVipModal
-        visible={showVipUpgrade}
-        onClose={() => setShowVipUpgrade(false)}
-        locale={locale ?? "en"}
-      />
       {floatingOverlay}
     <aside
       className="global-pulse-panel relative flex h-full min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/50 shadow-[0_0_32px_rgba(236,72,153,0.08),0_8px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl xl:rounded-l-xl xl:rounded-r-md"
@@ -662,20 +655,13 @@ export default function GlobalPulseChat({ locale = "en" }: Props) {
           </button>
           <button
             type="button"
-            onClick={() => {
-              if (vipTier !== "gold") {
-                setShowVipUpgrade(true);
-                return;
-              }
-              setPulseTab("gold");
-            }}
+            onClick={() => setPulseTab("gold")}
             className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition xl:text-[9px] ${
               pulseTab === "gold"
                 ? "bg-amber-500/45 text-amber-50"
                 : "text-amber-200/80 hover:bg-amber-500/15"
             }`}
           >
-            {vipTier !== "gold" && <span aria-hidden>🔒</span>}
             Gold
           </button>
         </div>

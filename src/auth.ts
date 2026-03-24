@@ -244,7 +244,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               isGhost: true,
               country: true,
               coins: true,
-              totalSpent: true,
               isVip: true,
               nickname: true,
               vipTier: true,
@@ -254,7 +253,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             session.tier = user.tier;
             session.xp = user.xp;
             session.currentLevel = user.currentLevel;
-            session.totalSpent = user.totalSpent ?? 0;
             session.countryCode = user.country ?? null;
             session.nickname = user.nickname ?? undefined;
             const ghostActive = user.ghostModeUntil ? user.ghostModeUntil > new Date() : user.isGhost;
@@ -263,7 +261,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             session.neonVipGlow = user.isVip ? neonVipGlowVariant(userId) : undefined;
             const computedVip = vipTierFromUser({
               isVip: user.isVip === true,
-              totalSpent: user.totalSpent ?? 0,
             });
             session.vipTier = computedVip;
             if (user.vipTier !== computedVip) {

@@ -3,7 +3,7 @@
  */
 
 import { getSupabase } from "./supabase";
-import type { FilterPlanId } from "./checkout-bundles";
+import type { FilterPlanId } from "./filter-plan-types";
 
 export type PassType = "gender" | "location";
 

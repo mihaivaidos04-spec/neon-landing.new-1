@@ -5,7 +5,6 @@ import { createNotification } from "@/src/lib/create-notification";
 
 export const REFERRED_SIGNUP_BONUS = 25;
 export const REFERRER_SIGNUP_BONUS = 50;
-export const REFERRER_PURCHASE_BONUS = 100;
 
 /** Total coins distributed on signup (25 + 50) for Referral.coinsAwarded audit */
 export const REFERRAL_SIGNUP_TOTAL_COINS = REFERRED_SIGNUP_BONUS + REFERRER_SIGNUP_BONUS;
@@ -164,36 +163,4 @@ export async function registerReferral(referredId: string, code: string): Promis
   });
 
   return { ok: true, applied: true };
-}
-
-/**
- * When a referred user completes a billing pack purchase, referrer gets a one-time bonus.
- */
-export async function rewardReferrerOnReferredPurchase(buyerId: string): Promise<{ granted: boolean }> {
-  const buyer = await prisma.user.findUnique({
-    where: { id: buyerId },
-    select: { referredBy: true },
-  });
-  const referrerId = buyer?.referredBy;
-  if (!referrerId) {
-    return { granted: false };
-  }
-
-  const res = await addCoins(referrerId, REFERRER_PURCHASE_BONUS, {
-    externalId: `referral-purchase-${buyerId}`,
-    reason: "referral_referred_purchase",
-  });
-
-  if (!res.success) {
-    return { granted: false };
-  }
-
-  await prisma.user
-    .update({
-      where: { id: referrerId },
-      data: { referralCoins: { increment: REFERRER_PURCHASE_BONUS } },
-    })
-    .catch(() => {});
-
-  return { granted: true };
 }

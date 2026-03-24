@@ -265,7 +265,7 @@ export function GiftShopQuestStack(props: BaseProps) {
       </div>
       <p className="mt-2 shrink-0 text-center text-[9px] leading-snug text-violet-300/55">
         Coin packs raise your daily AI Whisper limits — see{" "}
-        <Link href="/billing" className="text-fuchsia-300/90 underline hover:text-fuchsia-200">
+        <Link href="/profile" className="text-fuchsia-300/90 underline hover:text-fuchsia-200">
           Billing
         </Link>
         .

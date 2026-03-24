@@ -42,7 +42,7 @@ export async function POST(req: Request) {
       isUserMatchingSuspended(userId),
       prisma.user.findUnique({
         where: { id: userId },
-        select: { isShadowBanned: true, systemSuspensionUntil: true, isVip: true },
+        select: { isShadowBanned: true, systemSuspensionUntil: true },
       }),
     ]);
     if (dbSuspended || user?.isShadowBanned) {
@@ -70,19 +70,6 @@ export async function POST(req: Request) {
       }
     } catch {
       // no body
-    }
-
-    /** Gender preference matching requires Neon VIP (User.isVip — Whale Pack). */
-    if (filter === "female" || filter === "male") {
-      if (user?.isVip !== true) {
-        return NextResponse.json(
-          {
-            error: "Neon VIP is required to match by gender. Upgrade with the Whale Pack.",
-            code: "NEON_VIP_REQUIRED",
-          },
-          { status: 403 }
-        );
-      }
     }
 
     if (targetCountryCode) {

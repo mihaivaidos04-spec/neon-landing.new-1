@@ -10,8 +10,6 @@ type Props = { locale?: I18nLocale };
 const NAV = [
   { href: "/studio", labelKey: "studio.overview" },
   { href: "/studio/audience", labelKey: "studio.audience" },
-  { href: "/studio/payouts", labelKey: "studio.payouts" },
-  { href: "/studio/promocodes", labelKey: "studio.promocodes" },
 ] as const;
 
 const LOCALES: { value: I18nLocale; label: string }[] = [

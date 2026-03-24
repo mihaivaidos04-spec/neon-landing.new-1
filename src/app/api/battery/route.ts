@@ -18,7 +18,7 @@ export async function GET() {
       hasActivePass(userId, "location"),
       prisma.user.findUnique({
         where: { id: userId },
-        select: { isVip: true, totalSpent: true },
+        select: { isVip: true },
       }),
     ]);
     const isVip = genderPass && locationPass;
@@ -26,7 +26,6 @@ export async function GET() {
     const vipTier = vipRow
       ? vipTierFromUser({
           isVip: vipRow.isVip === true,
-          totalSpent: vipRow.totalSpent ?? 0,
         })
       : "free";
     return NextResponse.json({ battery: regenBattery, isVip, isNeonVip, vipTier });

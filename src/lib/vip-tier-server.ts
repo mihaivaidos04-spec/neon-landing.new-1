@@ -5,19 +5,19 @@ import { vipTierFromUser } from "@/src/lib/vip-tier";
 export async function syncUserVipTierInTx(tx: Prisma.TransactionClient, userId: string): Promise<void> {
   const u = await tx.user.findUnique({
     where: { id: userId },
-    select: { isVip: true, totalSpent: true },
+    select: { isVip: true },
   });
   if (!u) return;
-  const tier = vipTierFromUser({ isVip: u.isVip === true, totalSpent: u.totalSpent ?? 0 });
+  const tier = vipTierFromUser({ isVip: u.isVip === true });
   await tx.user.update({ where: { id: userId }, data: { vipTier: tier } });
 }
 
 export async function syncUserVipTierById(userId: string): Promise<void> {
   const u = await prisma.user.findUnique({
     where: { id: userId },
-    select: { isVip: true, totalSpent: true },
+    select: { isVip: true },
   });
   if (!u) return;
-  const tier = vipTierFromUser({ isVip: u.isVip === true, totalSpent: u.totalSpent ?? 0 });
+  const tier = vipTierFromUser({ isVip: u.isVip === true });
   await prisma.user.update({ where: { id: userId }, data: { vipTier: tier } });
 }
