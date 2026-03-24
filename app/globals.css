@@ -1199,7 +1199,8 @@ body {
   }
 }
 
-/* Theater / Agora: fill neon frames — object-fit: cover (no letterboxing), centered crop on main stage */
+/* Theater / LiveKit: fill neon frames — object-fit: cover (no letterboxing), centered crop on main stage */
+.theater-livekit-remote,
 .theater-agora-remote {
   overflow: hidden;
   width: 100%;
@@ -1208,6 +1209,7 @@ body {
   /* position comes from layout utilities (e.g. absolute inset-0) — do not set position here */
 }
 
+.theater-livekit-remote video,
 .theater-agora-remote video {
   display: block;
   width: 100% !important;
@@ -1217,7 +1219,13 @@ body {
   object-position: center center;
 }
 
+/* Hide local tile in VideoConference when remote peer is present (Neon Companion / partner on main stage) */
+.theater-livekit-vc [data-lk-local-participant="true"] {
+  display: none !important;
+}
+
 /* Self PiP: same treatment — tight crop in the small neon window */
+.theater-livekit-local,
 .theater-agora-local {
   position: relative;
   overflow: hidden;
@@ -1226,6 +1234,7 @@ body {
   min-height: 0;
 }
 
+.theater-livekit-local video,
 .theater-agora-local video {
   display: block;
   width: 100% !important;

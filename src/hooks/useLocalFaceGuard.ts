@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { ICameraVideoTrack } from "agora-rtc-sdk-ng";
 
 const MODEL_BASE = "https://unpkg.com/face-api.js@0.22.2/weights";
 const INTERVAL_MS = 2800;
@@ -21,13 +20,13 @@ function loadFaceModels() {
 }
 
 /**
- * Periodically checks the local Agora camera track for a visible face (TinyFaceDetector).
+ * Periodically checks the local camera track for a visible face (TinyFaceDetector).
  * If none for several frames → pause publishing; when face returns → resume.
  * Does not detect NSFW — only face presence (ceiling / away-from-camera).
  */
 export function useLocalFaceGuard(opts: {
   enabled: boolean;
-  videoTrack: ICameraVideoTrack | null;
+  videoTrack: MediaStreamTrack | null;
   onPausePublishing: () => void;
   onResumePublishing: () => void;
 }) {
@@ -54,7 +53,7 @@ export function useLocalFaceGuard(opts: {
       try {
         await loadFaceModels();
         if (cancelled) return;
-        const mst = opts.videoTrack!.getMediaStreamTrack();
+        const mst = opts.videoTrack!;
         video.srcObject = new MediaStream([mst]);
         await video.play().catch(() => {});
       } catch (e) {

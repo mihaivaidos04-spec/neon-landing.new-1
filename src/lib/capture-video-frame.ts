@@ -1,5 +1,5 @@
 /**
- * Grab a JPEG data URL from the first <video> inside a container (e.g. Agora remote view).
+ * Grab a JPEG data URL from the first <video> inside a container (e.g. LiveKit remote view).
  */
 export function captureVideoFrameFromContainer(
   container: HTMLElement | null,

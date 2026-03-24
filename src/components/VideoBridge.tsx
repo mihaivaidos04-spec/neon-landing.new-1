@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ContentLocale } from "../lib/content-i18n";
 import { getContentT } from "../lib/content-i18n";
-import { useAgoraTheater } from "../hooks/useAgoraTheater";
+import "@livekit/components-styles";
+import { RoomContext, VideoConference } from "@livekit/components-react";
+import { useLiveKitTheater } from "../hooks/useLiveKitTheater";
 import { createTranscriptBuffer, useNeonWhisper } from "../hooks/useNeonWhisper";
 import { useJeelizMaskPipeline } from "../hooks/useJeelizMaskPipeline";
 import type { FaceMaskId } from "../lib/face-masks";
@@ -153,10 +155,10 @@ type Props = {
   /** Fire/Rocket: full-screen-on-partner gift from peer (Socket.io). */
   partnerVideoGift?: PartnerVideoGiftPayload | null;
   onPartnerVideoGiftComplete?: () => void;
-  /** Agora: shared channel id (both peers). When set with a match, real video replaces demo loop. */
-  agoraChannelName?: string | null;
-  /** Agora: stable key for token UID (e.g. current user id). */
-  agoraUserIdKey?: string | null;
+  /** LiveKit: shared room name (both peers / Neon Companion). When set with a match, real video replaces demo loop. */
+  liveKitRoomName?: string | null;
+  /** LiveKit: stable identity for token (e.g. current user id). */
+  liveKitIdentityKey?: string | null;
   /** Wallet spend (Neon Glasses mask = 10 coins). */
   onSpend?: (amount: number, reason?: string) => Promise<boolean>;
   /** Logged-in: enable Neon Whisper AI wingman (local-only overlay; uses partner video + your mic transcript). */
@@ -220,8 +222,8 @@ export default function VideoBridge({
   onTheaterGift,
   partnerVideoGift = null,
   onPartnerVideoGiftComplete,
-  agoraChannelName = null,
-  agoraUserIdKey = null,
+  liveKitRoomName = null,
+  liveKitIdentityKey = null,
   onSpend,
   neonWhisperEnabled = false,
   transitionOutActive = false,
@@ -231,8 +233,8 @@ export default function VideoBridge({
   const fsLabels = videoFullscreenLabels(locale);
   const maskL = maskMenuLabels(locale);
   const splitContainerRef = useRef<HTMLDivElement>(null);
-  const agoraLocalRef = useRef<HTMLDivElement>(null);
-  const agoraRemoteRef = useRef<HTMLDivElement>(null);
+  const liveKitLocalRef = useRef<HTMLDivElement>(null);
+  const liveKitRemoteRef = useRef<HTMLDivElement>(null);
   const localPreviewVideoRef = useRef<HTMLVideoElement>(null);
   const [localPreviewStream, setLocalPreviewStream] = useState<MediaStream | null>(null);
   const [localPreviewError, setLocalPreviewError] = useState<string | null>(null);
@@ -247,26 +249,26 @@ export default function VideoBridge({
     if (!liveTranslationEnabled) setWhisperLine("");
   }, [liveTranslationEnabled]);
 
-  const agoraEnabled =
-    Boolean(agoraChannelName?.trim()) && !searching;
+  const liveKitEnabled =
+    Boolean(liveKitRoomName?.trim()) && !searching;
   const verticalSplit = Boolean(mobileSplitActive && isMobile);
   /** In-call split: vertical on mobile device, horizontal row on desktop (stranger left, self right). */
   const splitLayout = mobileSplitActive;
   const [replacePublishTrack, setReplacePublishTrack] =
     useState<MediaStreamTrack | null>(null);
 
-  const agora = useAgoraTheater({
-    channelName: agoraChannelName?.trim() ?? null,
-    enabled: agoraEnabled,
-    userIdKey: agoraUserIdKey ?? "",
-    localContainerRef: agoraLocalRef,
-    remoteContainerRef: agoraRemoteRef,
+  const liveKit = useLiveKitTheater({
+    roomName: liveKitRoomName?.trim() ?? null,
+    enabled: liveKitEnabled,
+    identityKey: liveKitIdentityKey ?? "",
+    localContainerRef: liveKitLocalRef,
+    remoteContainerRef: liveKitRemoteRef,
     replaceVideoWithTrack: replacePublishTrack,
   });
 
-  const maskPipelineEnabled = agoraEnabled && !ghostMode && agora.joined;
+  const maskPipelineEnabled = liveKitEnabled && !ghostMode && liveKit.joined;
   const jeeliz = useJeelizMaskPipeline(
-    agora.cameraMediaTrack,
+    liveKit.cameraMediaTrack,
     faceMask,
     maskPipelineEnabled
   );
@@ -275,8 +277,8 @@ export default function VideoBridge({
     transcriptBufferRef.current.push(text);
   }, []);
   const neonWhisper = useNeonWhisper({
-    remoteContainerRef: agoraRemoteRef,
-    active: neonWhisperEnabled && agoraEnabled && !searching && agora.hasRemoteVideo,
+    remoteContainerRef: liveKitRemoteRef,
+    active: neonWhisperEnabled && liveKitEnabled && !searching && liveKit.hasRemoteVideo,
     transcriptBuffer: transcriptBufferRef.current,
   });
 
@@ -289,12 +291,12 @@ export default function VideoBridge({
   }, [faceMask, jeeliz.ready, jeeliz.outputVideoTrack]);
 
   useEffect(() => {
-    if (!agoraEnabled) {
+    if (!liveKitEnabled) {
       setReplacePublishTrack(null);
       setFaceMask("none");
       setMasksMenuOpen(false);
     }
-  }, [agoraEnabled]);
+  }, [liveKitEnabled]);
 
   useEffect(() => {
     if (!masksMenuOpen) return;
@@ -328,7 +330,7 @@ export default function VideoBridge({
 
   /** Local camera/mic when not on Agora (no duplicate device access). */
   useEffect(() => {
-    if (agoraEnabled || ghostMode) {
+    if (liveKitEnabled || ghostMode) {
       setLocalPreviewStream((prev) => {
         prev?.getTracks().forEach((t) => t.stop());
         return null;
@@ -381,7 +383,7 @@ export default function VideoBridge({
         return null;
       });
     };
-  }, [agoraEnabled, ghostMode]);
+  }, [liveKitEnabled, ghostMode]);
 
   useEffect(() => {
     const el = localPreviewVideoRef.current;
@@ -427,12 +429,12 @@ export default function VideoBridge({
     premiumSecondsLeft >= 0;
   const percent = showBar ? (premiumSecondsLeft / premiumTotal) * 100 : 100;
 
-  /** Solo layout: one full-size stage (local on main). PiP only when a remote peer is present (Agora). */
+  /** Solo layout: one full-size stage (local on main). PiP only when a remote peer is present (LiveKit). */
   const hideSelfPip =
     !ghostMode &&
     (searching ||
-      (!agoraEnabled && Boolean(localPreviewStream)) ||
-      (agoraEnabled && (!agora.joined || !agora.hasRemoteVideo)));
+      (!liveKitEnabled && Boolean(localPreviewStream)) ||
+      (liveKitEnabled && (!liveKit.joined || !liveKit.hasRemoteVideo)));
 
   const partnerFilterStyle =
     batteryDepletedBlur
@@ -645,33 +647,56 @@ export default function VideoBridge({
               onDismiss={onBioCardDismiss}
             />
           )}
-          {showPartnerSkeleton && !agoraEnabled && <VideoSkeletonLoader />}
-          {agoraEnabled ? (
+          {showPartnerSkeleton && !liveKitEnabled && <VideoSkeletonLoader />}
+          {liveKitEnabled ? (
             <div
               className={`relative h-full min-h-0 w-full ${splitLayout ? "min-h-0" : "min-h-[120px] lg:min-h-0"}`}
             >
               <div
-                ref={agoraRemoteRef}
-                className={`theater-agora-remote h-full w-full bg-black ${splitLayout ? "min-h-0" : "min-h-[120px] lg:min-h-0"}`}
-              />
-              {agora.joining && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/70 text-sm text-fuchsia-200/90">
-                  Connecting…
-                </div>
-              )}
-              {agora.error && (
-                <div className="absolute inset-0 z-[25] flex items-center justify-center bg-black/85 p-4 text-center text-sm text-red-300">
-                  {agora.error}
-                </div>
-              )}
-              {agora.joined &&
-                !agora.hasRemoteVideo &&
-                !agora.error &&
-                !agora.joining && (
-                  <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1 text-[11px] text-white/80 backdrop-blur-sm">
-                    Waiting for partner…
+                ref={liveKitRemoteRef}
+                className={`theater-livekit-remote relative h-full w-full bg-black ${splitLayout ? "min-h-0" : "min-h-[120px] lg:min-h-0"}`}
+              >
+                {liveKit.room && liveKit.hasRemotePeer && (
+                  <RoomContext.Provider value={liveKit.room}>
+                    <div
+                      className="theater-livekit-vc absolute inset-0 z-[2] h-full w-full [&_.lk-video-conference]:h-full [&_.lk-video-conference]:min-h-0"
+                      aria-label="Neon Companion"
+                    >
+                      <VideoConference />
+                    </div>
+                  </RoomContext.Provider>
+                )}
+                {liveKit.joining && (
+                  <div
+                    className="absolute inset-0 z-[5] flex flex-col items-center justify-center gap-2 bg-black/80 text-sm text-fuchsia-200/90"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <div
+                      className="h-8 w-8 animate-spin rounded-full border-2 border-fuchsia-500/30 border-t-fuchsia-400"
+                      aria-hidden
+                    />
+                    <span>Connecting to LiveKit…</span>
                   </div>
                 )}
+                {liveKit.error && (
+                  <div
+                    className="absolute inset-0 z-[25] flex flex-col items-center justify-center gap-2 bg-black/85 p-4 text-center text-sm text-red-300"
+                    role="alert"
+                  >
+                    <span className="font-medium">Video unavailable</span>
+                    <span className="text-xs text-red-200/90">{liveKit.error}</span>
+                  </div>
+                )}
+                {liveKit.joined &&
+                  !liveKit.hasRemoteVideo &&
+                  !liveKit.error &&
+                  !liveKit.joining && (
+                    <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1 text-[11px] text-white/80 backdrop-blur-sm">
+                      Waiting for partner…
+                    </div>
+                  )}
+              </div>
             </div>
           ) : (
             <>
@@ -703,7 +728,7 @@ export default function VideoBridge({
             gift={partnerVideoGift}
             onComplete={onPartnerVideoGiftComplete ?? (() => {})}
           />
-          {neonWhisperEnabled && agoraEnabled && (
+          {neonWhisperEnabled && liveKitEnabled && (
             <NeonWhisperOverlay
               locale={locale}
               tip={neonWhisper.tip}
@@ -738,7 +763,7 @@ export default function VideoBridge({
           <div
             className={`relative h-full w-full transition-[filter] duration-300 ${splitLayout ? "min-h-0" : "min-h-[120px] lg:min-h-0"}`}
             style={{
-              filter: agoraEnabled
+              filter: liveKitEnabled
                 ? undefined
                 : ghostMode
                   ? getFilterCss("ghost_spy")
@@ -746,7 +771,7 @@ export default function VideoBridge({
             }}
           >
           <CrownOverlay visible={showCrownOnSelf} position="self" />
-            {agoraEnabled ? (
+            {liveKitEnabled ? (
               <div
                 className={`relative h-full w-full ${splitLayout ? "min-h-0" : "min-h-[120px] lg:min-h-0"}`}
                 style={{
@@ -756,11 +781,11 @@ export default function VideoBridge({
                 }}
               >
                 <div
-                  ref={agoraLocalRef}
+                  ref={liveKitLocalRef}
                   className={
                     ghostMode
                       ? "absolute left-0 top-0 h-px w-px overflow-hidden opacity-0"
-                      : `theater-agora-local h-full w-full bg-black ${splitLayout ? "min-h-0" : "min-h-[120px] lg:min-h-0"}`
+                      : `theater-livekit-local h-full w-full bg-black ${splitLayout ? "min-h-0" : "min-h-[120px] lg:min-h-0"}`
                   }
                   aria-hidden={ghostMode}
                 />
@@ -823,7 +848,7 @@ export default function VideoBridge({
             )}
           </div>
         </div>
-        {agoraEnabled && agora.joined && (
+        {liveKitEnabled && liveKit.joined && (
           <div
             className={`absolute left-1/2 z-[72] flex -translate-x-1/2 gap-2 ${
               verticalSplit
@@ -835,14 +860,14 @@ export default function VideoBridge({
           >
             <button
               type="button"
-              onClick={agora.toggleMute}
+              onClick={liveKit.toggleMute}
               className={`flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-[0_0_14px_rgba(236,72,153,0.25)] backdrop-blur-md transition hover:border-fuchsia-400/50 ${
-                agora.muted ? "bg-rose-600/85 text-white" : ""
+                liveKit.muted ? "bg-rose-600/85 text-white" : ""
               }`}
-              title={agora.muted ? "Unmute" : "Mute"}
-              aria-pressed={agora.muted}
+              title={liveKit.muted ? "Unmute" : "Mute"}
+              aria-pressed={liveKit.muted}
             >
-              {agora.muted ? (
+              {liveKit.muted ? (
                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
                   <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
                 </svg>
@@ -854,14 +879,14 @@ export default function VideoBridge({
             </button>
             <button
               type="button"
-              onClick={agora.toggleCamera}
+              onClick={liveKit.toggleCamera}
               className={`flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-[0_0_14px_rgba(168,85,247,0.25)] backdrop-blur-md transition hover:border-fuchsia-400/50 ${
-                agora.cameraOff ? "bg-rose-600/85 text-white" : ""
+                liveKit.cameraOff ? "bg-rose-600/85 text-white" : ""
               }`}
-              title={agora.cameraOff ? "Camera on" : "Camera off"}
-              aria-pressed={agora.cameraOff}
+              title={liveKit.cameraOff ? "Camera on" : "Camera off"}
+              aria-pressed={liveKit.cameraOff}
             >
-              {agora.cameraOff ? (
+              {liveKit.cameraOff ? (
                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
                   <path d="M18 10.48V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4.48l4 3.98v-11l-4 3.98zm-2-.79V18H4V6h12v3.69z" />
                 </svg>
@@ -962,12 +987,12 @@ export default function VideoBridge({
           onSubtitleTextChange={aiTranslationUi ? setWhisperLine : undefined}
           listenOnly={
             neonWhisperEnabled &&
-            agoraEnabled &&
+            liveKitEnabled &&
             !liveTranslationEnabled &&
             !searching
           }
           onTranscriptFinal={
-            neonWhisperEnabled && agoraEnabled ? pushTranscript : undefined
+            neonWhisperEnabled && liveKitEnabled ? pushTranscript : undefined
           }
           onInsufficientBalance={onLiveTranslationInsufficientBalance}
         />

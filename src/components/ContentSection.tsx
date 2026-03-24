@@ -1507,7 +1507,7 @@ export default function ContentSection({
     translationUnlimited,
   ]);
 
-  const agoraChannelName = useMemo(() => {
+  const liveKitRoomName = useMemo(() => {
     if (
       !useRealMatching ||
       !userId ||
@@ -1654,8 +1654,8 @@ export default function ContentSection({
                 theaterGiftsEnabled={connected && !searching && !!partnerId}
                 theaterGiftCoins={coins}
                 onTheaterGift={handleSendGift}
-                agoraChannelName={agoraChannelName}
-                agoraUserIdKey={userId}
+                liveKitRoomName={liveKitRoomName}
+                liveKitIdentityKey={userId}
                 partnerVideoGift={partnerVideoGift}
                 onPartnerVideoGiftComplete={handlePartnerVideoGiftComplete}
                 onSpend={onSpend}
